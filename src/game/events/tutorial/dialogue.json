@@ -1,0 +1,6 @@
+{
+  "_comment": "事件對話資料：教學階段（主角穿越木堆之前），猴長老在集滿六顆祈雨石前後的表情與台詞",
+  "before_rain_stones": [],
+  "after_rain_stones": [],
+  "note": "TODO(tutorial事件負責人)：GDD僅描述猴長老的表情素材(monkey_elder_sad/monkey_elder_pleased)，尚無明確對話文字，請依GDD世界觀補上單詞式對話"
+}

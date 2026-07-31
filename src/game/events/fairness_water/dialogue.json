@@ -1,0 +1,11 @@
+{
+  "_comment": "事件對話資料：喝水事件（Fairness）——是否與羚羊公平分配池塘水資源",
+  "proximity_hint": "喝一口水",
+  "trigger_lines": ["我們", "累", "渴", "一起", "喝水", "？"],
+  "choice_options": [
+    { "key": "share", "label": "分享（與羚羊一起公平分配）" },
+    { "key": "drink_all", "label": "自己喝光" }
+  ],
+  "share_lines": ["謝謝", "漂亮石頭", "禮物"],
+  "drink_all_note": "連按三次空白鍵表示自己喝光，湖底會出現一顆祈雨石但羚羊離開水邊"
+}

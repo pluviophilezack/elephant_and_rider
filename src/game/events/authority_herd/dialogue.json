@@ -1,0 +1,46 @@
+{
+  "_comment": "事件對話資料：象群事件（Authority）——整合劊子手、王權、跟隨、王與年輕象爭吵四段劇情",
+
+  "executioner": {
+    "summary": "象王委託玩家擔任劊子手，除掉違反軍紀（擅自飲用軍中儲備水）的士兵",
+    "choice_options": [
+      { "key": "execute", "label": "分支A：協助象王處決士兵" },
+      { "key": "help_escape", "label": "分支B：協助士兵逃脫" }
+    ],
+    "execute_result": "得到象王賞識並取得祈雨石，解鎖王權事件分支A（可加入象群）",
+    "help_escape_result": "遭象王斥責，護送士兵至安全地點，士兵給予祈雨石；之後無法加入象群，象王對話口氣不悅"
+  },
+
+  "kingship_rebellion": {
+    "summary": "王權事件：象群為威權統治，群體內已有反對與不滿的聲音",
+    "choice_options": [
+      { "key": "join_side_king", "label": "與象王同陣營，驅逐/懸崖處決反對者" },
+      { "key": "persuade_king", "label": "說服象王容忍反對者" },
+      { "key": "help_overthrow", "label": "協助反對者推翻象王" },
+      { "key": "leave", "label": "不加入象群，離去" }
+    ]
+  },
+
+  "herd_following": {
+    "trigger_lines": ["石頭", "給你", "山上", "危險", "爺爺", "說過", "不要走", "不能走", "不准走", "……"],
+    "nearby_herd_lines": ["山上", "比較近", "繞過去", "好遠", "食物", "不夠了", "水", "不夠了", "要快點", "……"],
+    "choice_options": [
+      { "key": "follow", "label": "服從要求，跟隨象群繞過山脈" },
+      { "key": "cross", "label": "婉拒要求，直接穿過山脈" }
+    ],
+    "follow_rockslide_lines": ["危險", "對吧", "……"],
+    "cross_meet_young_herd_lines": ["這邊", "快多了", "……"]
+  },
+
+  "herd_argument": {
+    "king_scold_lines": ["山上", "不能走", "不聽話", "危險", "不聽話", "處罰", "……"],
+    "young_herd_protest_lines": ["平路", "太久了", "食物", "不夠", "小象", "危險", "你", "固執", "……"],
+    "king_order_punishment_lines": ["王的", "命令", "爺爺", "教我的", "你", "不聽話", "離開象群", "……"],
+    "choice_options": [
+      { "key": "support_king", "label": "王，有理，秩序，重要" },
+      { "key": "support_young", "label": "年輕象，有理，小象，危險" }
+    ],
+    "support_king_result_lines": ["好吧", "對不起", "我們", "不聽話", "我們", "離開"],
+    "support_young_result_lines": ["好吧", "對不起", "我", "老了", "王", "給你們"]
+  }
+}
