@@ -7,13 +7,13 @@
 | **A｜移動與鼻子互動** | `core/PlayerController.js`<br>`core/TrunkController.js` | 主角在地圖上的 WASD 移動、鼻子角度跟隨滑鼠與伸縮拾放 |
 | **B｜對話系統** | `core/DialogueSystem.js`<br>`ui/DialogueBox.js` | 文字泡邏輯與外觀。`DialogueSystem` 直接 `import DialogueBox`，綁在同一人才不用兩人對接口 |
 | **C｜選項系統** | `core/ChoiceSystem.js`<br>`ui/ChoicePrompt.js` | A/D 選項游標邏輯與外觀，`ChoiceSystem` 直接 `import ChoicePrompt`，理由同上 |
-| **D｜場景整合與框架** | `scenes/Boot.js`<br>`scenes/Preloader.js`<br>`scenes/MainMenu.js`<br>`scenes/Overworld.js`<br>`scenes/Ending.js`<br>`core/EventManager.js`<br>`core/TriggerZone.js`<br>`core/MoralState.js`<br>`ui/HUD.js` | 遊戲場景流程、把 A/B/C 三組系統組裝進 `Overworld.js`、事件觸發註冊、道德數值 singleton、結局判斷、祈雨石 HUD |
+| **D｜場景整合與框架** | `scenes/Boot.js`<br>`scenes/Preloader.js`<br>`scenes/MainMenu.js`<br>`scenes/Overworld.js`<br>`scenes/Ending.js`<br>`core/TriggerZone.js`<br>`core/MoralState.js`<br>`ui/HUD.js` | 遊戲場景流程、把 A/B/C 三組系統組裝進 `Overworld.js`、道德數值 singleton、結局判斷、祈雨石 HUD |
 
 ## 分組理由
 
 - **A、B、C**：機制與它自己的 UI 綁在同一人身上——這是唯二存在直接 `import` 關係的地方（`DialogueSystem → DialogueBox`、`ChoiceSystem → ChoicePrompt`），拆給不同人就得頻繁對接口，綁在一起完全不用溝通。
-- **D**：整合者角色，工作量本來就比較多（9 個檔案，但多數很小，如 `Boot.js`/`HUD.js` 都在 20～30 行內），因為「把大家的系統接在一起」本質上就是要碰很多檔案。但 D 只需要「呼叫」A/B/C 暴露出來的公開方法，完全不需要進去改 A/B/C 的檔案內容。
-- `MoralState.js`、`TriggerZone.js` 雖是小工具，但主要呼叫方都在 D 的檔案裡（`Ending.js` 讀 `MoralState`、`EventManager.js` 用 `TriggerZone`），歸給 D 比拆給 A/B/C 更符合「誰用歸誰管」。
+- **D**：整合者角色，工作量本來就比較多（8 個檔案，但多數很小，如 `Boot.js`/`HUD.js` 都在 20～30 行內），因為「把大家的系統接在一起」本質上就是要碰很多檔案。但 D 只需要「呼叫」A/B/C 暴露出來的公開方法，完全不需要進去改 A/B/C 的檔案內容。
+- `MoralState.js` 是小工具，但主要呼叫方在 D 的 `Ending.js` 裡（讀取道德數值計算結局），歸給 D 符合「誰用歸誰管」。`TriggerZone.js` 同樣是共用工具類，雖由 `domain_elephants` 事件使用，但作為核心工具歸給 D 統一管理。
 
 ## 介面契約（開工前先講死，之後各自可自由重構內部實作）
 
