@@ -17,7 +17,18 @@ export class Boot extends Scene
 
     create ()
     {
-        this.scene.start('Preloader');
+        if (document.fonts) {
+            document.fonts.ready.then(()=> {
+                this.scene.start('Preloader');
+            }).catch((err) => {
+                console.error("Font load error:", err);
+                this.scene.start('Preloader');
+            });
+        }else {
+            this.scene.start('Preloader');
+        }
+
+    // Just for Test
         // const gameW = this.scale.width;
         // const gameH = this.scale.height;
         // this.bg = this.add.image(0, 0, 'background');
