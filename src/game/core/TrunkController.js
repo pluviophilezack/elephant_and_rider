@@ -1,6 +1,6 @@
 // 核心系統：騎象人的樹枝魔杖／象鼻互動——朝向跟隨滑鼠角度、按住空白鍵伸長、放開收回，
 // 伸長時可拾起／放置場景中的單一物品（一次僅能拾起一個）
-export class TrunkController {
+export class WandController {
 
     constructor(scene, playerController) {
         this.scene = scene;
@@ -10,7 +10,7 @@ export class TrunkController {
         //最大伸長距離
         this.maxReachDistance = 150;
         //延伸視覺
-        this.trunkGraphics = scene.add.graphics();
+        this.wandGraphics = scene.add.graphics();
         //監聽滑鼠與鍵盤
         this.pointer = scene.input.activePointer();
         this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -31,14 +31,14 @@ export class TrunkController {
 
         // 限制實際伸長不超過最大範圍
         const reachDistance = Math.min(distance, this.maxReachDistance);
-        // 計算象鼻前端點 (Trunk Tip) 的座標
+        // 計算魔杖前端點 (Wand Tip) 的座標
         this.tipX = playerPos.x + Math.cos(angle) * reachDistance;
         this.tipY = playerPos.y + Math.sin(angle) * reachDistance;
 
-        // 繪製伸長的象鼻
-        this.trunkGraphics.clear();
-        this.trunkGraphics.lineStyle(4, 0x8B4513, 0.8);//顏色之後調
-        this.trunkGraphics.lineBetween(playerPos.x, playerPos.y, this.tipX, this.tipY);
+        // 繪製伸長的魔杖線條
+        this.wandGraphics.clear();
+        this.wandGraphics.lineStyle(4, 0x8B4513, 0.8);//顏色之後調
+        this.wandGraphics.lineBetween(playerPos.x, playerPos.y, this.tipX, this.tipY);
 
         // 若當前有抓取物件，讓物件跟隨象鼻前端點移動
         if (this.heldItem){
@@ -57,10 +57,9 @@ export class TrunkController {
     }
 
     tryGrabItem(){
-        // 取得場景中所有可被抓取的物件組（需要在場景中掛載 scene.interactiveItem)
-        if (!this.scene.interactiveItem) return;
-
-        const objects = this.scene.interactiveItem.getChildren();
+        // 取得場景中的可互動物品列表（例如 scene.items 陣列或 Physics Group）
+        const items = this.scene.items ? (this.scene.items.getChildren ? this.scene.items.getChildren() : this.scene.items) : [];
+        
         let closestItem = null;
         let minDistance = 40; // 抓取判定範圍距離
 
