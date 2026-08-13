@@ -8,8 +8,14 @@ import dialogue from './dialogue.json';
 export default {
     key: 'purity_flooded_ruins',
 
-    // TODO(此事件負責人)：改成實際地圖上水域廢墟入口的座標
-    triggerZone: { x: 3000, y: 1600, width: 220, height: 180 },
+    // 事件負責人在這裡建立自己的 sprite、觸發區域或按鍵監聽，並在條件成立時呼叫 this.onEnter(scene)
+    // TODO(此事件負責人)：建立聖物、守衛、石塊的 sprite 與觸發邏輯
+    setup(scene) {
+    },
+
+    // TODO(此事件負責人)：黑油污染區持續判定、守衛動畫等逐幀邏輯寫在這裡
+    update(scene) {
+    },
 
     onEnter(scene) {
         DialogueSystem.show(scene, dialogue.guard_resist_lines, () => {

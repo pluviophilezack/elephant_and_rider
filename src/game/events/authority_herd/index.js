@@ -8,8 +8,14 @@ import dialogue from './dialogue.json';
 export default {
     key: 'authority_herd',
 
-    // TODO(此事件負責人)：改成實際地圖上非洲裂谷/象群所在的座標
-    triggerZone: { x: 3800, y: 900, width: 250, height: 200 },
+    // 事件負責人在這裡建立自己的 sprite、觸發區域或按鍵監聽，並在條件成立時呼叫 this.onEnter(scene)
+    // TODO(此事件負責人)：建立象群、劊子手、象王等 sprite 與觸發邏輯
+    setup(scene) {
+    },
+
+    // TODO(此事件負責人)：象群跟隨移動、待機動畫等逐幀邏輯寫在這裡
+    update(scene) {
+    },
 
     onEnter(scene) {
         this._runExecutioner(scene);

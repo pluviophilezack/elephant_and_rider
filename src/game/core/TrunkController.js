@@ -1,5 +1,6 @@
 // 核心系統：騎象人的樹枝魔杖／象鼻互動——朝向跟隨滑鼠角度、按住空白鍵伸長、放開收回，
 // 伸長時可拾起／放置場景中的單一物品（一次僅能拾起一個）
+import * as Phaser from 'phaser';
 export class TrunkController {
 
     constructor(scene, playerController) {

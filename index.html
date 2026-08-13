@@ -5,10 +5,14 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/style.css">
-    <title>Phaser - Template</title>
+    <title>大象的道德冒險</title>
 </head>
 
 <body>
+    <!-- 預載入字型，確保瀏覽器觸發 naikaifont 下載 -->
+    <div style="font-family: naikaifont; position: absolute; top: -9999px; left: -9999px; visibility: hidden;">
+        preload naikaifont
+    </div>
     <div id="app">
         <div id="game-container"></div>
     </div>

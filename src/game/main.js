@@ -1,6 +1,5 @@
 // 遊戲核心進入點：定義 Phaser GameConfig，並依序註冊所有場景（Scene）
 import { Boot } from './scenes/Boot';
-import { Preloader } from './scenes/Preloader';
 import { MainMenu } from './scenes/MainMenu';
 import { Overworld } from './scenes/Overworld';
 import { Ending } from './scenes/Ending';
@@ -13,7 +12,7 @@ const config = {
     width: 1024,
     height: 768,
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    backgroundColor: '#ffffff',
     scale: {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH
@@ -21,12 +20,11 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            debug: false
+            debug: true
         }
     },
     scene: [
         Boot,
-        Preloader,
         MainMenu,
         Overworld,
         Ending
