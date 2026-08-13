@@ -8,7 +8,7 @@ export const TextStyles = {
     // 主選單
     fontSetting: {
         fontFamily: THEME_FONT, 
-        color: '#ffffff',
+        color: '#e3e0d7',
         stroke: '#000000',
         strokeThickness: 7,
     }
