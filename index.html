@@ -9,6 +9,10 @@
 </head>
 
 <body>
+    <!-- 預載入字型，確保瀏覽器觸發 naikaifont 下載 -->
+    <div style="font-family: naikaifont; position: absolute; top: -9999px; left: -9999px; visibility: hidden;">
+        preload naikaifont
+    </div>
     <div id="app">
         <div id="game-container"></div>
     </div>
