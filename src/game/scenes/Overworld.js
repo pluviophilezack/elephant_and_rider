@@ -1,7 +1,7 @@
 // 大地圖場景：整個遊戲唯一的連續場景，玩家在此移動、觸發各事件（見 game/events/）
 import { Scene } from 'phaser';
 import { PlayerController } from '../core/PlayerController';
-import { TrunkController } from '../core/TrunkController';
+import { WandController } from '../core/TrunkController';
 import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
