@@ -7,8 +7,14 @@ import dialogue from './dialogue.json';
 export default {
     key: 'fairness_water',
 
-    // TODO(此事件負責人)：改成實際地圖上池塘所在的座標
-    triggerZone: { x: 2200, y: 1200, width: 200, height: 150 },
+    // 事件負責人在這裡建立自己的 sprite、觸發區域或按鍵監聽，並在條件成立時呼叫 this.onEnter(scene)
+    // TODO(此事件負責人)：建立池塘與羚羊的 sprite 與觸發邏輯
+    setup(scene) {
+    },
+
+    // TODO(此事件負責人)：羚羊待機動畫、離開動畫等逐幀邏輯寫在這裡
+    update(scene) {
+    },
 
     onEnter(scene) {
         DialogueSystem.show(scene, dialogue.trigger_lines, () => {
