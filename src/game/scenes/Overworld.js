@@ -2,7 +2,6 @@
 import * as Phaser from 'phaser';
 import { PlayerController } from '../core/PlayerController';
 import { WandController } from '../core/TrunkController';
-import { EventManager } from '../core/EventManager';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
 import tutorial from '../events/tutorial';
@@ -29,15 +28,6 @@ export class Overworld extends Scene
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
 
-        this.add.image(512, 384, 'background');
-
-        // TODO(核心負責人)：改用實際地圖尺寸、主角素材，並設定 camera bounds 以支援大地圖捲動
-        this.player = this.physics.add.sprite(512, 384, 'logo');
-        this.trunk = this.physics.add.sprite(512, 384, 'logo').setVisible(false);
-
-        this.playerController = new PlayerController(this, this.player);
-        this.trunkController = new TrunkController(this, this.player, this.trunk);
-
         this.hud = new HUD(this);
 
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
@@ -54,7 +44,6 @@ export class Overworld extends Scene
     }
 
     update () {
-        this.playerController.update();
-        this.trunkController.update();
+        this.events_.forEach(event => event.update(this));
     }
 }
