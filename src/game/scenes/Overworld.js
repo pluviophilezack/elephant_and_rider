@@ -42,7 +42,7 @@ export class Overworld extends Scene
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
     giveRainStone() {
         this.hud.addRainStone(1);
-        if (this.hud.rainStoneCount >= 6) {
+        if (this.hud.hasEnoughRainStones()) {
             this.scene.start('Ending');
         }
     }

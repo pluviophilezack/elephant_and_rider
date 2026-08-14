@@ -5,10 +5,10 @@ export class DialogueBox {
         this.scene = scene;
         this.container = scene.add.container(0, 0).setScrollFactor(0).setDepth(1000);
 
-        this.background = scene.add.rectangle(512, 680, 600, 80, 0x000000, 0.6)
-            .setStrokeStyle(2, 0xffffff);
+        this.background = scene.add.rectangle(512, 680, 600, 80, 0xffffff, 0.6)
+            .setStrokeStyle(2, 0x000000);
         this.text = scene.add.text(512, 680, '', {
-            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+            fontFamily: 'Arial Black', fontSize: 28, color: '#000000',
             align: 'center'
         }).setOrigin(0.5);
 
@@ -20,6 +20,10 @@ export class DialogueBox {
 
     setText(line) {
         this.text.setText(line);
+
+        const padding = 40
+        const newWidth = Math.max(this.text.width + padding, 300);
+        this.background.setSize(newWidth, this.background.height);
     }
 
     onAdvance(callback) {
