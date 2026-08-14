@@ -42,8 +42,8 @@ export class TrunkController {
 
         // 若當前有抓取物件，讓物件跟隨象鼻前端點移動
         if (this.heldItem){
-            this.heldObject.x = this.tipX;
-            this.heldObject.y = this.tipY;
+            this.heldItem.x = this.tipX;
+            this.heldItem.y = this.tipY;
         }
     }
     toggleGrab(){
