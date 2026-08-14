@@ -1,11 +1,16 @@
 // 大地圖場景：整個遊戲唯一的連續場景，玩家在此移動、觸發各事件（見 game/events/）
-import { Scene } from 'phaser';
+import * as Phaser from 'phaser';
 import { PlayerController } from '../core/PlayerController';
 import { WandController } from '../core/TrunkController';
 import { EventManager } from '../core/EventManager';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
 import domainElephants from '../events/domain_elephants';
+
+// 將 Phaser 掛載到全域，修正其他模組中「Phaser is not defined」的錯誤
+window.Phaser = Phaser;
+
+const { Scene } = Phaser;
 
 export class Overworld extends Scene
 {
@@ -19,14 +24,19 @@ export class Overworld extends Scene
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
 
-        this.add.image(512, 384, 'background');
+        // 建立玩家控制器（傳入初始座標 512, 384）
+        this.playerController = new PlayerController(this, 512, 384);
+        
+        // 動態為 PlayerController 實例注入 getPosition 方法，以配合 WandController 呼叫
+        this.playerController.getPosition = function() {
+            return { x: this.sprite.x, y: this.sprite.y };
+        };
 
-        // TODO(核心負責人)：改用實際地圖尺寸、主角素材，並設定 camera bounds 以支援大地圖捲動
-        this.player = this.physics.add.sprite(512, 384, 'logo');
-        this.trunk = this.physics.add.sprite(512, 384, 'logo').setVisible(false);
+        // 取得實際的主角 sprite，以供 EventManager 與其他系統使用
+        this.player = this.playerController.sprite;
 
-        this.playerController = new PlayerController(this, this.player);
-        this.trunkController = new TrunkController(this, this.player, this.trunk);
+        // 建立魔杖/象鼻控制器（傳入 scene 與 playerController 實例）
+        this.wandController = new WandController(this, this.playerController);
 
         this.hud = new HUD(this);
 
@@ -44,6 +54,6 @@ export class Overworld extends Scene
 
     update () {
         this.playerController.update();
-        this.trunkController.update();
+        this.wandController.update();
     }
 }
