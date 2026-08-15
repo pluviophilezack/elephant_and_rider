@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+# ==============================================================================
+# 使用方法1，消除特定檔案的四邊：
+# python3 public/assets/trim_four_sides.py [多個目標檔案]
+# 範例：
+# python3 public/assets/trim_four_sides.py items/rock_rolling.png items/music_note.png
+# 
+# 使用方法2，消除item/, main_characters/, npc/ 其下所有檔案的四邊：
+# 範例：
+# python3 public/assets/trim_four_sides.py
+# ==============================================================================
+
+
 import os
 import sys
 from PIL import Image
