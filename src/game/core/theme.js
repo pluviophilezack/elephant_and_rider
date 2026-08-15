@@ -10,6 +10,6 @@ export const TextStyles = {
         fontFamily: THEME_FONT, 
         color: '#e3e0d7',
         stroke: '#000000',
-        strokeThickness: 7,
+        strokeThickness: 0,
     }
 };
