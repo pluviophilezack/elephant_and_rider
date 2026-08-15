@@ -13,7 +13,7 @@ export class MainMenu extends Scene
     init ()
     {
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
-        this.debugSlowLoad = true;
+        this.debugSlowLoad = false;
 
         // 初始化兩個主要條件狀態
         this.firstPlayFinished = false;
@@ -88,10 +88,49 @@ export class MainMenu extends Scene
     {
         // 設定資源路徑並載入遊戲後續核心素材
         this.load.setPath('assets');
+        
+        // 建立素材清單
+        const assetFiles = import.meta.glob('../../../public/assets/**/*', {
+            eager: true,
+            query: '?url',
+            import: 'default'
+        });
 
-        // ==========================================
-        // 這裡放您未來所有要載入的遊戲物件素材（圖片、音訊、地圖等）
-        // ==========================================
+        // 依序載入asset
+        for (const path in assetFiles) {
+            // 排除其他特殊asset
+            if (
+                path.includes('main_menu_spritesheet.png') ||
+                path.includes('.DS_Store') ||
+                path.endsWith('.py')
+            ) {
+                continue;
+            }
+
+            // 進一步判斷載入與否、方式
+            const relativePath = path.replace('../../../public/assets/', '');
+            const filename = relativePath.split('/').pop();
+            const extension = filename.split('.').pop().toLowerCase();
+            const key = filename.substring(0, filename.lastIndexOf('.')) || filename //substring 擷取從第0個char至最後一個dot
+
+            // A: 自動載入。特殊檔案留待下方 Phaser 引擎載入處理
+            if (['png', 'jpg', 'jpeg', 'webp'].includes(extension)){
+                if (!key.endsWith('_sheet') && !key.endsWith('_atlas')) {
+                    this.load.image(key, relativePath); // * 若要使用該素材，其檔名（不含extension）即 key
+                }
+            } else if (['mp3', 'wav', 'ogg'].includes(extension)){
+                this.load.audio(key, relativePath);
+            }
+
+            // B: 特殊手動載入
+            // 如果未來有動畫（TODO）
+            
+
+        }
+
+
+        
+
     }
 
     create ()
