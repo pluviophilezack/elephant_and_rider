@@ -12,7 +12,7 @@ export class WandController {
         //延伸視覺
         this.wandGraphics = scene.add.graphics();
         //監聽滑鼠與鍵盤
-        this.pointer = scene.input.activePointer();
+        this.pointer = scene.input.activePointer;
         this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         // 空白鍵按下時觸發抓取或放置
         this.spaceKey.on('down', ()=>{
@@ -64,7 +64,7 @@ export class WandController {
         let minDistance = 40; // 抓取判定範圍距離
 
         //找出最近可抓取的物品
-        item.forEach((itm) => {
+        items.forEach((itm) => {
             const dist = Phaser.Math.Distance.Between(this.tipX, this.tipY, itm.x, itm.y);
             if (dist < minDistance){
                 minDistance = dist;
@@ -83,7 +83,7 @@ export class WandController {
     releaseItem(){
         if (this.heldItem){
             if (this.heldItem.body){
-                his.heldItem.body.enable = true; // 放置後恢復物理碰撞
+                this.heldItem.body.enable = true; // 放置後恢復物理碰撞
             }
             this.heldItem = null;
         }
