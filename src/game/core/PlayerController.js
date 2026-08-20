@@ -6,7 +6,12 @@ export class PlayerController {
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
         this.sprite.setCollideWorldBounds(true);
-        
+
+        // 加入sprite
+        scene.player = this.sprite; 
+        // 設定圖層順序，避免被底圖覆蓋
+        this.sprite.setDepth(15);
+
         this.speed = 160;
         //輸入鍵盤監聽
         this.cursors = scene.input.keyboard.createCursorKeys();
