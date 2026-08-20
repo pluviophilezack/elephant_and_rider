@@ -16,6 +16,9 @@ export class Boot extends Scene
             frameWidth: 1024,
             frameHeight: 768
         });
+        this.load.image('main_character_stand_still', 'assets/main_characters/main_character_stand_still.png');
+        this.load.image('main_character_moving_01', 'assets/main_characters/main_character_moving_01.png');
+        this.load.image('main_character_moving_02', 'assets/main_characters/main_character_moving_02.png');
     }
 
     create ()
