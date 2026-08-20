@@ -37,6 +37,42 @@ export class Overworld extends Scene
 
         this.hud = new HUD(this);
 
+        // ==========================================
+        // TODO: 大底圖拼接與座標系統實作區
+        // ==========================================
+        
+        // 步驟 1: 動態讀取底圖尺寸
+        // 語法提示：
+        // const img = this.textures.get('background_01_plain').getSourceImage();
+        // const w = img.width;
+        // const h = img.height;
+        const img = this.textures.get('background_01_plain').getSourceImage();
+        const w = img.width;
+        const h = img.height;
+        
+        // 步驟 2: 計算物理世界總尺寸
+        const worldWidth = w * 2;
+        const worldHeight = h * 2;
+        
+        // 步驟 3: 拼接四張大地圖
+        // 語法提示：
+        // this.add.image(x座標, y座標, '貼圖Key').setOrigin(0, 0);
+        // 左上
+        this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
+        // 左下
+        this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
+        // 右上
+        this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
+        // 右下
+        this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+        
+        // 步驟 4: 動態設定物理世界邊界 (Physics Bounds) 
+        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+        
+        // 步驟 5: 動態設定鏡頭移動邊界 (Camera Bounds)
+        // 語法提示：
+        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
         this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
         this.events_.forEach(event => event.setup(this));
