@@ -38,7 +38,7 @@ export class Overworld extends Scene
         this.hud = new HUD(this);
 
         // ==========================================
-        // TODO: 大底圖拼接與座標系統實作區
+        // 大底圖拼接
         // ==========================================
         
         // 步驟 1: 動態讀取底圖尺寸
@@ -73,9 +73,20 @@ export class Overworld extends Scene
         // 語法提示：
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
+        // ==========================================
+        // registerAsset
+        // ==========================================
+        this.registeredAssets = {};
+
+        // 為了讓模組register assets時自動附上所屬模組
+        this.currentActiveEventKey = null;
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
         this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
-        this.events_.forEach(event => event.setup(this));
+        this.events_.forEach(event => {
+            this.currentActiveEventKey = event.key;
+            event.setup(this);
+            this.currentActiveEventKey = null;
+        });
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
@@ -84,6 +95,49 @@ export class Overworld extends Scene
         if (this.hud.hasEnoughRainStones()) {
             this.scene.start('Ending');
         }
+    }
+
+    // 供事件模組呼叫：於add sprite後，將該sprite建立到遊戲系統中
+    registerAsset(sprite, customID = null) {
+        // 決定id
+        // 模組負責人在特殊情況下，可自訂sprite ID
+        let id;
+        if (customID){
+            id = customID;
+        }
+        else {
+            const mappingKey = sprite.texture.key;
+            let countSuffix = 0;
+            id = mappingKey + "_" + countSuffix;
+            while(true){
+                if(this.registeredAssets[id]){
+                    countSuffix++;
+                    id = mappingKey + "_" + countSuffix;
+                    continue;
+                }
+                break;
+            }
+        }
+        sprite.id = id;
+        
+        // 決定eventKey
+        let createdEvent;
+        if (this.currentActiveEventKey){
+            createdEvent = this.currentActiveEventKey;
+        }else{
+            createdEvent = 'other_module';
+        }
+        sprite.createdEvent = createdEvent;
+
+        this.registeredAssets[id] = sprite;
+
+        sprite.once('destroy', ()=>{
+            // 此sprite被移除遊戲，清單隨同刪除
+            delete this.registeredAssets[id];
+        })
+
+        // Test
+        console.log(this.registeredAssets);
     }
 
     update () {

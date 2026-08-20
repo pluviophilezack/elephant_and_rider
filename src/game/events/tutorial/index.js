@@ -10,7 +10,12 @@ export default {
     setup(scene) {
         // TODO：例如 this.woodpile = scene.add.sprite(x, y, 'woodpile_04');
         //       scene.pickupRegistry.register(this.woodpile, { onPick, onPlace });
+        const monkey_elder_sad = scene.add.sprite(100, 100, 'monkey_elder_sad');
+        scene.registerAsset(monkey_elder_sad);
+        console.log()
+        
     },
+
 
     // TODO(tutorial事件負責人)：待機動畫、木堆被拿起時跟隨象鼻位置等逐幀邏輯寫在這裡
     update(scene) {
