@@ -12,7 +12,7 @@ export class WandController {
         //延伸視覺
         this.wandGraphics = scene.add.graphics();
         //監聽滑鼠與鍵盤
-        this.pointer = scene.input.activePointer();
+        this.pointer = scene.input.activePointer;
         this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         // 空白鍵按下時觸發抓取或放置
         this.spaceKey.on('down', ()=>{
@@ -29,16 +29,22 @@ export class WandController {
         const angle = Phaser.Math.Angle.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
         const distance = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
 
-        // 限制實際伸長不超過最大範圍
-        const reachDistance = Math.min(distance, this.maxReachDistance);
+        // 機制補齊：僅在「按住空白鍵」時伸長，放開時收回至主角位置
+        let reachDistance = 0;
+        if (this.spaceKey.isDown) {
+            reachDistance = Math.min(distance, this.maxReachDistance);
+        }
+
         // 計算魔杖前端點 (Wand Tip) 的座標
         this.tipX = playerPos.x + Math.cos(angle) * reachDistance;
         this.tipY = playerPos.y + Math.sin(angle) * reachDistance;
 
         // 繪製伸長的魔杖線條
         this.wandGraphics.clear();
-        this.wandGraphics.lineStyle(4, 0x8B4513, 0.8);//顏色之後調
-        this.wandGraphics.lineBetween(playerPos.x, playerPos.y, this.tipX, this.tipY);
+        if (reachDistance > 0) {
+            this.wandGraphics.lineStyle(4, 0x8B4513, 0.8);
+            this.wandGraphics.lineBetween(playerPos.x, playerPos.y, this.tipX, this.tipY);
+        }
 
         // 若當前有抓取物件，讓物件跟隨象鼻前端點移動
         if (this.heldItem){
@@ -64,7 +70,7 @@ export class WandController {
         let minDistance = 40; // 抓取判定範圍距離
 
         //找出最近可抓取的物品
-        item.forEach((itm) => {
+        items.forEach((itm) => {
             const dist = Phaser.Math.Distance.Between(this.tipX, this.tipY, itm.x, itm.y);
             if (dist < minDistance){
                 minDistance = dist;
@@ -83,7 +89,7 @@ export class WandController {
     releaseItem(){
         if (this.heldItem){
             if (this.heldItem.body){
-                his.heldItem.body.enable = true; // 放置後恢復物理碰撞
+                this.heldItem.body.enable = true; // 放置後恢復物理碰撞
             }
             this.heldItem = null;
         }

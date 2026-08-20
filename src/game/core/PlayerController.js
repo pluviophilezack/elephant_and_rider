@@ -6,7 +6,12 @@ export class PlayerController {
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
         this.sprite.setCollideWorldBounds(true);
-        
+
+        // 加入sprite
+        scene.player = this.sprite; 
+        // 設定圖層順序，避免被底圖覆蓋
+        this.sprite.setDepth(15);
+
         this.speed = 160;
         //輸入鍵盤監聽
         this.cursors = scene.input.keyboard.createCursorKeys();
@@ -27,12 +32,15 @@ export class PlayerController {
                 key: 'walk',
                 frames:[
                     {key: 'main_character_moving_01'},
-                    {key: 'main_character_moving_01'}
+                    {key: 'main_character_moving_02'}
                 ],
                 frameRate: 6,
                 repeat: -1
             });
         }
+    }
+    getPosition() {
+        return { x: this.sprite.x, y: this.sprite.y };
     }
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
