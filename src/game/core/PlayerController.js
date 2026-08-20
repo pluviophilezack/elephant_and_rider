@@ -27,12 +27,15 @@ export class PlayerController {
                 key: 'walk',
                 frames:[
                     {key: 'main_character_moving_01'},
-                    {key: 'main_character_moving_01'}
+                    {key: 'main_character_moving_02'}
                 ],
                 frameRate: 6,
                 repeat: -1
             });
         }
+    }
+    getPosition() {
+        return { x: this.sprite.x, y: this.sprite.y };
     }
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
