@@ -28,6 +28,12 @@ export class Overworld extends Scene
     {
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
+        // 1. 初始化主角控制器 (測試用座標)
+        this.playerController = new PlayerController(this, 400, 300);
+        // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
+        this.wandController = new WandController(this, this.playerController);
+        // 3. 設定攝影機跟隨主角移動
+        this.cameras.main.startFollow(this.playerController.sprite);
 
         this.hud = new HUD(this);
 
@@ -45,6 +51,14 @@ export class Overworld extends Scene
     }
 
     update () {
+        // 更新主角與魔杖控制邏輯
+        if (this.playerController) {
+            this.playerController.update();
+        }
+        if (this.wandController) {
+            this.wandController.update();
+        }
+        //更新個事件邏輯
         this.events_.forEach(event => event.update(this));
     }
 }

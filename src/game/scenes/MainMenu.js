@@ -12,75 +12,81 @@ export class MainMenu extends Scene
 
     init ()
     {
+        // 跳過Menu動畫，方便方便快速開發
+        this.debugSkipMenu = true;
+
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
 
-        // 初始化兩個主要條件狀態
-        this.firstPlayFinished = false;
-        this.isLoadingComplete = false;
-        this.startText = null;
+        // 方便開發快速跳過Menu
+        if (!this.debugSkipMenu){
+            // 初始化兩個主要條件狀態
+            this.firstPlayFinished = false;
+            this.isLoadingComplete = false;
+            this.startText = null;
 
-        // 1. 建立背景 Sprite 並播放動畫
-        const bg = this.add.sprite(512, 384, 'main_menu_background');
-        const scaleX = 1024 / bg.width;
-        const scaleY = 768 / bg.height;
-        const scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale);
+            // 1. 建立背景 Sprite 並播放動畫
+            const bg = this.add.sprite(512, 384, 'main_menu_background');
+            const scaleX = 1024 / bg.width;
+            const scaleY = 768 / bg.height;
+            const scale = Math.max(scaleX, scaleY);
+            bg.setScale(scale);
 
-        // 播放動畫：先播 start，完畢後接著播 loop
-        bg.play('main_menu_bg_start');
-        // 類似 EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation, frame, gameObject三個instance，這邊我們只需要EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation(資訊)
-        bg.on('animationcomplete', (animation) => {
-            if (animation.key === 'main_menu_bg_start') {
-                this.firstPlayFinished = true;
-                bg.play('main_menu_bg_loop');
+            // 播放動畫：先播 start，完畢後接著播 loop
+            bg.play('main_menu_bg_start');
+            // 類似 EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation, frame, gameObject三個instance，這邊我們只需要EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation(資訊)
+            bg.on('animationcomplete', (animation) => {
+                if (animation.key === 'main_menu_bg_start') {
+                    this.firstPlayFinished = true;
+                    bg.play('main_menu_bg_loop');
 
-                // 動畫第一次播放完畢，即顯示遊戲標題文字。因此無論載入時間多長，標題都會在一樣的時間出現。
-                this.showTitleText();
-                
-                // 條件判斷：如果資源也已經載入完成了，就顯示 start 按鈕
-                if (this.isLoadingComplete) {
-                    this.showStartButton();
-                }
-            }
-        });
-
-        // 2. 建立進度條元件
-        this.progressOutline = this.add.rectangle(512, 640, 468, 32).setStrokeStyle(1, 0x4d3d8f);
-        this.progressBar = this.add.rectangle(512-230, 640, 4, 28, 0xb2a12c).setOrigin(0, 0.5);
-
-        // 3. 監聽載入進度，動態更新進度條
-        if (this.debugSlowLoad) {
-            // 測試模式：使用 Tween 模擬慢速載入 3 秒鐘
-            this.tweens.addCounter({
-                from: 0,
-                to: 1,
-                duration: 3000,
-                onUpdate: (tween) => {
-                    const progress = tween.getValue();
-                    if (this.progressBar && this.progressBar.active) {
-                        this.progressBar.width = 4 + (460 * progress);
-                    }
-                },
-                onComplete: () => {
-                    this.isLoadingComplete = true;
-                    // 銷毀進度條元件
-                    if (this.progressOutline) this.progressOutline.destroy();
-                    if (this.progressBar) this.progressBar.destroy();
+                    // 動畫第一次播放完畢，即顯示遊戲標題文字。因此無論載入時間多長，標題都會在一樣的時間出現。
+                    this.showTitleText();
                     
-                    // 動畫也播完的話就顯示按鈕
-                    if (this.firstPlayFinished) {
+                    // 條件判斷：如果資源也已經載入完成了，就顯示 start 按鈕
+                    if (this.isLoadingComplete) {
                         this.showStartButton();
                     }
                 }
             });
-        } else {
-            // 正式模式：監聽真實載入進度
-            this.load.on('progress', (progress) => {
-                if (this.progressBar && this.progressBar.active) {
-                    this.progressBar.width = 4 + (460 * progress);
-                }
-            });
+
+            // 2. 建立進度條元件
+            this.progressOutline = this.add.rectangle(512, 640, 468, 32).setStrokeStyle(1, 0x4d3d8f);
+            this.progressBar = this.add.rectangle(512-230, 640, 4, 28, 0xb2a12c).setOrigin(0, 0.5);
+
+            // 3. 監聽載入進度，動態更新進度條
+            if (this.debugSlowLoad) {
+                // 測試模式：使用 Tween 模擬慢速載入 3 秒鐘
+                this.tweens.addCounter({
+                    from: 0,
+                    to: 1,
+                    duration: 3000,
+                    onUpdate: (tween) => {
+                        const progress = tween.getValue();
+                        if (this.progressBar && this.progressBar.active) {
+                            this.progressBar.width = 4 + (460 * progress);
+                        }
+                    },
+                    onComplete: () => {
+                        this.isLoadingComplete = true;
+                        // 銷毀進度條元件
+                        if (this.progressOutline) this.progressOutline.destroy();
+                        if (this.progressBar) this.progressBar.destroy();
+                        
+                        // 動畫也播完的話就顯示按鈕
+                        if (this.firstPlayFinished) {
+                            this.showStartButton();
+                        }
+                    }
+                });
+            } else {
+                // 正式模式：監聽真實載入進度
+                this.load.on('progress', (progress) => {
+                    if (this.progressBar && this.progressBar.active) {
+                        this.progressBar.width = 4 + (460 * progress);
+                    }
+                });
+            }
         }
     }
 
@@ -135,6 +141,11 @@ export class MainMenu extends Scene
 
     create ()
     {
+        // 方便開發快速跳過Menu
+        if (this.debugSkipMenu) {
+            this.scene.start('Overworld');
+        }
+
         if (!this.debugSlowLoad) {
             // 標記資源載入已完成
             this.isLoadingComplete = true;
@@ -178,26 +189,26 @@ export class MainMenu extends Scene
         });
     }
 
-            showTitleText ()                                                                                                                                                                 
-        {
-            // 避免重複建立標題
-            if (this.titleText) return;
-  
-            // 建立並顯示標題文字（例如放在畫面中央偏上的位置：x=512, y=250）
-            this.titleText = this.add.text(512, 120, '大象與騎象人', {
-                ...TextStyles.fontSetting,
-                fontSize: '64px',
-            }).setOrigin(0.5);
-  
-            // 淡入動畫
-            this.titleText.setAlpha(0);
-            this.tweens.add({
-                targets: this.titleText,
-                alpha: 1,
-                duration: 600,
-                ease: 'Power2'
-            });
-        }
+    showTitleText ()                                                                                                                                                                 
+    {
+        // 避免重複建立標題
+        if (this.titleText) return;
+
+        // 建立並顯示標題文字（例如放在畫面中央偏上的位置：x=512, y=250）
+        this.titleText = this.add.text(512, 120, '大象與騎象人', {
+            ...TextStyles.fontSetting,
+            fontSize: '64px',
+        }).setOrigin(0.5);
+
+        // 淡入動畫
+        this.titleText.setAlpha(0);
+        this.tweens.add({
+            targets: this.titleText,
+            alpha: 1,
+            duration: 600,
+            ease: 'Power2'
+        });
+    }
 }
 
 
