@@ -5,6 +5,7 @@ import { WandController } from '../core/TrunkController';
 import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
+import { DevToolsManager } from '../core/DevToolsManager';
 import tutorial from '../events/tutorial';
 import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
@@ -28,14 +29,17 @@ export class Overworld extends Scene
     {
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
-        // 1. 初始化主角控制器 (測試用座標)
-        this.playerController = new PlayerController(this, 400, 300);
+        // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
+        this.playerController = new PlayerController(this, 300, 400);
         // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
         this.wandController = new WandController(this, this.playerController);
         // 3. 設定攝影機跟隨主角移動
         this.cameras.main.startFollow(this.playerController.sprite);
 
+        // 建立祈雨石計分面板
         this.hud = new HUD(this);
+
+
 
         // ==========================================
         // 大底圖拼接
@@ -70,7 +74,6 @@ export class Overworld extends Scene
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
         // 步驟 5: 動態設定鏡頭移動邊界 (Camera Bounds)
-        // 語法提示：
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
         // ==========================================
@@ -87,6 +90,9 @@ export class Overworld extends Scene
             event.setup(this);
             this.currentActiveEventKey = null;
         });
+
+        // 建立開發者工具
+        this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
@@ -131,13 +137,11 @@ export class Overworld extends Scene
 
         this.registeredAssets[id] = sprite;
 
+        // TODO:理解destroy的觸發條件
         sprite.once('destroy', ()=>{
             // 此sprite被移除遊戲，清單隨同刪除
             delete this.registeredAssets[id];
         })
-
-        // Test
-        console.log(this.registeredAssets);
     }
 
     update () {
@@ -148,7 +152,11 @@ export class Overworld extends Scene
         if (this.wandController) {
             this.wandController.update();
         }
-        //更新個事件邏輯
+        // 更新除錯工具
+        if (this.devToolsManager) {
+            this.devToolsManager.update();
+        }
+        //更新每個事件
         this.events_.forEach(event => event.update(this));
     }
 }

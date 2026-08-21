@@ -11,8 +11,10 @@ export default {
         // TODO：例如 this.woodpile = scene.add.sprite(x, y, 'woodpile_04');
         //       scene.pickupRegistry.register(this.woodpile, { onPick, onPlace });
         const monkey_elder_sad = scene.add.sprite(100, 100, 'monkey_elder_sad');
+        const monkey_elder_pleased = scene.add.sprite(200, 100, 'monkey_elder_pleased');
+        // 登記此物件
         scene.registerAsset(monkey_elder_sad);
-        console.log()
+        scene.registerAsset(monkey_elder_pleased);
         
     },
 
