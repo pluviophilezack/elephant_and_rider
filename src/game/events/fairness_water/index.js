@@ -7,6 +7,7 @@ import dialogue from './dialogue.json';
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
 
 export default {
+    key: 'fairness_water',
     setup(scene) {
     },
 
