@@ -5,6 +5,7 @@ import { WandController } from '../core/TrunkController';
 import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
+import { DevToolsManager } from '../core/DevToolsManager';
 import tutorial from '../events/tutorial';
 import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
@@ -28,17 +29,20 @@ export class Overworld extends Scene
     {
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
-        // 1. 初始化主角控制器 (測試用座標)
-        this.playerController = new PlayerController(this, 400, 300);
+        // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
+        this.playerController = new PlayerController(this, 300, 400);
         // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
         this.wandController = new WandController(this, this.playerController);
         // 3. 設定攝影機跟隨主角移動
         this.cameras.main.startFollow(this.playerController.sprite);
 
+        // 建立祈雨石計分面板
         this.hud = new HUD(this);
 
+
+
         // ==========================================
-        // TODO: 大底圖拼接與座標系統實作區
+        // 大底圖拼接
         // ==========================================
         
         // 步驟 1: 動態讀取底圖尺寸
@@ -70,20 +74,90 @@ export class Overworld extends Scene
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
         // 步驟 5: 動態設定鏡頭移動邊界 (Camera Bounds)
-        // 語法提示：
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+        // ==========================================
+        // registerAsset
+        // ==========================================
+        this.registeredAssets = {};
+
+        // 為了讓模組register assets時自動附上所屬模組
+        this.currentActiveEventKey = null;
+
+        // 共享state
+        this.sharedState = {
+            rain: false,
+            completedTutorial: false,
+            tutorial: false,
+            ingroup_bird_contest: false,
+            fairness_water: false,
+            purity_flooded_ruins: false,
+            authority_herd: false
+        }
+
 
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
         this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
-        this.events_.forEach(event => event.setup(this));
+        this.events_.forEach(event => {
+            this.currentActiveEventKey = event.key;
+            event.setup(this);
+            this.currentActiveEventKey = null;
+        });
+
+        // 建立開發者工具
+        this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
-    giveRainStone() {
+    giveRainStone(eventKey) {
+        if (eventKey && this.sharedState.hasOwnProperty(eventKey)) {
+            this.sharedState[eventKey] = true;
+        }
         this.hud.addRainStone(1);
         if (this.hud.hasEnoughRainStones()) {
-            this.scene.start('Ending');
+            this.sharedState["rain"] = true;
         }
+    }
+
+    // 供事件模組呼叫：於add sprite後，將該sprite建立到遊戲系統中
+    registerAsset(sprite, customID = null) {
+        // 決定id
+        // 模組負責人在特殊情況下，可自訂sprite ID
+        let id;
+        if (customID){
+            id = customID;
+        }
+        else {
+            const mappingKey = sprite.texture.key;
+            let countSuffix = 0;
+            id = mappingKey + "_" + countSuffix;
+            while(true){
+                if(this.registeredAssets[id]){
+                    countSuffix++;
+                    id = mappingKey + "_" + countSuffix;
+                    continue;
+                }
+                break;
+            }
+        }
+        sprite.id = id;
+        
+        // 決定eventKey
+        let createdEvent;
+        if (this.currentActiveEventKey){
+            createdEvent = this.currentActiveEventKey;
+        }else{
+            createdEvent = 'other_module';
+        }
+        sprite.createdEvent = createdEvent;
+
+        this.registeredAssets[id] = sprite;
+
+        // TODO:理解destroy的觸發條件
+        sprite.once('destroy', ()=>{
+            // 此sprite被移除遊戲，清單隨同刪除
+            delete this.registeredAssets[id];
+        })
     }
 
     update () {
@@ -94,7 +168,11 @@ export class Overworld extends Scene
         if (this.wandController) {
             this.wandController.update();
         }
-        //更新個事件邏輯
+        // 更新除錯工具
+        if (this.devToolsManager) {
+            this.devToolsManager.update();
+        }
+        //更新每個事件
         this.events_.forEach(event => event.update(this));
     }
 }

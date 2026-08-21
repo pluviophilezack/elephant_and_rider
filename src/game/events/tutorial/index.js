@@ -1,23 +1,31 @@
-// 事件模組：教學階段——玩家學習用象鼻拾放物品，依序拿掉四塊木堆（woodpile_04 → 01）才能通過
 import { DialogueSystem } from '../../core/DialogueSystem';
+import { ChoiceSystem } from '../../core/ChoiceSystem';
+import { MoralState } from '../../core/MoralState';
+import { createTriggerZone } from '../../core/TriggerZone';
 import dialogue from './dialogue.json';
+
+// 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
 
 export default {
     key: 'tutorial',
-
-    // 事件負責人在這裡建立自己的 sprite、觸發區域或按鍵監聽，並在條件成立時呼叫 this.onEnter(scene)
-    // TODO(tutorial事件負責人)：建立 woodpile_04~01 的 sprite，並用 pickupRegistry.register() 註冊拾取邏輯
     setup(scene) {
-        // TODO：例如 this.woodpile = scene.add.sprite(x, y, 'woodpile_04');
-        //       scene.pickupRegistry.register(this.woodpile, { onPick, onPlace });
+
+        // 範例：加入猴長老悲傷表情 (monkey_elder_sad) 的 sprite
+        if (!scene.sharedState.rain){
+            this.monkeyElderSad = scene.add.sprite(300, 200, 'monkey_elder_sad');
+            scene.registerAsset(this.monkeyElderSad);
+        } else{
+            this.monkeyElderPleased = scene.add.sprite(300, 200, 'monkey_elder_pleased');
+            scene.registerAsset(this.monkeyElderPleased);
+        }
+
+        // 範例：使用 createTriggerZone 建立觸發區域，並設定與主角 (scene.player) 的重疊 (overlap) 偵測
+        const triggerZone = createTriggerZone(scene, { x: 800, y: 200, width: 100, height: 100 });
+        scene.physics.add.overlap(scene.player, triggerZone, () => {
+            console.log("Trigger");
+        });
     },
 
-    // TODO(tutorial事件負責人)：待機動畫、木堆被拿起時跟隨象鼻位置等逐幀邏輯寫在這裡
     update(scene) {
-    },
-
-    onEnter(scene) {
-        DialogueSystem.show(scene, dialogue.before_rain_stones);
-        // TODO：串接 woodpile_04 ~ woodpile_01 依序移除的拾取邏輯
     }
 };
