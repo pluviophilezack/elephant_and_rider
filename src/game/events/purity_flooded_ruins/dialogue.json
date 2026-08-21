@@ -1,8 +1,3 @@
 {
-  "_comment": "事件對話資料：水域廢墟事件——被污染的聖物（Purity）。玩家需強迫大象走進黑油污染區取得白蓮聖物",
-  "guard_resist_lines": ["不要", "靠近", "我", "不乾淨"],
-  "guard_farewell_if_not_rescued": ["太好了", "你的", "鼻子", "沒有", "受到", "污染", "……", "只有", "我被", "留在", "這裡"],
-  "rescue_subline_note": "小支線（選項）：是否救出守衛。救出：purity -1, harm +1",
-  "guard_rescued_lines": ["牠明明", "那麼", "排斥", "這裡", "……", "你卻", "還是", "讓牠", "過來", "救我？"],
-  "guard_see_stained_relic_lines": ["為了", "救我", "象鼻", "污穢"]
+  "_comment": ""
 }

@@ -83,6 +83,19 @@ export class Overworld extends Scene
 
         // 為了讓模組register assets時自動附上所屬模組
         this.currentActiveEventKey = null;
+
+        // 共享state
+        this.sharedState = {
+            rain: false,
+            completedTutorial: false,
+            tutorial: false,
+            ingroup_bird_contest: false,
+            fairness_water: false,
+            purity_flooded_ruins: false,
+            authority_herd: false
+        }
+
+
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
         this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
         this.events_.forEach(event => {
@@ -96,10 +109,13 @@ export class Overworld extends Scene
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
-    giveRainStone() {
+    giveRainStone(eventKey) {
+        if (eventKey && this.sharedState.hasOwnProperty(eventKey)) {
+            this.sharedState[eventKey] = true;
+        }
         this.hud.addRainStone(1);
         if (this.hud.hasEnoughRainStones()) {
-            this.scene.start('Ending');
+            this.sharedState["rain"] = true;
         }
     }
 

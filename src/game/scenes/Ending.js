@@ -17,7 +17,7 @@ export class Ending extends Scene
         const scores = MoralState.getAll();
         console.log('[Ending] 本次遊玩道德數值：', scores);
 
-        this.add.text(512, 384, '莽原重獲甘霖', {
+        this.add.text(512, 384, 'Ending', {
             fontFamily: 'Arial Black', fontSize: 48, color: '#ffffff',
             stroke: '#000000', strokeThickness: 8,
             align: 'center'
