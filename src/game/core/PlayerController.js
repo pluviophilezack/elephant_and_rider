@@ -8,7 +8,7 @@ export class PlayerController {
         this.sprite.setCollideWorldBounds(true);
 
         // 加入sprite
-        scene.player = this.sprite; 
+        scene.player = this.sprite.setScale(0.4); 
         // 設定圖層順序，避免被底圖覆蓋
         this.sprite.setDepth(15);
 
@@ -44,6 +44,7 @@ export class PlayerController {
     }
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
+        if (this.isAutoMoving) return;
         const body = this.sprite.body;
         if (!body) return;
 
