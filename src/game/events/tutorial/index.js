@@ -9,9 +9,10 @@ import dialogue from './dialogue.json';
 export default {
     key: 'tutorial',
     setup(scene) {
-        this.CONVERSATION_DISTANCE = 175;
+        this.CONVERSATION_DISTANCE = 200;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
+        this.isGetRainStone = false;
 
         // Easter Egg: apple
         this.puddle = scene.add.sprite(80, 160, 'puddle');
@@ -72,16 +73,6 @@ export default {
         this.wear_glasses = false;
         this.turns_monkey = 0;
 
-        // 初始教學，自動開啟對話
-        if(this.turns_monkey === 0){
-            const distance = Phaser.Math.Distance.Between(
-            this.playerSprite.x, this.playerSprite.y,
-            this.monkeyElder.x, this.monkeyElder.y);
-            if (distance <= this.CONVERSATION_DISTANCE){
-                this.startConversationMonkey(scene);
-            }
-        }
-
         // 一般情況
         scene.input.keyboard.on('keydown-SPACE', () => {
             const distance = Phaser.Math.Distance.Between(
@@ -93,26 +84,84 @@ export default {
         })
 
 
-        // 範例：使用 createTriggerZone 建立觸發區域，並設定與主角 (scene.player) 的重疊 (overlap) 偵測
-        // const triggerZone = createTriggerZone(scene, { x: 800, y: 200, width: 100, height: 100 });
-        // scene.physics.add.overlap(scene.player, triggerZone, () => {
-        //     console.log("Trigger");
-        // }); 
-
-
-        // Elephant stretching
+        // 自言自語路段
         
+        
+        if (!this.isGetRainStone){
+            const triggerZone = createTriggerZone(scene, { x: 300, y: 1600, width: 400, height: 1 });
+            scene.physics.add.overlap(scene.player, triggerZone, ()=>{
+                this.startConversationRider(scene);
+                triggerZone.destroy();
+            })
+        }else{
+            const triggerZone = createTriggerZone(scene, { x: 700, y: 1400, width: 100, height: 400 });
+            scene.physics.add.overlap(scene.player, triggerZone, () => {
+            this.tartConversationRider();
+            triggerZone.destroy();
+        }); 
+
+
+
+        }
+
+        /// Woodpile
+        this.woodpile = scene.physics.add.sprite(285, 1884, 'woodpile_04').setDepth(15); 
+        this.woodpile.body.setImmovable(true);
+
+        //TODO: Change texture when player take one wood
+        let offset_y = 150;
+        let wood_remaining_number =4;
+
+        // 3. Set the custom collider size (w, h)
+        // (Using raw width is safer for dynamic body calculations)
+        if (wood_remaining_number === 3){
+            this.woodpile.setTexture('woodpile_03');
+            offset_y = 100;
+        } else if(wood_remaining_number ===2){
+            this.woodpile.setTexture('woodpile_02');
+            offset_y = 50;
+        } else if(wood_remaining_number ===1){
+            this.woodpile.setTexture('woodpile_01')
+            offset_y = 0;
+        }
+        this.woodpile.body.setSize(this.woodpile.width, offset_y, false);
+        this.woodpile.body.setOffset(0, offset_y);
+        scene.registerAsset(this.woodpile);
+        scene.physics.add.collider(this.playerSprite, this.woodpile);
+
+
+
+        // RainStone
+        // TODO: Replace rock with tree texture
+
+        this.tree = scene.add.sprite(2531, 200, 'rock_rolling');
+        scene.registerAsset(this.tree);
+        this.rainStone = scene.add.sprite(2532, 80, 'rain_stone');
+        scene.tweens.add({
+            targets: this.rainStone,
+            y: {start: 85, from: 70, to: 100},
+            ease: "Linear",
+            yoyo: true,
+            duration: 4000,
+            repeat: -1
+        })
+
+        // TODO: Add bushes surround rock
+
 
     },
+
 
     startConversationMonkey(scene) {
         if (this.isConversing) return;
         this.isConversing = true;
 
         if(this.turns_monkey === 0 ){
-            DialogueSystem.show(scene, [
-                '空白鍵',
-                '說說話'
+            DialogueSystem.show(scene, [ // 改成自動推進對話
+                '是你嗎？',
+                '快過來',
+                '用空白鍵',
+                '和我說說話'
             ], () => {
                 this.isConversing = false;
             });
@@ -124,28 +173,84 @@ export default {
                 '空白鍵',
                 '可以撿起',
                 '身邊的東西',
-                '但我',
-                '看不到空白鍵⋯⋯'
+                '幫我找找',
+                '那個東西'
             ], ()=> {
                 this.isConversing = false;
             });
-        }else {
+        }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
+            '謝謝你',
+            '這裡',
             '久旱',
             '河道乾涸',
             '生靈塗炭',
             '⋯⋯',
-            '集齊6顆',
-            '祈天降雨之石'
+            '拜託你找找',
+            '一顆',
+            '懸浮的石頭'
+            
         ], ()=> {
             this.isConversing = false;
         });
-        };
+        } else if(this.wear_glasses &&! this.isGetRainStone){
+            DialogueSystem.show(scene, [
+            '就是它！',
+            '「祈天降雨之石」',
+            '傳說',
+            '集齊6顆',
+            '天降甘霖',
+            '快去吧！'
+            ], ()=> {
+                const distance = Phaser.Math.Distance.Between(
+                this.playerSprite.x, this.playerSprite.y,
+                this.monkeyElder.x, this.monkeyElder.y);
+                if (distance > this.CONVERSATION_DISTANCE){
+                    DialogueSystem.show(scene, [
+                        '等等！',
+                        '記得',
+                        '遵循',
+                        '你內心的道德',
+                        '做正確的選擇'
+                    ])
+                };
+                this.isConversing = false;
+            }) 
+        }
 
-        
+    
         this.turns_monkey++;
+    },
+    
+    startConversationRider(scene){
+        if (this.isConversing) return;
+        if (this.isGetRainStone){
+            DialogueSystem.show(scene, [
+                '（正確的選擇⋯⋯）', // 改成自動推進對話
+                '（什麼）',
+                '（才是）',
+                '（合乎）',
+                '（道德之選擇？）'
+            ])
+        }else{
+            DialogueSystem.show(scene, [
+                '（木堆）',
+                '（太高）',
+                '（過不去）'
+            ])
+        }
     },
 
     update(scene) {
+
+        // 初始教學，自動開啟與monkey的對話
+        if(this.turns_monkey === 0 &&!this.isConversing){
+            const distance = Phaser.Math.Distance.Between(
+            this.playerSprite.x, this.playerSprite.y,
+            this.monkeyElder.x, this.monkeyElder.y);
+            if (distance <= this.CONVERSATION_DISTANCE){
+                this.startConversationMonkey(scene);
+            }
+        }
     }
 };
