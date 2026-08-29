@@ -9,28 +9,20 @@ import dialogue from './dialogue.json';
 export default {
     key: 'tutorial',
     setup(scene) {
+        scene.items = scene.items || [];
         this.CONVERSATION_DISTANCE = 200;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
 
-        // Easter Egg: apple
+        // Floating apple
         this.puddle = scene.add.sprite(80, 160, 'puddle');
         scene.registerAsset(this.puddle);
-        
 
-        // Floating apple
-
-        this.apple_on_puddle = scene.add.sprite(120, 160, 'apple_without_leaf').setScale(0.6);
+        this.apple_on_puddle = scene.physics.add.sprite(120, 160, 'apple_without_leaf').setScale(0.6);
         scene.registerAsset(this.apple_on_puddle);
-        // scene.pickupRegistry.register(this.apple_on_puddle, {
-        //     onPick: () =>{
-        //         console.log("pick up!");
-        //     },
-        //     onPlace: () => {
-        //         console.log("placed.")
-        //     }
-        // });
+        scene.items.push(this.apple_on_puddle);
+
 
         scene.tweens.add({
             targets: this.apple_on_puddle, 
@@ -59,7 +51,11 @@ export default {
             repeat: -1
         })
 
-        // Elder Monkey
+        // Elder Monkey and its glasses
+
+        // flag for monkey
+        this.wear_glasses = false;
+        this.turns_monkey = 0;
 
         if (!scene.sharedState.rain){
             this.monkeyElder = scene.add.sprite(1110, 849, 'monkey_elder_sad').setScale(0.6);
@@ -69,9 +65,13 @@ export default {
             scene.registerAsset(this.monkeyElder);
         }
 
-        // flag for monkey
-        this.wear_glasses = false;
-        this.turns_monkey = 0;
+        // TODO: Replace rock tiny with glasses
+        this.glasses = scene.physics.add.sprite(222, 724, 'rock_tiny');
+        scene.registerAsset(this.glasses);
+        scene.items.push(this.glasses);
+
+
+
 
         // 一般情況
         scene.input.keyboard.on('keydown-SPACE', () => {
@@ -96,7 +96,7 @@ export default {
         }else{
             const triggerZone = createTriggerZone(scene, { x: 700, y: 1400, width: 100, height: 400 });
             scene.physics.add.overlap(scene.player, triggerZone, () => {
-            this.tartConversationRider();
+            this.startConversationRider();
             triggerZone.destroy();
         }); 
 
@@ -132,11 +132,12 @@ export default {
 
 
         // RainStone
-        // TODO: Replace rock with tree texture
 
-        this.tree = scene.add.sprite(2531, 200, 'rock_rolling');
-        scene.registerAsset(this.tree);
-        this.rainStone = scene.add.sprite(2532, 80, 'rain_stone');
+        this.rock = scene.add.sprite(2531, 200, 'rock_rolling');
+        scene.registerAsset(this.rock);
+        
+        this.rainStone = scene.physics.add.sprite(2532, 80, 'rain_stone');
+        scene.items.push(this.rainStone);
         scene.tweens.add({
             targets: this.rainStone,
             y: {start: 85, from: 70, to: 100},
@@ -188,12 +189,14 @@ export default {
             '⋯⋯',
             '拜託你找找',
             '一顆',
-            '懸浮的石頭'
+            '懸浮的石頭',
+            '好像在',
+            '枯枝小徑'
             
         ], ()=> {
             this.isConversing = false;
         });
-        } else if(this.wear_glasses &&! this.isGetRainStone){
+        } else if(this.wear_glasses &&this.isGetRainStone){
             DialogueSystem.show(scene, [
             '就是它！',
             '「祈天降雨之石」',
@@ -202,19 +205,9 @@ export default {
             '天降甘霖',
             '快去吧！'
             ], ()=> {
-                const distance = Phaser.Math.Distance.Between(
-                this.playerSprite.x, this.playerSprite.y,
-                this.monkeyElder.x, this.monkeyElder.y);
-                if (distance > this.CONVERSATION_DISTANCE){
-                    DialogueSystem.show(scene, [
-                        '等等！',
-                        '記得',
-                        '遵循',
-                        '你內心的道德',
-                        '做正確的選擇'
-                    ])
-                };
+                this.shouldTriggerPartingDialogue = true;
                 this.isConversing = false;
+
             }) 
         }
 
@@ -242,6 +235,15 @@ export default {
     },
 
     update(scene) {
+        // Detect if the player picked up the apple
+            if (scene.wandController.heldItem === this.apple_on_puddle) {
+                // Stop the floating tweens completely            
+                scene.tweens.killTweensOf(this.apple_on_puddle);                
+            }
+            if (scene.wandController.heldItem === this.rainStone){
+                scene.tweens.killTweensOf(this.rainStone);
+            }
+            
 
         // 初始教學，自動開啟與monkey的對話
         if(this.turns_monkey === 0 &&!this.isConversing){
@@ -251,6 +253,77 @@ export default {
             if (distance <= this.CONVERSATION_DISTANCE){
                 this.startConversationMonkey(scene);
             }
+        }
+        // Glasses Logic
+        if (scene.wandController.heldItem === this.glasses) {
+            const playerSprite = scene.playerController.sprite;
+            
+            // Check distance between player and monkey
+            const distance = Phaser.Math.Distance.Between(
+                playerSprite.x, playerSprite.y,
+                this.monkeyElder.x, this.monkeyElder.y
+            );
+
+            // If player is close enough to the monkey while holding the glasses
+            if (distance <= this.CONVERSATION_DISTANCE) {
+                // 1. Set the flag to true (setting both names to be safe)
+                this.wear_glasses = true;
+
+                // 2. Remove the held item from the player's trunk
+                scene.wandController.heldItem = null;
+
+                // 3. Destroy/Remove the glasses sprite from the map
+                this.glasses.destroy();
+
+                // 4. Automatically trigger the next dialogue (where the monkey puts them on)
+                this.startConversationMonkey(scene);
+            }
+        }
+
+        // rainStone Logic
+        if (scene.wandController.heldItem === this.rainStone) {
+            const playerSprite = scene.playerController.sprite;
+            
+            // Check distance between player and monkey
+            const distance = Phaser.Math.Distance.Between(
+                playerSprite.x, playerSprite.y,
+                this.monkeyElder.x, this.monkeyElder.y
+            );
+
+            // If player is close enough to the monkey while holding the glasses
+            if (distance <= this.CONVERSATION_DISTANCE) {
+
+                this.isGetRainStone = true;
+
+                scene.wandController.heldItem = null;
+
+                scene.giveRainStone();
+
+                this.rainStone.destroy();
+
+
+                this.startConversationMonkey(scene);
+            }
+        }
+
+        // Parting Warning
+        if (this.shouldTriggerPartingDialogue && !this.isConversing){
+            const distance = Phaser.Math.Distance.Between(
+            this.playerSprite.x, this.playerSprite.y,
+            this.monkeyElder.x, this.monkeyElder.y);
+            if (distance > this.CONVERSATION_DISTANCE){
+                this.shouldTriggerPartingDialogue = false;
+                this.isConversing = true;
+                DialogueSystem.show(scene, [
+                    '等等！',
+                    '記得',
+                    '遵循',
+                    '你內心的道德',
+                    '做正確的選擇'
+                ], () => {
+                    this.isConversing = false;
+                })
+            };
         }
     }
 };
