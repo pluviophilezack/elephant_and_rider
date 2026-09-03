@@ -12,6 +12,16 @@ export class PlayerController {
         // 設定圖層順序，避免被底圖覆蓋
         this.sprite.setDepth(15);
 
+        //碰撞範圍
+        const rawWidth = this.sprite.body.width;
+        const rawHeight = this.sprite.body.height;
+        const boxWidth = rawWidth * 1;
+        const boxHeight = rawHeight * 0.5;
+        this.sprite.body.setSize(boxWidth, boxHeight);
+        const offsetX = (rawWidth - boxWidth) / 2; // 水平置中
+        const offsetY = rawHeight - boxHeight;     // 靠到底部
+        this.sprite.body.setOffset(offsetX, offsetY);
+
         this.speed = 160;
         //輸入鍵盤監聽
         this.cursors = scene.input.keyboard.createCursorKeys();
