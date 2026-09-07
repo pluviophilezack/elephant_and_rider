@@ -4,6 +4,7 @@ import { DialogueSystem } from "./DialogueSystem";
 export class PlayerController {
 
     constructor(scene, x, y) {
+        this.baseSpeed = 900; 
         this.scene = scene;
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
@@ -14,7 +15,7 @@ export class PlayerController {
         // 設定圖層順序，避免被底圖覆蓋
         this.sprite.setDepth(15);
 
-        this.speed = 160;
+        this.speed = this.baseSpeed;
         //輸入鍵盤監聽
         this.cursors = scene.input.keyboard.createCursorKeys();
         this.wasd = scene.input.keyboard.addKeys({
@@ -46,11 +47,11 @@ export class PlayerController {
     }
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
-
-                if(DialogueSystem.isShowing()){
-            this.speed = 0;
-        }else {
-            this.speed = 160;
+        if(DialogueSystem.isShowing()){
+            this.sprite.setVelocity(0, 0);
+            this.sprite.stop();
+            this.sprite.setTexture('main_character_stand_still');
+            return;
         }
 
 
