@@ -188,7 +188,7 @@ export class DialogueBox {
     graphics.fillPath();
 
     // 繪製手繪筆觸外框
-    graphics.lineStyle(2, 0x5c5a93, 0.85);
+    graphics.lineStyle(2, 0xffffff, 0.85);
     graphics.beginPath();
     graphics.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {
