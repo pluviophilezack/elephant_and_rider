@@ -11,7 +11,7 @@ export class PlayerController {
         this.sprite.setCollideWorldBounds(true);
 
         // 加入sprite
-        scene.player = this.sprite; 
+        scene.player = this.sprite.setScale(0.4); 
         // 設定圖層順序，避免被底圖覆蓋
         this.sprite.setDepth(15);
 

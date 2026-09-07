@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 *.code-workspace
+
+# Python virtual environment
+.venv/
+
