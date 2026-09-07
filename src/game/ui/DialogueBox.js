@@ -1,3 +1,5 @@
+import { TextStyles } from "../core/theme";
+
 export class DialogueBox {
   constructor(scene, options = {}) {
     this.scene = scene;
@@ -17,27 +19,30 @@ export class DialogueBox {
       .setScrollFactor(0)
       .setDepth(1000);
 
-    this.background = scene.add
-      .rectangle(0, 0, 600, 120, 0xffffff, 0.9)
-      .setStrokeStyle(2, 0x000000);
+    // Border removed; solid white background
+    this.background = scene.add.rectangle(0, 0, 600, 120, 0xffffff, 1);
+
+    const speakerStyle = {
+      ...TextStyles.fontSetting,
+      align: "center",
+      fontSize: "20px",
+      color: "#5C5A93",
+    };
 
     this.speakerText = scene.add
-      .text(0, 0, "", {
-        fontFamily: "Arial Black",
-        fontSize: "20px",
-        color: "#4d3d8f",
-        align: "center",
-      })
+      .text(0, 0, "", speakerStyle)
       .setOrigin(0.5);
 
+    const bodyStyle = {
+      ...TextStyles.fontSetting,
+      align: "center",
+      fontSize: "26px",
+      wordWrap: { width: 600 },
+      color: "#5C5A93",
+    };
+
     this.bodyText = scene.add
-      .text(0, 0, "", {
-        fontFamily: "Arial",
-        fontSize: "26px",
-        color: "#000000",
-        align: "center",
-        wordWrap: { width: 600 },
-      })
+      .text(0, 0, "", bodyStyle)
       .setOrigin(0.5);
 
     this.container.add([
@@ -95,27 +100,27 @@ export class DialogueBox {
   }
 
   _insertLineBreaks(text) {
-    const maxChars = this.options.maxCharsPerLine; // M
-    const paragraphs = String(text ?? '').split('\n');
+    const maxChars = this.options.maxCharsPerLine;
+    const paragraphs = String(text ?? "").split("\n");
 
-    return paragraphs.map((paragraph) => {
+    return paragraphs
+      .map((paragraph) => {
         const chars = Array.from(paragraph);
         const L = chars.length;
 
-        // 依需求：完整的 M 字區塊數量為 floor(L / M)
-        const breakCount = Math.floor((L - 1) / maxChars);
-        let result = '';
+        const breakCount = Math.max(0, Math.floor((L - 1) / maxChars));
+        let result = "";
 
         for (let i = 0; i < breakCount; i += 1) {
-            result += chars
-                .slice(i * maxChars, (i + 1) * maxChars)
-                .join('') + '\n';
+          result +=
+            chars.slice(i * maxChars, (i + 1) * maxChars).join("") + "\n";
         }
 
-        result += chars.slice(breakCount * maxChars).join('');
+        result += chars.slice(breakCount * maxChars).join("");
         return result;
-    }).join('\n');
-}
+      })
+      .join("\n");
+  }
 
   _layout() {
     if (this.destroyed) return;
@@ -140,7 +145,7 @@ export class DialogueBox {
       speakerGap +
       bodyHeight;
 
-    this.background.setSize(width, height);
+    this.background.setDisplaySize(width, height);
 
     let y = -height / 2 + this.options.paddingY;
 
@@ -164,9 +169,9 @@ export class DialogueBox {
     this.destroyed = true;
     this._advanceCallback = null;
 
-    this.scene.input.off("pointerdown", this._handleAdvance);
-    this.scene.input.keyboard?.off("keydown", this._handleKeyDown);
-    this.scene.scale.off("resize", this._handleResize);
+    this.scene?.input?.off("pointerdown", this._handleAdvance);
+    this.scene?.input?.keyboard?.off("keydown", this._handleKeyDown);
+    this.scene?.scale?.off("resize", this._handleResize);
 
     this.container.destroy(true);
   }
