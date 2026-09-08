@@ -117,7 +117,7 @@ export class DevToolsManager {
             //        e. 呼叫 document.execCommand('copy') 執行複製
             //        f. 用 document.body.removeChild 將該元素從網頁中移除
             // ==============================================================================
-            const copyText = `(${clickX}, ${clickY})`
+            const copyText = `${clickX}, ${clickY}`
             if(navigator.clipboard){
                 navigator.clipboard.writeText(copyText);
             }
@@ -132,7 +132,7 @@ export class DevToolsManager {
         const worldPoint = pointerNow.positionToCamera(this.scene.cameras.main);
         const clickX = Math.round(worldPoint.x);
         const clickY = Math.round(worldPoint.y);
-        this.hudText.setText(`(${clickX}, ${clickY})`);
+        this.hudText.setText(`${clickX}, ${clickY}`);
         
     }
 }
