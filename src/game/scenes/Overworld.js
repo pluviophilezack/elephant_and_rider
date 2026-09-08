@@ -62,14 +62,16 @@ export class Overworld extends Scene
         // 步驟 3: 拼接四張大地圖
         // 語法提示：
         // this.add.image(x座標, y座標, '貼圖Key').setOrigin(0, 0);
-        // 左上
-        this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
-        // 左下
-        this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
-        // 右上
-        this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
-        // 右下
-        this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+        // // 左上
+        // this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
+        // // 左下
+        // this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
+        // // 右上
+        // this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
+        // // 右下
+        // this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+
+        this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         
         // 步驟 4: 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
