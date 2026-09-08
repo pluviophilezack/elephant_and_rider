@@ -10,7 +10,7 @@ export default {
     key: 'tutorial',
     setup(scene) {
         scene.items = scene.items || [];
-        this.CONVERSATION_DISTANCE = 200;
+        this.CONVERSATION_DISTANCE = 100;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
@@ -51,6 +51,24 @@ export default {
             repeat: -1
         })
 
+        // Giraffe (Guide) 
+        this.giraffe = scene.physics.add.sprite(1652, 243, 'young_elephant').setScale(0.4).setDepth(10); // TODO 更換為giraffe texture
+        scene.registerAsset(this.giraffe);
+        this.giraffe.body.setImmovable(true);
+        scene.physics.add.collider(this.playerSprite, this.giraffe);
+
+        // 開啟對話
+        scene.input.keyboard.on('keydown-SPACE', () => {
+            const distance = Phaser.Math.Distance.Between(
+            this.playerSprite.x, this.playerSprite.y,
+            this.giraffe.x, this.giraffe.y);
+            if (distance <= this.CONVERSATION_DISTANCE){
+                this.startConversationGiraffe(scene);
+            }
+        })
+        
+        
+
         // Elder Monkey and its glasses
 
         // flag for monkey
@@ -58,20 +76,18 @@ export default {
         this.turns_monkey = 0;
 
         if (!scene.sharedState.rain){
-            this.monkeyElder = scene.add.sprite(1110, 849, 'monkey_elder_sad').setScale(0.6);
+            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_sad').setScale(0.6);
             scene.registerAsset(this.monkeyElder);
         } else{
-            this.monkeyElder = scene.add.sprite(1110, 849, 'monkey_elder_pleased').setScale(0.6);
+            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_pleased').setScale(0.6);
             scene.registerAsset(this.monkeyElder);
         }
+        scene.physics.add.collider(this.playerSprite, this.monkeyElder);
+        this.monkeyElder.body.setImmovable(true);
 
-        // TODO: Replace rock tiny with glasses
-        this.glasses = scene.physics.add.sprite(222, 724, 'rock_tiny');
+        this.glasses = scene.physics.add.sprite(222, 724, 'glasses');
         scene.registerAsset(this.glasses);
         scene.items.push(this.glasses);
-
-
-
 
         // 一般情況
         scene.input.keyboard.on('keydown-SPACE', () => {
@@ -99,7 +115,6 @@ export default {
             this.startConversationRider();
             triggerZone.destroy();
         }); 
-
 
 
         }
@@ -147,11 +162,133 @@ export default {
             repeat: -1
         })
 
-        // TODO: Add bushes surround rock
+        // Bushes
+        const hardBushPositions = [    
+        // Surrounded rock bushes                                                                   
+        { x: 2420, y: 64 },                                                                        
+        { x: 2410, y: 149 },
+        { x: 2400, y: 220 },                                                                       
+        { x: 2435, y: 292 },
+        {x: 2511, y:338},
+        // one side of footpath
+        {x:2219,y:44},
+        {x:2280, y:69},
+        {x: 2345, y:74},
+        {x: 2132, y: 65},
+        {x:2048, y:82},
+        {x: 1952, y: 106},
+        {x:1851, y: 139},
+        {x:1777, y: 189},
+        // the other side of footpath
+        { x: 1897, y: 469 },
+        { x: 1993, y: 412 },
+        { x: 2069, y: 403 },
+        { x: 2144, y: 398 },
+        { x: 2300, y: 413},
+        { x: 2235, y: 414 },
+        { x: 2373, y: 409 },
+        { x: 2438, y: 374 },
 
+        // Surrounded puddle
+        { x: 17, y: 280 },
+        { x: 105, y: 251 },
+        { x: 170, y: 228 },
+        { x: 242, y: 203 },
+        { x: 280, y: 132 },
+        { x: 201, y: 101 },
+        { x: 122, y: 83 },
+        { x: 54, y: 50 },
+        { x: 28, y: 350 },
+        { x: 114, y: 321 },
+        { x: 200, y: 306 },
+        { x: 269, y: 268 },
+
+        // Right side of road
+        { x: 1687, y: 195 },
+        { x: 1619, y: 157 },
+        { x: 1554, y: 127 },
+        { x: 1485, y: 87 },
+        { x: 1416, y: 50 },
+        { x: 1353, y: 13 },
+
+        // Right side of road (past footpath)
+        { x: 560, y: 1790 },
+        { x: 641, y: 1681 },
+        { x: 773, y: 1598 },
+        { x: 881, y: 1534 },
+        { x: 1062, y: 1427 },
+        { x: 1205, y: 1329 },
+        { x: 1340, y: 1251 },
+        { x: 1497, y: 1132 },
+        { x: 1550, y: 1017 },
+        { x: 1596, y: 895 },
+        { x: 1676, y: 805 },
+        { x: 1750, y: 735 },
+        { x: 1829, y: 664 },
+        { x: 1880, y: 570 },
+        {x: 590, y: 1897}
+
+        ];  
+        this.hardBushes = hardBushPositions.map(({x, y})=> {
+            const bush = scene.physics.add.sprite(x, y, 'bush_02');
+            bush.body.setImmovable(true);
+            scene.registerAsset(bush);
+            return bush;
+        });
+        scene.physics.add.collider(this.playerSprite, this.hardBushes);
+
+        // Soft bush
+        const softBushPositions = [
+            {x:1849, y: 334},
+            { x: 1786, y: 270 },
+            { x: 2327, y: 525 },
+            { x: 2241, y: 521 },
+            { x: 2160, y: 325 },
+            { x: 2248, y: 327 },
+            { x: 2161, y: 244 },
+            { x: 2061, y: 271 },
+            { x: 1892, y: 400 }
+        ];
+        this.softBushes = softBushPositions.map(({x, y})=> {
+            const bush = scene.add.sprite(x, y, 'bush_01');
+            scene.registerAsset(bush);
+            return bush;
+        })
+
+        // Apple tree
+        this.apple_tree_1 = scene.add.sprite(1750, 120, 'apple_tree');
 
     },
 
+    // 縮放鏡頭function      
+    zoomInCamera(scene ,onComplete = null) {                                       
+        scene.cameras.main.zoomTo(1.25, 1000, 'Sine.easeInOut', true, 
+            (camera, progress) => {
+                if (progress ===1 && onComplete)
+                    onComplete();
+            }
+        );                                                        
+    },                                                                       
+    zoomOutCamera(scene) {                                      
+        scene.cameras.main.zoomTo(1, 800, 'Sine.easeInOut',     
+  true);                                                        
+    },
+
+    startConversationGiraffe(scene) {
+        if(this.isConversing) return;
+        this.isConversing = true;
+        this.zoomInCamera(scene, ()=> {
+            DialogueSystem.show(scene, [
+            '我長得不夠高，',
+            '吃不到樹上的蘋果⋯⋯'
+            ], () => {
+            this.isConversing = false;
+            this.zoomOutCamera(scene);
+            })
+        });
+
+
+    },
 
     startConversationMonkey(scene) {
         if (this.isConversing) return;
@@ -161,37 +298,30 @@ export default {
             DialogueSystem.show(scene, [ // 改成自動推進對話
                 '是你嗎？',
                 '快過來',
-                '用空白鍵',
-                '和我說說話'
+                '用空白鍵和我說說話'
             ], () => {
                 this.isConversing = false;
             });
         }else if(!this.wear_glasses){
             DialogueSystem.show(scene, [
-                '老花',
-                '看不到⋯⋯',
+                '我老花，看不到⋯⋯',
                 '⋯⋯',
-                '空白鍵',
-                '可以撿起',
-                '身邊的東西',
-                '幫我找找',
-                '那個東西'
+                '用空白鍵，可以撿起身邊的東西',
+                '幫我找找那個我需要的東西'
             ], ()=> {
                 this.isConversing = false;
             });
         }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
             '謝謝你',
-            '這裡',
-            '久旱',
-            '河道乾涸',
-            '生靈塗炭',
+            '大地久旱，河道乾涸，生靈塗炭',
+            '70年前，當我還是隻小猴子時，大地綠意昂然，生機蓬勃',
+            '當時東南方的祭壇仍完好無缺',
+            '後來發生了一場暴風雨，祭壇倒塌，那裡供俸的聖物四散',
+            '聖物⋯⋯',
+            '對⋯⋯！那些聖物，也許就是恢復一切的關鍵',
+            '也許它就在雜草蔓生之盡頭⋯⋯',
             '⋯⋯',
-            '拜託你找找',
-            '一顆',
-            '懸浮的石頭',
-            '好像在',
-            '枯枝小徑'
             
         ], ()=> {
             this.isConversing = false;
@@ -200,14 +330,14 @@ export default {
             DialogueSystem.show(scene, [
             '就是它！',
             '「祈天降雨之石」',
-            '傳說',
-            '集齊6顆',
-            '天降甘霖',
-            '快去吧！'
+            '我想起來了！傳說中集齊6顆，天降甘霖',
+            '試圖適應冒險中遇到的難題，',
+            '那些難題將觸動直覺的大象，而你作為騎象人，就是牠的夥伴',
+            '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '快去吧！尋找其他失散的5顆祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 this.isConversing = false;
-
             }) 
         }
 
@@ -220,16 +350,11 @@ export default {
         if (this.isGetRainStone){
             DialogueSystem.show(scene, [
                 '（正確的選擇⋯⋯）', // 改成自動推進對話
-                '（什麼）',
-                '（才是）',
-                '（合乎）',
-                '（道德之選擇？）'
+                '（什麼才是合乎道德的選擇？）',
             ])
         }else{
             DialogueSystem.show(scene, [
-                '（木堆）',
-                '（太高）',
-                '（過不去）'
+                '（木堆太高了，我們過不去）'
             ])
         }
     },
@@ -244,13 +369,21 @@ export default {
                 scene.tweens.killTweensOf(this.rainStone);
             }
             
+        // 對話時鎖定主角
+        if (this.isConversing){
+            const sprite = scene.playerController.sprite;
+            sprite.setVelocity(0, 0);
+            sprite.stop();
+            sprite.setTexture('main_character_stand_still');
+            return;
+        }
 
         // 初始教學，自動開啟與monkey的對話
         if(this.turns_monkey === 0 &&!this.isConversing){
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
-            if (distance <= this.CONVERSATION_DISTANCE){
+            if (distance <= 250){
                 this.startConversationMonkey(scene);
             }
         }
@@ -273,7 +406,7 @@ export default {
                 scene.wandController.heldItem = null;
 
                 // 3. Destroy/Remove the glasses sprite from the map
-                this.glasses.destroy();
+                this.glasses.setPosition(1104, 802);
 
                 // 4. Automatically trigger the next dialogue (where the monkey puts them on)
                 this.startConversationMonkey(scene);
@@ -316,10 +449,8 @@ export default {
                 this.isConversing = true;
                 DialogueSystem.show(scene, [
                     '等等！',
-                    '記得',
-                    '遵循',
-                    '你內心的道德',
-                    '做正確的選擇'
+                    '記得遵循大象，遵循你內心的道德',
+                    '做正確的選擇。'
                 ], () => {
                     this.isConversing = false;
                 })
