@@ -14,8 +14,8 @@ export class HUD {
             .setOrigin(0)
             .setStrokeStyle(2, 0xffffff, 0.35);
 
-        this.icon = scene.add.graphics();
-        this._drawRainStoneIcon();
+        this.icon = scene.add.image(29, 23, 'rain_stone')
+            .setScale(0.26);
 
         this.text = scene.add.text(58, 10, this._formatText(), {
             fontFamily: 'Arial Black',
@@ -43,24 +43,6 @@ export class HUD {
 
     hasEnoughRainStones() {
         return this.rainStoneCount >= this.maxRainStones;
-    }
-
-    _drawRainStoneIcon() {
-        this.icon.clear();
-        this.icon.fillStyle(0x69c7ff, 1);
-        this.icon.lineStyle(3, 0xffffff, 0.9);
-        this.icon.beginPath();
-        this.icon.moveTo(30, 7);
-        this.icon.lineTo(47, 20);
-        this.icon.lineTo(38, 39);
-        this.icon.lineTo(18, 39);
-        this.icon.lineTo(10, 20);
-        this.icon.closePath();
-        this.icon.fillPath();
-        this.icon.strokePath();
-
-        this.icon.fillStyle(0xffffff, 0.45);
-        this.icon.fillCircle(25, 17, 4);
     }
 
     _formatText() {
