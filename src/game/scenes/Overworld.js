@@ -30,7 +30,8 @@ export class Overworld extends Scene
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
         // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
-        this.playerController = new PlayerController(this, 300, 400);
+        // 正式初始位置：(700, 100)
+        this.playerController = new PlayerController(this, 700, 100);
         // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
         this.wandController = new WandController(this, this.playerController);
         // 3. 設定攝影機跟隨主角移動
@@ -61,14 +62,16 @@ export class Overworld extends Scene
         // 步驟 3: 拼接四張大地圖
         // 語法提示：
         // this.add.image(x座標, y座標, '貼圖Key').setOrigin(0, 0);
-        // 左上
-        this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
-        // 左下
-        this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
-        // 右上
-        this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
-        // 右下
-        this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+        // // 左上
+        // this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
+        // // 左下
+        // this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
+        // // 右上
+        // this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
+        // // 右下
+        // this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+
+        this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         
         // 步驟 4: 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
@@ -141,6 +144,8 @@ export class Overworld extends Scene
             }
         }
         sprite.id = id;
+
+        
         
         // 決定eventKey
         let createdEvent;
