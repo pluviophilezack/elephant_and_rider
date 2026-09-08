@@ -21,6 +21,10 @@ export class DevToolsManager {
     constructor(scene, worldWidth, worldHeight) {
         // 參數設定
         this.isDevMode = true;
+        this.isSprinting = false;
+        this.sprintMultiplier = 3;
+        this.baseMoveSpeed = null;
+        this.disabledBushBodies = new Map();
         
         this.scene = scene;
         this.worldWidth = worldWidth;
@@ -77,10 +81,14 @@ export class DevToolsManager {
         // })
 
         const toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
+        this.sprintKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
         // Switch DevMode
         toggleKey.on('down', () => {
             this.isDevMode = !this.isDevMode;
+            if (!this.isDevMode) {
+                this.stopSprint();
+            }
             console.log("isDevModeOpen: ", this.isDevMode);
             this.cross.setVisible(this.isDevMode);
             this.hudText.setVisible(this.isDevMode);
@@ -124,8 +132,56 @@ export class DevToolsManager {
         })
     }
 
+    startSprint() {
+        const playerController = this.scene.playerController;
+        if (this.isSprinting || !playerController) return;
+
+        this.isSprinting = true;
+        this.baseMoveSpeed = playerController.speed;
+        playerController.speed = this.baseMoveSpeed * this.sprintMultiplier;
+        this.disableBushCollisions();
+    }
+
+    disableBushCollisions() {
+        const registeredAssets = Object.values(this.scene.registeredAssets || {});
+
+        registeredAssets.forEach((sprite) => {
+            if (sprite?.texture?.key !== 'bush_02' || !sprite.body) return;
+            if (!this.disabledBushBodies.has(sprite.body)) {
+                this.disabledBushBodies.set(sprite.body, sprite.body.enable);
+            }
+            sprite.body.enable = false;
+        });
+    }
+
+    stopSprint() {
+        if (!this.isSprinting) return;
+
+        const playerController = this.scene.playerController;
+        if (playerController && this.baseMoveSpeed !== null) {
+            playerController.speed = this.baseMoveSpeed;
+        }
+
+        this.disabledBushBodies.forEach((wasEnabled, body) => {
+            if (body?.gameObject?.active) {
+                body.enable = wasEnabled;
+            }
+        });
+        this.disabledBushBodies.clear();
+        this.baseMoveSpeed = null;
+        this.isSprinting = false;
+    }
+
     // 步驟 6: 隨滑鼠移動更新 HUD 座標
     update() {
+        const shouldSprint = this.isDevMode && this.sprintKey?.isDown;
+        if (shouldSprint) {
+            this.startSprint();
+            this.disableBushCollisions();
+        } else {
+            this.stopSprint();
+        }
+
         if (!this.isDevMode) return;
 
         const pointerNow = this.scene.input.activePointer;
