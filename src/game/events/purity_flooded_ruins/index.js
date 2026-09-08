@@ -67,11 +67,12 @@ export default {
             { key: "leave", label: "不救並離開" },
             { key: "save", label: "用象鼻移開石塊救牠" },
           ];
-          //console.log("part 1");
+          setTimeout(()=>{}, 500);
           if (ChoiceSystem?.prompt) {
+            scene.time.delayedCall(150, () => {
             ChoiceSystem.prompt(scene, options, (choice) => {
-              //console.log("part 2");
-              if (choice === "save") {
+              if (choice == "save") {
+
                 this.isGuardRescued = true;
                 this.isTrunkPolluted = true;
 
@@ -87,13 +88,15 @@ export default {
                 DialogueSystem.show(scene, dialogs[2] || [], () => {
                   this.isTalking = false;
                 });
-              } else if (choice === "leave"){
+              } else if (choice == "leave"){
+
                 this.isTrunkPolluted = false;
                 DialogueSystem.show(scene, dialogs[1] || [], () => {
                   this.isTalking = false;
                 });
               }
             });
+          });
           } else {
             this.isTalking = false;
           }
