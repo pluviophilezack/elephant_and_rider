@@ -1,7 +1,10 @@
 // 核心系統：主角（大象＋騎象人）在大地圖上的移動控制，使用 WASD／方向鍵
+import { DialogueSystem } from "./DialogueSystem";
+
 export class PlayerController {
 
     constructor(scene, x, y) {
+        this.baseSpeed = 160; 
         this.scene = scene;
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
@@ -54,7 +57,14 @@ export class PlayerController {
     }
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
-        if (this.isAutoMoving) return;
+        if(DialogueSystem.isShowing()){
+            this.sprite.setVelocity(0, 0);
+            this.sprite.stop();
+            this.sprite.setTexture('main_character_stand_still');
+            return;
+        }
+
+
         const body = this.sprite.body;
         if (!body) return;
 
