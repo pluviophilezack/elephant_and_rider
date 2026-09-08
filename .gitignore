@@ -22,9 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
 *.code-workspace
 
 # Python virtual environment
 .venv/
 
+git
+pnpm-lock.yaml
