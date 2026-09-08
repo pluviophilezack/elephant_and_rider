@@ -66,10 +66,15 @@ export class PlayerController {
     enable() {
         this.enabled = true;
     }
-    
+
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
-        if (this.isAutoMoving) return;
+        if(DialogueSystem.isShowing()){
+            this.sprite.setVelocity(0, 0);
+            this.sprite.stop();
+            this.sprite.setTexture('main_character_stand_still');
+            return;
+        }
         if (!this.enabled) return; 
         const body = this.sprite.body;
         if (!body) return;

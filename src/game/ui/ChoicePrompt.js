@@ -20,7 +20,8 @@ export class ChoicePrompt {
                 align: 'center', //置中
                 wordWrap: {
                     width: 200, //自動換行長度限制
-                }
+                },
+                lineSpacing: 10, //行距
             }).setOrigin(0.5);
 
             ////滑鼠操作
