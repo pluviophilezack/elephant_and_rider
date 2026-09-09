@@ -9,6 +9,7 @@ export class PlayerController {
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
         this.sprite.setCollideWorldBounds(true);
+        this.enabled = true;   // 🆕 新增：控制是否允許移動
 
         // 加入sprite
         scene.player = this.sprite.setScale(0.4); 
@@ -25,7 +26,7 @@ export class PlayerController {
         const offsetY = rawHeight - boxHeight;     // 靠到底部
         this.sprite.body.setOffset(offsetX, offsetY);
 
-        this.speed = 160;
+        this.speed = 160*5;
         //輸入鍵盤監聽
         this.cursors = scene.input.keyboard.createCursorKeys();
         this.wasd = scene.input.keyboard.addKeys({
@@ -55,6 +56,20 @@ export class PlayerController {
     getPosition() {
         return { x: this.sprite.x, y: this.sprite.y };
     }
+
+    // 🆕 新增：禁用玩家控制（停止移動，鎖定輸入）
+    disable() {
+        this.enabled = false;
+        this.sprite.setVelocity(0, 0);
+        this.sprite.stop();                // 停止動畫
+        this.sprite.setTexture('main_character_stand_still');
+    }
+
+    // 🆕 新增：啟用玩家控制
+    enable() {
+        this.enabled = true;
+    }
+
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
     update() {
         if(DialogueSystem.isShowing()){
@@ -64,7 +79,7 @@ export class PlayerController {
             return;
         }
 
-
+        if (!this.enabled) return; 
         const body = this.sprite.body;
         if (!body) return;
 

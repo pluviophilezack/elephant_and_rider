@@ -12,6 +12,13 @@ export const ChoiceSystem = {
             scene.events.off('update', update);
             if (onChoose) onChoose(chosen.key);
         });
+        //選擇期間禁止移動
+        if(scene.playerController){
+            scene.playerController.enabled = false;
+            scene.playerController.sprite.setVelocity(0, 0);
+            scene.playerController.sprite.stop();                // 停止動畫
+            scene.playerController.sprite.setTexture('main_character_stand_still');
+        }
 
         const keyA = scene.input.keyboard.addKey('A');
         const keyD = scene.input.keyboard.addKey('D');
@@ -20,13 +27,12 @@ export const ChoiceSystem = {
         const update = () => {
             if (Phaser.Input.Keyboard.JustDown(keyA)) prompt.moveCursor(-1); //上個選項
             if (Phaser.Input.Keyboard.JustDown(keyD)) prompt.moveCursor(1); //下個選項
-            // if (Phaser.Input.Keyboard.JustDown(keySpace)) {
-            //     scene.events.off('update', update);
-            //     const chosen = prompt.getSelected();
-            //     prompt.destroy();
-            //     onChoose(chosen.key);
-            // }
+
             if (Phaser.Input.Keyboard.JustDown(keySpace)) {
+                //選擇完成後解禁
+                if (scene.playerController){
+                    scene.playerController.enabled = true;
+                }
                 prompt._confirmChoice(); //確認選項
             }
         };

@@ -10,17 +10,18 @@ export class ChoicePrompt {
         this._isConfirmed = false;          //是否已選擇選項
         this.onConfirm = onConfirm;         //儲存外部回調
 
-        this.container = scene.add.container(0, 0).setScrollFactor(0).setDepth(1000);
+        this.container = scene.add.container(0, 0).setScrollFactor(0).setDepth(100000);
         this.optionTexts = options.map((option, i) => {
-            const x = 512 + (i - (options.length - 1) / 2) * 260;
+            const x = 512 + (i - (options.length - 1) / 2) * 320;////
             const text = scene.add.text(x, 600, option.label, {
-                fontFamily: 'Arial Black',  //字形
-                fontSize: 26, //大小
-                color: '#ffffff', //顏色
+                fontFamily: 'naikaifont',//'Arial Black',  //字形
+                fontSize: 24, //大小
+                color: '#5c5a93', //顏色
                 align: 'center', //置中
                 wordWrap: {
                     width: 200, //自動換行長度限制
-                }
+                },
+                lineSpacing: 10, //行距
             }).setOrigin(0.5);
 
             ////滑鼠操作
@@ -49,27 +50,27 @@ export class ChoicePrompt {
 
         // 文字邊框
         this.optionTexts.forEach((text) => {
-            text.setStroke('#000000', 1); //顏色 寬度
+            text.setStroke('#000000', 0); //顏色 寬度
         });
 
         // 建立文字的背景板
         this.optionBgs = [];
         this.optionTexts.forEach((text) => {
-            const paddingX = 24;
-            const paddingY = 12;
+            const paddingX = 20;
+            const paddingY = 10;
             const bgWidth = text.width + paddingX * 2;
             const bgHeight = text.height + paddingY * 2;
 
             const bg = scene.add.graphics();
             bg.setPosition(text.x, text.y);  // 對齊文字中心
-            bg.fillStyle(0xffffff, 0.75);  //白色、透明度
+            bg.fillStyle(0xffffff, 1);  //白色、透明度
             bg.fillRect(
                 - bgWidth / 2,//text.x - bgWidth / 2,
                 - bgHeight / 2,//text.y - bgHeight / 2,
                 bgWidth,
                 bgHeight,
             );
-            bg.lineStyle(1, 0x0000FF, 1); //寬度 顏色 透明度
+            bg.lineStyle(5, 0x0000FF, 0); //寬度 顏色 透明度
             bg.strokeRect(
                 - bgWidth / 2,//text.x - bgWidth / 2,
                 - bgHeight / 2,//text.y - bgHeight / 2,
@@ -99,11 +100,11 @@ export class ChoicePrompt {
 
     _refreshHighlight() {
         this.optionTexts.forEach((text, i) => {
-            text.setColor(i === this.selectedIndex ? '#ffe066' : '#ffffff'); //被選時變色
+            text.setColor(i === this.selectedIndex ? '#42406c' : '#5c5a93'); //被選時變色
             text.setScale(i === this.selectedIndex ? 1.05 : 1); //被選時變大
         });
         this.optionBgs.forEach((bg,i) => {
-            bg.setAlpha(i === this.selectedIndex ? 1 : 0.5); //被選時不透明
+            bg.setAlpha(i === this.selectedIndex ? 1 : 0.4); //被選時不透明
             bg.setScale(i === this.selectedIndex ? 1.05 : 1); //被選時變大
         })
     }
