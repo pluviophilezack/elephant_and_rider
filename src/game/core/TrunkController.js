@@ -7,6 +7,7 @@ export class WandController {
 
         this.heldItem = null;
         this.maxReachDistance = 150;
+        this.currentBodyLength = 0; // 紀錄當前魔杖伸長長度
 
         this.pointer = scene.input.activePointer;
         this.cursors = scene.input.keyboard.createCursorKeys();
@@ -19,26 +20,45 @@ export class WandController {
 
         // 2. 尖端 (Tip)
         this.wandTip = scene.physics.add.sprite(0, 0, 'wand_tip');
-        this.wandTip.setOrigin(0, 0.5);
+        this.wandTip.setOrigin(0.5, 0.5);
         this.wandTip.setDepth(101);
-        this.wandTip.body.setSize(20, 20);
+        this.wandTip.setVisible(false);
 
-        // 綁定空白鍵按下事件
+        // 設定圓形碰撞盒於尖端叉叉上
+        const radius = 12;
+        this.wandTip.body.setCircle(radius);
+        this.wandTip.body.setOffset(
+            (this.wandTip.width / 2) - radius,
+            (this.wandTip.height / 2) - radius
+        );
+
+        // 綁定空白鍵抓取/釋放邏輯
         if (this.cursors.space) {
             this.cursors.space.on('down', () => {
-                // 檢查是否拿到 rainStone，以及是否處於對話或自動移動中
-                const hasUnlockedWand = this.scene.hasRainStone || this.scene.hasUnlockedWand;
+                const isUnlocked = this.checkIsWandUnlocked();
                 const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
-                // 尚未取得 rainStone 或處於鎖定狀態時，禁止抓取
-                 
-                // if (!hasUnlockedWand || isLocked) {
-                //     return;
-                // }
+                if (!isUnlocked || isLocked) return;
 
+                // 按下空白鍵時進行切換抓取/放開判斷
                 this.toggleGrab();
             });
         }
+    }
+
+    checkIsWandUnlocked() {
+        if (this.scene.hasUnlockedWand || this.scene.hasRainStone) {
+            return true;
+        }
+
+        const items = this.getItemsList();
+        const glasses = items.find(itm => itm && itm.texture && itm.texture.key === 'glasses');
+        if (glasses && glasses.x === 1104 && glasses.y === 802) {
+            this.scene.hasUnlockedWand = true;
+            return true;
+        }
+
+        return false;
     }
 
     update() {
@@ -48,46 +68,118 @@ export class WandController {
         const angle = Phaser.Math.Angle.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
         const distance = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
 
-        const idleOffset = 10;
-        let currentBodyLength = 0;
+        // 手持極座標偏移，確保魔杖發射點在手上
+        const handSideOffset = 10;
+        const handHeightOffset = -15;
 
-        // 核心解鎖條件：
-        // 1. 玩家已經替猴子長老找到 rainStone (this.scene.hasRainStone)
-        // 2. 當前不在對話中 (isDialogueActive) 且不在自動移動中 (isAutoMoving)
-        const hasUnlockedWand = this.scene.hasRainStone || this.scene.hasUnlockedWand;
+        const handX = playerPos.x + Math.cos(angle + Math.PI / 2) * handSideOffset + Math.cos(angle) * handHeightOffset;
+        const handY = playerPos.y + Math.sin(angle + Math.PI / 2) * handSideOffset + Math.sin(angle) * handHeightOffset;
+
+        const hasUnlockedWand = this.checkIsWandUnlocked();
         const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
-        // 只有「已解鎖能力」且「無鎖定」且「按住空白鍵」時，魔杖才會伸長
-
-        // 暫時註解掉
-        if (!isLocked && this.cursors.space && this.cursors.space.isDown) {
-            currentBodyLength = Math.min(distance, this.maxReachDistance);
+        // -------------------------------------------------------------
+        // 模式 A：未解鎖魔杖 (靠身體接近拾取)
+        // -------------------------------------------------------------
+        if (!hasUnlockedWand) {
+            this.wandBody.setVisible(false);
+            this.wandTip.setVisible(false);
+            this.currentBodyLength = 0;
+            this.checkBodyPickup(playerPos);
+            return;
         }
 
-        // --- 1. 更新 Body (中間伸長段) ---
-        if (currentBodyLength > 0) {
+        // -------------------------------------------------------------
+        // 模式 B：已解鎖魔杖 (需伸長才能抓取)
+        // -------------------------------------------------------------
+        this.wandTip.setVisible(true);
+
+        // 按住空白鍵時伸長魔杖，否則長度為 0
+        if (!isLocked && this.cursors.space && this.cursors.space.isDown) {
+            this.currentBodyLength = Math.min(distance, this.maxReachDistance);
+        } else {
+            this.currentBodyLength = 0;
+        }
+
+        // --- 1. 更新 Body (桿身伸長) ---
+        if (this.currentBodyLength > 0) {
             this.wandBody.setVisible(true);
-            this.wandBody.setPosition(playerPos.x, playerPos.y);
+            this.wandBody.setPosition(handX, handY);
             this.wandBody.setRotation(angle);
-            this.wandBody.displayWidth = currentBodyLength;
+            this.wandBody.displayWidth = this.currentBodyLength;
         } else {
             this.wandBody.setVisible(false);
         }
 
-        // --- 2. 計算 Tip 位置與物品跟隨 ---
-        this.tipX = playerPos.x + Math.cos(angle) * (currentBodyLength + idleOffset - 10.5);
-        this.tipY = playerPos.y + Math.sin(angle) * (currentBodyLength + idleOffset - 14);
+        // --- 2. 計算 Tip 尖端座標與跟隨 ---
+        const tipOffset = 25; // 叉叉位置微調
+        const totalDistance = this.currentBodyLength + tipOffset;
+
+        this.tipX = handX + Math.cos(angle) * totalDistance;
+        this.tipY = handY + Math.sin(angle) * totalDistance;
 
         this.wandTip.setPosition(this.tipX, this.tipY);
         this.wandTip.setRotation(angle);
 
+        // --- 3. 魔杖伸長時自動判斷周圍物品抓取 ---
+        if (this.currentBodyLength > 0 && !this.heldItem) {
+            this.autoCheckWandGrab();
+        }
+
+        // 若已抓取物品，讓物品固定在魔杖尖端叉叉上
         if (this.heldItem) {
             this.heldItem.x = this.tipX;
             this.heldItem.y = this.tipY;
         }
     }
 
-    // ... toggleGrab, tryGrabItem, releaseItem 保持不變 ...
+    // 尚未解鎖魔杖時：身體靠近拾取
+    checkBodyPickup(playerPos) {
+        if (this.heldItem) {
+            this.heldItem.x = playerPos.x;
+            this.heldItem.y = playerPos.y;
+            return;
+        }
+
+        const items = this.getItemsList();
+        const pickupRadius = 35;
+
+        for (const itm of items) {
+            if (!itm || !itm.active) continue;
+
+            const dist = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, itm.x, itm.y);
+            if (dist < pickupRadius) {
+                this.heldItem = itm;
+                if (this.heldItem.body) {
+                    this.heldItem.body.enable = false;
+                }
+                break;
+            }
+        }
+    }
+
+    // 當魔杖伸長（currentBodyLength > 0）且尖端接觸物品時自動抓取
+    autoCheckWandGrab() {
+        // 核心限制：魔杖必須延伸達到一定距離（例如 > 10px），不能在收起狀態下抓取
+        if (this.currentBodyLength <= 10) return;
+
+        const items = this.getItemsList();
+        const grabRadius = 30; // 尖端叉叉感應範圍
+
+        for (const itm of items) {
+            if (!itm || !itm.active) continue;
+
+            const dist = Phaser.Math.Distance.Between(this.tipX, this.tipY, itm.x, itm.y);
+            if (dist < grabRadius) {
+                this.heldItem = itm;
+                if (this.heldItem.body) {
+                    this.heldItem.body.enable = false;
+                }
+                break;
+            }
+        }
+    }
+
     toggleGrab() {
         if (this.heldItem) {
             this.releaseItem();
@@ -97,13 +189,15 @@ export class WandController {
     }
 
     tryGrabItem() {
-        if (!this.cursors.space.isDown) return;
+        // 關鍵核心限制：必須在魔杖伸長（currentBodyLength > 10）時才允許拾取物品
+        if (this.currentBodyLength <= 10) return;
 
-        const items = this.scene.items ? (this.scene.items.getChildren ? this.scene.items.getChildren() : this.scene.items) : [];
+        const items = this.getItemsList();
         let closestItem = null;
-        let minDistance = 40;
+        let minDistance = 35;
 
         items.forEach((itm) => {
+            if (!itm || !itm.active) return;
             const dist = Phaser.Math.Distance.Between(this.tipX, this.tipY, itm.x, itm.y);
             if (dist < minDistance) {
                 minDistance = dist;
@@ -127,5 +221,11 @@ export class WandController {
             this.heldItem = null;
         }
     }
-}
 
+    getItemsList() {
+        if (!this.scene.items) return [];
+        if (Array.isArray(this.scene.items)) return this.scene.items;
+        if (typeof this.scene.items.getChildren === 'function') return this.scene.items.getChildren();
+        return [];
+    }
+}
