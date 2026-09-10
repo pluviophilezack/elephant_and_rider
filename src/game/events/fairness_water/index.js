@@ -32,8 +32,8 @@ export default {
         state.boundaries = [];
 
         // 1. 池塘與重疊區域
-        state.pondSprite = scene.add.sprite(2071, 1035, 'pond_01').setDepth(1);
-        state.pondZone = scene.add.zone(2071, 1035, 850, 350);
+        state.pondSprite = scene.add.sprite(1484, 1946, 'pond_01').setDepth(1).setScale(1.5);
+        state.pondZone = scene.add.zone(1484, 1946, 850, 350);
         scene.physics.add.existing(state.pondZone, true);
 
         // 🎥 2. 營造遠處感受
@@ -134,8 +134,8 @@ export default {
             player.isAutoMoving = true;
             if (player.body) player.body.enable = false;
 
-            const targetX = 1850;
-            const targetY = 1100;
+            const targetX = 1470;
+            const targetY = 2160;
 
             const moveDistance = Phaser.Math.Distance.Between(player.x, player.y, targetX, targetY);
             const playerMoveDuration = (moveDistance / 150) * 1000;
@@ -180,11 +180,9 @@ export default {
                                     scene.isDialogueActive = true;
                                     scene.time.delayedCall(100, () => {
                                         DialogueSystem.show(scene, [
-                                            '我們...',
-                                            '累...',
-                                            '渴...',
-                                            '一起...',
-                                            '喝水...？'
+                                            '我們好久沒看到水了',
+                                            '好累...',
+                                            '可不可以分我們一點水?'
                                         ], () => {
                                             scene.isDialogueActive = false;
                                             this.spawnChoiceTiles(scene);
@@ -204,8 +202,8 @@ export default {
     spawnChoiceTiles(scene) {
         state.isDeciding = true;
 
-        const selfishX = 1832;
-        const selfishY = 954;
+        const selfishX = 1005;
+        const selfishY = 2078;
         state.tileSelfish = scene.add.rectangle(selfishX, selfishY, 120, 120, 0xff4444, 0.4);
         state.tileSelfish.setStrokeStyle(4, 0xff0000, 0.8).setDepth(100);
         scene.physics.add.existing(state.tileSelfish, true);
@@ -215,7 +213,7 @@ export default {
         }).setOrigin(0.5).setDepth(101);
 
         const shareX = state.pondZone.x + 100;
-        const shareY = state.pondZone.y + 250;
+        const shareY = state.pondZone.y + 350;
         state.tileShare = scene.add.rectangle(shareX, shareY, 120, 120, 0x44ff44, 0.4);
         state.tileShare.setStrokeStyle(4, 0x00ff00, 0.8).setDepth(100);
         scene.physics.add.existing(state.tileShare, true);
