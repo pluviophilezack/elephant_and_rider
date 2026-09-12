@@ -31,7 +31,8 @@ export class WandController {
                 const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
                 // 尚未取得 rainStone 或處於鎖定狀態時，禁止抓取
-                 
+                
+                // 暫時註解掉
                 // if (!hasUnlockedWand || isLocked) {
                 //     return;
                 // }
@@ -59,7 +60,7 @@ export class WandController {
 
         // 只有「已解鎖能力」且「無鎖定」且「按住空白鍵」時，魔杖才會伸長
 
-        // 暫時註解掉
+        // 暫時註解掉 hasUnlockedWand
         if (!isLocked && this.cursors.space && this.cursors.space.isDown) {
             currentBodyLength = Math.min(distance, this.maxReachDistance);
         }
