@@ -177,11 +177,11 @@ export class Overworld extends Scene
         if (this.wandController) {
             this.wandController.update();
         }
-        // 更新除錯工具
+        //更新每個事件
+        this.events_.forEach(event => event.update(this));
+        // 最後更新除錯工具，避免事件模組覆蓋 Dev Mode 的衝刺速度
         if (this.devToolsManager) {
             this.devToolsManager.update();
         }
-        //更新每個事件
-        this.events_.forEach(event => event.update(this));
     }
 }

@@ -15,7 +15,7 @@ const EVENT_CREDITS = [
         x: 150,
         y: 205,
         designer: '待補',
-        developer: 'amwayzack'
+        developer: '待補'
     },
     {
         title: '歌唱比賽的團隊精神',
@@ -24,7 +24,7 @@ const EVENT_CREDITS = [
         x: 510,
         y: 180,
         designer: '待補',
-        developer: 'CoolRanger'
+        developer: 'Ranger'
     },
     {
         title: '喝水事件',
@@ -33,7 +33,7 @@ const EVENT_CREDITS = [
         x: 865,
         y: 210,
         designer: '待補',
-        developer: 'yujueq'
+        developer: '待補'
     },
     {
         title: '水域廢墟事件：被污染的聖物',
@@ -41,8 +41,8 @@ const EVENT_CREDITS = [
         scale: 0.42,
         x: 330,
         y: 590,
-        designer: '待補',
-        developer: 'chris'
+        designer: 'Ranger',
+        developer: '待補'
     },
     {
         title: '象群事件（跟隨事件＋王權事件）',
@@ -51,7 +51,7 @@ const EVENT_CREDITS = [
         x: 690,
         y: 600,
         designer: '待補',
-        developer: 'Andyyds404'
+        developer: '待補'
     }
 ];
 
@@ -67,8 +67,9 @@ export class EventCredits extends Scene
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.cameras.main.setBackgroundColor(0xf7f7f4);
+        this.cameras.main.setBackgroundColor(0x91b86a);
         this.physics.world.setBounds(0, 0, width, height);
+        this.createGreenField(width, height);
 
         this.playerController = new PlayerController(this, width / 2, height / 2);
         this.playerController.speed = 220;
@@ -92,6 +93,30 @@ export class EventCredits extends Scene
 
         this.createCreditsPanel();
         this.createBackControl();
+    }
+
+    createGreenField (width, height)
+    {
+        this.add.rectangle(width / 2, height / 2, width, height, 0x91b86a)
+            .setDepth(-30);
+
+        const decorations = [
+            { texture: 'apple_tree', x: 52, y: 680, scale: 0.32 },
+            { texture: 'apple_tree', x: 972, y: 680, scale: 0.32, flipX: true },
+            { texture: 'bush_01', x: 30, y: 330, scale: 0.55 },
+            { texture: 'bush_02', x: 994, y: 330, scale: 0.55 },
+            { texture: 'bush_02', x: 170, y: 748, scale: 0.48 },
+            { texture: 'bush_01', x: 850, y: 748, scale: 0.48 },
+            { texture: 'bush_01', x: 360, y: 24, scale: 0.42 },
+            { texture: 'bush_02', x: 664, y: 24, scale: 0.42 }
+        ];
+
+        decorations.forEach((decoration) => {
+            this.add.image(decoration.x, decoration.y, decoration.texture)
+                .setScale(decoration.scale)
+                .setFlipX(Boolean(decoration.flipX))
+                .setDepth(-20);
+        });
     }
 
     createCreditsPanel ()
