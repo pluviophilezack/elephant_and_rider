@@ -134,10 +134,13 @@ export class DevToolsManager {
 
     startSprint() {
         const playerController = this.scene.playerController;
-        if (this.isSprinting || !playerController) return;
+        if (!playerController) return;
 
-        this.isSprinting = true;
-        this.baseMoveSpeed = playerController.speed;
+        if (!this.isSprinting) {
+            this.isSprinting = true;
+            this.baseMoveSpeed = playerController.baseSpeed ?? playerController.speed;
+        }
+
         playerController.speed = this.baseMoveSpeed * this.sprintMultiplier;
         this.disableBushCollisions();
     }

@@ -3,6 +3,7 @@ import { Boot } from './scenes/Boot';
 import { MainMenu } from './scenes/MainMenu';
 import { Overworld } from './scenes/Overworld';
 import { Ending } from './scenes/Ending';
+import { EventCredits } from './scenes/EventCredits';
 import { AUTO, Game, Scale } from 'phaser';
 
 //  Find out more information about the Game Config at:
@@ -27,7 +28,8 @@ const config = {
         Boot,
         MainMenu,
         Overworld,
-        Ending
+        Ending,
+        EventCredits
     ]
 };
 
