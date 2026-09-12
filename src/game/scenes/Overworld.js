@@ -117,8 +117,12 @@ export class Overworld extends Scene
             this.sharedState[eventKey] = true;
         }
         this.hud.addRainStone(1);
-        if (this.hud.hasEnoughRainStones()) {
+        if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
             this.sharedState["rain"] = true;
+            this.isEndingTriggered = true;
+            this.time.delayedCall(800, () => {
+                this.scene.start('Ending');
+            });
         }
     }
 
