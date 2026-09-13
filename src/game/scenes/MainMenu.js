@@ -2,6 +2,8 @@
 // 同時作為資源讀取場景，在背景動畫播放時默默下載後續資源，並於載入完成且首播動畫結束後顯示 Start 按鈕
 import { Scene } from 'phaser';
 import { TextStyles } from '../core/theme';
+import { GameProgress } from '../core/GameProgress';
+import { EVENT_CREDITS_MENU_LABEL } from './EventCredits';
 
 export class MainMenu extends Scene
 {
@@ -13,7 +15,7 @@ export class MainMenu extends Scene
     init ()
     {
         // 跳過Menu動畫，方便方便快速開發
-        this.debugSkipMenu = true;
+        this.debugSkipMenu = false;
 
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
@@ -24,6 +26,8 @@ export class MainMenu extends Scene
             this.firstPlayFinished = false;
             this.isLoadingComplete = false;
             this.startText = null;
+            this.creditsText = null;
+            this.titleText = null;
 
             // 1. 建立背景 Sprite 並播放動畫
             const bg = this.add.sprite(512, 384, 'main_menu_background');
@@ -144,6 +148,7 @@ export class MainMenu extends Scene
         // 方便開發快速跳過Menu
         if (this.debugSkipMenu) {
             this.scene.start('Overworld');
+            return;
         }
 
         if (!this.debugSlowLoad) {
@@ -167,7 +172,10 @@ export class MainMenu extends Scene
         if (this.startText) return;
 
         // 顯示 Start 按鈕文字
-        this.startText = this.add.text(512, 640, 'Start', {
+        const hasCreditsUnlocked = GameProgress.hasCompletedGame();
+        const startY = hasCreditsUnlocked ? 600 : 640;
+
+        this.startText = this.add.text(512, startY, 'Start', {
             ...TextStyles.fontSetting,
             fontSize: '52px',
             align: 'center'
@@ -187,6 +195,18 @@ export class MainMenu extends Scene
         this.startText.once('pointerdown', () => {
             this.scene.start('Overworld');
         });
+
+        if (hasCreditsUnlocked) {
+            this.creditsText = this.add.text(512, 682, EVENT_CREDITS_MENU_LABEL, {
+                ...TextStyles.fontSetting,
+                fontSize: '30px',
+                align: 'center'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            this.creditsText.once('pointerdown', () => {
+                this.scene.start('EventCredits');
+            });
+        }
     }
 
     showTitleText ()                                                                                                                                                                 
