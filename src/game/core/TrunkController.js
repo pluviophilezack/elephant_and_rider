@@ -95,6 +95,7 @@ export class WandController {
         this.wandTip.setVisible(true);
 
         // 按住空白鍵時伸長魔杖，否則長度為 0
+
         if (!isLocked && this.cursors.space && this.cursors.space.isDown) {
             this.currentBodyLength = Math.min(distance, this.maxReachDistance);
         } else {
