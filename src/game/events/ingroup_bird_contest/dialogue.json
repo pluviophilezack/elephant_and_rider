@@ -1,73 +1,28 @@
 {
   "_comment": "歌唱比賽的團隊精神（Ingroup）事件對話與選項",
-  "monkey_trunk_tutorial_lines": [
-    { "speaker": "猴長老", "text": "孩子" },
-    { "speaker": "猴長老", "text": "用滑鼠" },
-    { "speaker": "猴長老", "text": "對準" },
-    { "speaker": "猴長老", "text": "落單鳥" },
-    { "speaker": "猴長老", "text": "按住" },
-    { "speaker": "猴長老", "text": "空白鍵" },
-    { "speaker": "猴長老", "text": "伸長" },
-    { "speaker": "猴長老", "text": "象鼻" },
-    { "speaker": "猴長老", "text": "拖到" },
-    { "speaker": "猴長老", "text": "藍色" },
-    { "speaker": "猴長老", "text": "圓圈" }
-  ],
-  "monkey_return_to_flock_lines": [
-    { "speaker": "猴長老", "text": "孩子" },
-    { "speaker": "猴長老", "text": "帶牠" },
-    { "speaker": "猴長老", "text": "回去" },
-    { "speaker": "猴長老", "text": "鳥群" },
-    { "speaker": "猴長老", "text": "等牠" }
-  ],
   "flock_request_lines": [
-    { "speaker": "鳥群", "text": "祈雨" },
-    { "speaker": "鳥群", "text": "歌唱" },
-    { "speaker": "鳥群", "text": "比賽" },
-    { "speaker": "鳥群", "text": "缺一" },
-    { "speaker": "鳥群", "text": "不可" },
-    { "speaker": "鳥群", "text": "......" },
-    { "speaker": "鳥群", "text": "落單" },
-    { "speaker": "鳥群", "text": "夥伴" },
-    { "speaker": "鳥群", "text": "猴長老" },
-    { "speaker": "鳥群", "text": "旁邊" },
-    { "speaker": "鳥群", "text": "找回" },
-    { "speaker": "鳥群", "text": "牠" },
-    { "speaker": "鳥群", "text": "給你" },
-    { "speaker": "鳥群", "text": "湛藍" },
-    { "speaker": "鳥群", "text": "石頭" }
+    { "speaker": "鳥群", "text": "祈雨歌唱比賽，缺一不可......" },
+    { "speaker": "鳥群", "text": "落單夥伴，猴長老旁邊，找回牠。" },
+    { "speaker": "鳥群", "text": "給你湛藍石頭。" }
   ],
   "lone_bird_lines": [
-    { "speaker": "落單鳥", "text": "嚮往" },
-    { "speaker": "落單鳥", "text": "自由" },
-    { "speaker": "落單鳥", "text": "不想" },
-    { "speaker": "落單鳥", "text": "回去" },
-    { "speaker": "落單鳥", "text": "......" },
-    { "speaker": "落單鳥", "text": "給你" },
-    { "speaker": "落單鳥", "text": "湛藍" },
-    { "speaker": "落單鳥", "text": "石頭" }
+    { "speaker": "落單鳥", "text": "嚮往自由，不想回去......" },
+    { "speaker": "落單鳥", "text": "給你湛藍石頭。" }
   ],
   "choice_options": [
     { "key": "release", "label": "尊重自由：放走牠" },
     { "key": "capture", "label": "凝聚團隊：捉拿牠" }
   ],
   "release_result_lines": [
-    { "speaker": "落單鳥", "text": "謝謝" },
-    { "speaker": "落單鳥", "text": "自由" },
-    { "speaker": "落單鳥", "text": "再見" }
+    { "speaker": "落單鳥", "text": "謝謝，自由，再見。" }
   ],
   "flock_throws_rocks_lines": [
-    { "speaker": "鳥群", "text": "夥伴" },
-    { "speaker": "鳥群", "text": "不見" },
-    { "speaker": "鳥群", "text": "嗚" }
+    { "speaker": "鳥群", "text": "夥伴不見，嗚！" }
   ],
   "capture_start_lines": [
-    { "speaker": "落單鳥", "text": "不要" },
-    { "speaker": "落單鳥", "text": "追我" }
+    { "speaker": "落單鳥", "text": "不要追我！" }
   ],
   "capture_success_lines": [
-    { "speaker": "鳥群", "text": "齊聲" },
-    { "speaker": "鳥群", "text": "應和" },
-    { "speaker": "鳥群", "text": "祈雨" }
+    { "speaker": "鳥群", "text": "齊聲應和，祈雨！" }
   ]
 }

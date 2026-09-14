@@ -8,8 +8,9 @@ import dialogue from './dialogue.json';
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
 const BIRD_SCALE = 0.55;
 const NOTE_SCALE = 0.72;
-const ROAD_ACCEPT_RADIUS = 92;
 const FLOCK_DELIVERY_RADIUS = 105;
+const FIRST_GRAB_ESCAPE_DELAY_MS = 1000;
+const FIRST_GRAB_ESCAPE_MS = 320;
 const ROCK_THROW_COOLDOWN_MS = 1500;
 const ROCK_THROW_COUNT = 4;
 const ROCK_THROW_STAGGER_MS = 170;
@@ -23,12 +24,22 @@ const CHASE_TIRED_SPEED = 105;
 const CHASE_SPRINT_MS = 14000;
 
 const AREA = {
-    monkeyCenter: { x: 300, y: 200 },
     flockCenter: { x: 2040, y: 1240 },
-    loneStart: { x: 480, y: 235 },
-    roadDrop: { x: 780, y: 480 },
+    loneStart: { x: 690, y: 850 },
+    firstEscapeSpot: { x: 525, y: 900 },
     chaseBounds: new Phaser.Geom.Rectangle(180, 160, 1700, 1160)
 };
+
+const LONE_BIRD_BUSH_OFFSETS = [
+    { x: 0, y: -62 },
+    { x: 62, y: -44 },
+    { x: 88, y: 0 },
+    { x: 62, y: 44 },
+    { x: 0, y: 62 },
+    { x: -62, y: 44 },
+    { x: -88, y: 0 },
+    { x: -62, y: -44 }
+];
 
 export default {
     key: 'ingroup_bird_contest',
@@ -38,8 +49,7 @@ export default {
         this.hasAwardedRainStone = scene.sharedState[this.key];
         this.hasShownReleaseReaction = false;
         this.isFlockAngry = false;
-        this.hasShownMonkeyTutorial = false;
-        this.hasShownReturnReminder = false;
+        this.hasTriggeredFirstGrab = false;
         this.controlsLocked = false;
         this.wasHoldingLoneBird = false;
         this.nextRockThrowAt = 0;
@@ -48,6 +58,7 @@ export default {
         this.flockBirds = [];
         this.musicNotes = [];
         this.angerMarks = [];
+        this.loneBirdBushes = [];
 
         if (!scene.items) {
             scene.items = [];
@@ -66,17 +77,6 @@ export default {
         scene.physics.add.overlap(scene.player, this.flockTrigger, () => {
             this._handleFlockOverlap(scene);
         });
-
-        this.monkeyTutorialTrigger = createTriggerZone(scene, {
-            x: AREA.monkeyCenter.x,
-            y: AREA.monkeyCenter.y,
-            width: 380,
-            height: 170
-        });
-
-        scene.physics.add.overlap(scene.player, this.monkeyTutorialTrigger, () => {
-            this._handleMonkeyTutorial(scene);
-        });
     },
 
     update(scene) {
@@ -86,7 +86,6 @@ export default {
 
         this._syncWandGrabFallback(scene);
         this._updateLoneBirdGrabState(scene);
-        this._updateLoneBirdRescue(scene);
         this._updateCapture(scene);
         this._updateDepths(scene);
     },
@@ -149,19 +148,24 @@ export default {
     },
 
     _createLoneBird(scene) {
-        this.bush = scene.add.ellipse(AREA.loneStart.x, AREA.loneStart.y + 18, 150, 82, 0x638f31, 0.62)
-            .setDepth(12);
-        this.bush.setStrokeStyle(3, 0x365f21, 0.7);
+        this.loneBirdBushes = LONE_BIRD_BUSH_OFFSETS.map((offset, index) => {
+            const bush = scene.physics.add.sprite(
+                AREA.loneStart.x + offset.x,
+                AREA.loneStart.y + offset.y,
+                'bush_02'
+            )
+                .setDepth(offset.y > 0 ? 29 : (offset.y < 0 ? 25 : 27));
 
-        this.roadTarget = scene.add.ellipse(AREA.roadDrop.x, AREA.roadDrop.y, 184, 92, 0x78d9ff, 0.28)
-            .setDepth(8);
-        this.roadTarget.setStrokeStyle(2, 0x2ca6d8, 0.9);
+            bush.body.setImmovable(true);
+            scene.registerAsset(bush, `ingroup_lone_bird_bush_${index + 1}`);
+            return bush;
+        });
+        scene.physics.add.collider(scene.player, this.loneBirdBushes);
 
         this.loneBird = scene.add.sprite(AREA.loneStart.x, AREA.loneStart.y, 'bird_member_05')
             .setScale(BIRD_SCALE)
-            .setDepth(22);
+            .setDepth(27);
         scene.registerAsset(this.loneBird, 'ingroup_lone_bird');
-        this._addToItems(scene, this.loneBird);
 
         scene.tweens.add({
             targets: this.loneBird,
@@ -178,6 +182,7 @@ export default {
             this.state = 'flock_dialogue';
             this._showDialogue(scene, dialogue.flock_request_lines, () => {
                 this.state = 'finding_lone';
+                this._addToItems(scene, this.loneBird);
             });
             return;
         }
@@ -191,59 +196,6 @@ export default {
                 this.hasShownReleaseReaction = true;
                 this._showDialogue(scene, dialogue.flock_throws_rocks_lines);
             }
-        }
-    },
-
-    _handleMonkeyTutorial(scene) {
-        if (this.controlsLocked) return;
-
-        const isReturningLoneBird = this.state === 'capture_return'
-            && scene.wandController?.heldItem === this.loneBird;
-
-        if (isReturningLoneBird && !this.hasShownReturnReminder) {
-            this.hasShownReturnReminder = true;
-            this._showDialogue(scene, dialogue.monkey_return_to_flock_lines);
-            return;
-        }
-
-        if (this.hasShownMonkeyTutorial) return;
-        if (this.state !== 'finding_lone') return;
-
-        this.hasShownMonkeyTutorial = true;
-        this._showDialogue(scene, dialogue.monkey_trunk_tutorial_lines);
-    },
-
-    _updateLoneBirdRescue(scene) {
-        if (this.state !== 'finding_lone') return;
-
-        const distanceToRoad = Phaser.Math.Distance.Between(
-            this.loneBird.x,
-            this.loneBird.y,
-            AREA.roadDrop.x,
-            AREA.roadDrop.y
-        );
-
-        if (distanceToRoad <= ROAD_ACCEPT_RADIUS) {
-            if (scene.wandController?.heldItem === this.loneBird) {
-                scene.wandController.releaseItem();
-            }
-            scene.tweens.killTweensOf(this.loneBird);
-            this._removeFromItems(scene, this.loneBird);
-            this.loneBird.setPosition(AREA.roadDrop.x, AREA.roadDrop.y);
-            this.state = 'lone_dialogue';
-            this._showDialogue(scene, dialogue.lone_bird_lines, () => {
-                this.state = 'choosing';
-                this._setControlsLocked(scene, true);
-                ChoiceSystem.prompt(scene, dialogue.choice_options, (choiceKey) => {
-                    scene.time.delayedCall(0, () => {
-                        if (choiceKey === 'release') {
-                            this._releaseLoneBird(scene);
-                        } else {
-                            this._startCapture(scene);
-                        }
-                    });
-                });
-            });
         }
     },
 
@@ -273,9 +225,58 @@ export default {
 
         if (isHoldingLoneBird && !this.wasHoldingLoneBird) {
             this._resetMovementInput(scene);
+
+            if (this.state === 'finding_lone' && !this.hasTriggeredFirstGrab) {
+                this.hasTriggeredFirstGrab = true;
+                this.state = 'first_grab_hold';
+                this._removeFromItems(scene, this.loneBird);
+                scene.time.delayedCall(FIRST_GRAB_ESCAPE_DELAY_MS, () => {
+                    this._escapeFirstGrab(scene);
+                });
+            }
         }
 
         this.wasHoldingLoneBird = isHoldingLoneBird;
+    },
+
+    _escapeFirstGrab(scene) {
+        if (scene.wandController?.heldItem === this.loneBird) {
+            scene.wandController.releaseItem();
+        }
+
+        this.wasHoldingLoneBird = false;
+        this._resetMovementInput(scene);
+        scene.tweens.killTweensOf(this.loneBird);
+        this.state = 'first_grab_escape';
+
+        scene.tweens.add({
+            targets: this.loneBird,
+            x: AREA.firstEscapeSpot.x,
+            y: AREA.firstEscapeSpot.y,
+            angle: Phaser.Math.Between(-10, 10),
+            duration: FIRST_GRAB_ESCAPE_MS,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.state = 'lone_dialogue';
+                this._showDialogue(scene, dialogue.lone_bird_lines, () => {
+                    this._promptChoice(scene);
+                });
+            }
+        });
+    },
+
+    _promptChoice(scene) {
+        this.state = 'choosing';
+        this._setControlsLocked(scene, true);
+        ChoiceSystem.prompt(scene, dialogue.choice_options, (choiceKey) => {
+            scene.time.delayedCall(0, () => {
+                if (choiceKey === 'release') {
+                    this._releaseLoneBird(scene);
+                } else {
+                    this._startCapture(scene);
+                }
+            });
+        });
     },
 
     _releaseLoneBird(scene) {
@@ -499,6 +500,13 @@ export default {
     _setFlockAngry(scene) {
         if (this.isFlockAngry) return;
         this.isFlockAngry = true;
+
+        this.flockBirds.forEach((bird, index) => {
+            const angryTexture = `bird_member_angry_0${index + 1}`;
+            if (scene.textures.exists(angryTexture)) {
+                bird.setTexture(angryTexture);
+            }
+        });
 
         this.musicNotes.forEach((note, index) => {
             scene.tweens.killTweensOf(note);
