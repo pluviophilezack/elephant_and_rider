@@ -9,7 +9,7 @@ export class DialogueBox {
     this.options = {
       maxWidth: options.maxWidth ?? 720,
       maxCharsPerLine: options.maxCharsPerLine ?? 20,
-      bottomMargin: options.bottomMargin ?? 180,
+      bottomMargin: options.bottomMargin ?? 140,
       paddingX: options.paddingX ?? 32,
       paddingY: options.paddingY ?? 20,
       speakerLeftMargin: options.speakerLeftMargin ?? 16,

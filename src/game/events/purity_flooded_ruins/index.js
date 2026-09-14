@@ -11,13 +11,6 @@ function safeAddImage(scene, x, y, key, depth = 0) {
   return null;
 }
 
-function safeAddSprite(scene, x, y, key, depth = 0) {
-  if (scene.textures.exists(key)) {
-    return scene.add.sprite(x, y, key).setDepth(depth);
-  }
-  return null;
-}
-
 function safeSetTexture(gameObject, key) {
   if (gameObject && gameObject.scene?.textures?.exists(key)) {
     gameObject.setTexture(key);
@@ -31,11 +24,13 @@ export default {
     this.isTrunkPolluted = false;
     this.isGuardRescued = false;
     this.hasTakenRelic = false;
-    this.isTalking = false; // Locks velocity during dialogue & choice selection
+    this.isTalked = false;
 
-    this.currentForceX = -80;
-    this.currentForceY = -45;
+    this.currentForceX = -20;
+    this.currentForceY = -10;
+    this.conversationDistance = 100;
 
+    // 1. 背景裝飾與黑油水流區域
     this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
     this.slowZone = createTriggerZone(scene, {
       x: 4850,
@@ -44,108 +39,114 @@ export default {
       height: 650,
     });
 
-    this.guard = safeAddSprite(scene, 5000, 2800, "guard_trapped", 2);
-    this.rockGuard = safeAddImage(scene, 5000, 2800, "rock_guard", 3);
+    // 2. 守衛與巨石
+    this.guard = scene.physics.add
+      .sprite(4835, 2680, "guard_trapped")
+      .setScale(0.6)
+      .setDepth(2);
 
-    this.altar = safeAddImage(scene, 5400, 2800, "altar", 2);
-    this.lotusRelic = safeAddImage(scene, 5400, 2760, "lotus_relic_clean", 3);
+    this.rockGuard = safeAddImage(scene, 4835, 2600, "rock_guard", 3);
 
-    const guardTrigger = createTriggerZone(scene, {
-      x: 5000,
-      y: 2800,
-      width: 120,
-      height: 120,
-    });
+    // 3. 祭壇與白蓮聖物
+    this.lotusRelic = scene.physics.add
+      .sprite(5000, 2700, "lotus_relic_clean")
+      .setScale(0.4)
+      .setDepth(3);
+    this.altar = safeAddImage(scene, 5000, 2780, "altar", 2);
 
-    if (guardTrigger) {
-      scene.physics.add.overlap(scene.player, guardTrigger, () => {
-        const dialogs = dialogueData || [];
-        this.isTalking = true;
+    // 4. 空白鍵手動觸發對話 (距離判斷)
+    scene.input.keyboard.on("keydown-SPACE", () => {
+      if (!scene.player || DialogueSystem.isShowing() || ChoiceSystem.isShowing()) return;
 
-        DialogueSystem.show(scene, dialogs[0] || [], () => {
-          const options = [
-            { key: "leave", label: "不救並離開" },
-            { key: "save", label: "用象鼻移開石塊救牠" },
-          ];
-          setTimeout(()=>{}, 500);
-          if (ChoiceSystem?.prompt) {
-            scene.time.delayedCall(150, () => {
-            ChoiceSystem.prompt(scene, options, (choice) => {
-              if (choice == "save") {
+      // 與守衛對話觸發
+      if (this.guard && !this.isGuardRescued) {
+        const distance = Phaser.Math.Distance.Between(
+          scene.player.x,
+          scene.player.y,
+          this.guard.x,
+          this.guard.y
+        );
 
-                this.isGuardRescued = true;
-                this.isTrunkPolluted = true;
-
-                if (this.rockGuard) {
-                  this.rockGuard.destroy();
-                  this.rockGuard = null;
-                }
-                safeSetTexture(this.guard, "guard_saved");
-
-                MoralState?.add?.("purity", -1);
-                MoralState?.add?.("harm", 1);
-
-                DialogueSystem.show(scene, dialogs[2] || [], () => {
-                  this.isTalking = false;
-                });
-              } else if (choice == "leave"){
-
-                this.isTrunkPolluted = false;
-                DialogueSystem.show(scene, dialogs[1] || [], () => {
-                  this.isTalking = false;
-                });
-              }
-            });
-          });
-          } else {
-            this.isTalking = false;
-          }
-        });
-
-        guardTrigger.destroy();
-      });
-    }
-
-    const altarTrigger = createTriggerZone(scene, {
-      x: 5400,
-      y: 2800,
-      width: 100,
-      height: 100,
-    });
-
-    if (altarTrigger) {
-      scene.physics.add.overlap(scene.player, altarTrigger, () => {
-        if (this.hasTakenRelic) return;
-        this.hasTakenRelic = true;
-        this.isTalking = true;
-
-        const dialogs = dialogueData || [];
-
-        if (this.isTrunkPolluted) {
-          safeSetTexture(this.lotusRelic, "lotus_relic_polluted");
-          DialogueSystem.show(scene, dialogs[3] || [], () => {
-            scene.giveRainStone?.();
-            this.isTalking = false;
-          });
-        } else {
-          safeSetTexture(this.lotusRelic, "lotus_relic_clean");
-          DialogueSystem.show(scene, dialogs[1] || [], () => {
-            scene.giveRainStone?.();
-            this.isTalking = false;
-          });
+        if (distance <= this.conversationDistance) {
+          this.triggerGuardDialogue(scene);
         }
+      }
 
-        altarTrigger.destroy();
+      // 與聖物互動觸發（加入 !this.hasTakenRelic 避免重複領取）
+      if (this.lotusRelic && this.isTalked && !this.hasTakenRelic) {
+        const distance = Phaser.Math.Distance.Between(
+          scene.player.x,
+          scene.player.y,
+          this.lotusRelic.x,
+          this.lotusRelic.y
+        );
+
+        if (distance <= this.conversationDistance) {
+          this.triggerLotus(scene);
+        }
+      }
+    });
+  },
+
+  triggerLotus(scene) {
+    if (this.hasTakenRelic) return;
+    this.hasTakenRelic = true;
+
+    const dialogs = dialogueData || [];
+
+    if (this.isTrunkPolluted) {
+      safeSetTexture(this.lotusRelic, "lotus_relic_polluted");
+      DialogueSystem.show(scene, dialogs[3] || [], () => {
+        scene.giveRainStone?.();
       });
+    } else {
+      safeSetTexture(this.lotusRelic, "lotus_relic_clean");
+        scene.giveRainStone?.();
     }
+  },
+
+  triggerGuardDialogue(scene) {
+    const dialogs = dialogueData || [];
+    this.isTalked = true;
+
+    DialogueSystem.show(scene, dialogs[0] || [], () => {
+      const options = [
+        { key: "leave", label: "不救並離開" },
+        { key: "save", label: "用象鼻移開石塊救牠" },
+      ];
+
+      if (ChoiceSystem?.prompt) {
+        scene.time.delayedCall(150, () => {
+          ChoiceSystem.prompt(scene, options, (choice) => {
+            if (choice === "save") {
+              this.isGuardRescued = true;
+              this.isTrunkPolluted = true;
+
+              if (this.rockGuard) {
+                this.rockGuard.destroy();
+                this.rockGuard = null;
+              }
+              safeSetTexture(this.guard, "guard_saved");
+
+              MoralState?.add?.("purity", -1);
+              MoralState?.add?.("harm", 1);
+
+              DialogueSystem.show(scene, dialogs[2] || [], () => {});
+            } else if (choice === "leave") {
+              this.isTrunkPolluted = false;
+              DialogueSystem.show(scene, dialogs[1] || [], () => {});
+            }
+          });
+        });
+      }
+    });
   },
 
   update(scene) {
     if (!scene.player || !scene.playerController) return;
 
-    const isCurrentlyTalking = this.isTalking || DialogueSystem.isShowing();
-
-    if (isCurrentlyTalking) {
+    // 對話或選擇中時停止玩家移動與黑油推力
+    if (DialogueSystem.isShowing() || ChoiceSystem.isShowing()) {
       scene.playerController.speed = 0;
       if (scene.player.body) {
         scene.player.body.setVelocity(0, 0);

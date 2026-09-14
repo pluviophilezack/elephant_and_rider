@@ -101,7 +101,7 @@ export const DialogueSystem = {
             this._isZooming = true;
             job.scene.tweens.add({
                 targets: camera,
-                zoom: this._baseZoom * 1.5,
+                zoom: this._baseZoom * 1.25,
                 duration: 1000,
                 ease: 'Cubic.easeInOut',
                 onComplete: () => {
