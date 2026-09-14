@@ -89,6 +89,7 @@ export class Overworld extends Scene
 
         // 共享state
         this.sharedState = {
+            wand_unlocked: false,
             rain: false,
             completedTutorial: false,
             tutorial: false,
