@@ -9,7 +9,7 @@ export class DialogueBox {
     this.options = {
       maxWidth: options.maxWidth ?? 720,
       maxCharsPerLine: options.maxCharsPerLine ?? 20,
-      bottomMargin: options.bottomMargin ?? 28,
+      bottomMargin: options.bottomMargin ?? 180,
       paddingX: options.paddingX ?? 32,
       paddingY: options.paddingY ?? 20,
       speakerLeftMargin: options.speakerLeftMargin ?? 16,
@@ -18,10 +18,19 @@ export class DialogueBox {
       roughness: options.roughness ?? 2.5, // 手繪波浪起伏程度
     };
 
+    
     this.container = scene.add
       .container(0, 0)
       .setScrollFactor(0)
       .setDepth(1000);
+
+// 在 DialogueBox 創建完畢所有元件與容器後：
+const cameraZoom = scene.cameras?.main?.zoom || 1;
+
+if (cameraZoom !== 1 && this.container) {
+  // 將 Container 縮放設定為 1 / zoom (即 1 / 1.5 = 0.666)
+  this.container.setScale(1 / cameraZoom);
+}
 
     // 使用 Graphics 物件繪製手繪風格多邊形
     this.background = scene.add.graphics();
