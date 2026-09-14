@@ -32,8 +32,8 @@ export default {
         state.boundaries = [];
 
         // 1. 池塘與重疊區域
-        state.pondSprite = scene.add.sprite(1484, 1946, 'pond_01').setDepth(1).setScale(1.5);
-        state.pondZone = scene.add.zone(1484, 1946, 850, 350);
+        state.pondSprite = scene.add.sprite(1484, 1946, 'pond_01').setDepth(1).setScale(1.7);
+        state.pondZone = scene.add.zone(1484, 1946, 1000, 350);
         scene.physics.add.existing(state.pondZone, true);
 
         // 🎥 2. 營造遠處感受
