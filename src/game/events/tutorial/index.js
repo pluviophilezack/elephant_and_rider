@@ -85,7 +85,7 @@ export default {
         scene.physics.add.collider(this.playerSprite, this.monkeyElder);
         this.monkeyElder.body.setImmovable(true);
 
-        this.glasses = scene.physics.add.sprite(222, 724, 'glasses');
+        this.glasses = scene.physics.add.sprite(222, 724, 'glasses').setScale(0.75);
         scene.registerAsset(this.glasses);
         scene.items.push(this.glasses);
 
@@ -119,39 +119,44 @@ export default {
 
         }
 
-        /// Woodpile
-        this.woodpile = scene.physics.add.sprite(285, 1884, 'woodpile_04').setDepth(15); 
-        this.woodpile.body.setImmovable(true);
+        // Woodpile_04
+        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04').setDepth(50); 
+        this.woodpile04.body.setImmovable(true);
+        this.woodpile04.held = false;
+        scene.registerAsset(this.woodpile04);
+        this.woodpile04Collider = scene.physics.add.collider(this.playerSprite, this.woodpile04);
 
-        //TODO: Change texture when player take one wood
-        let offset_y = 150;
-        let wood_remaining_number =4;
+        // Woodpile_03
+        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03').setDepth(50); 
+        this.woodpile03.body.setImmovable(true);
+        this.woodpile03.held = false;
+        scene.registerAsset(this.woodpile03);
 
-        // 3. Set the custom collider size (w, h)
-        // (Using raw width is safer for dynamic body calculations)
-        if (wood_remaining_number === 3){
-            this.woodpile.setTexture('woodpile_03');
-            offset_y = 100;
-        } else if(wood_remaining_number ===2){
-            this.woodpile.setTexture('woodpile_02');
-            offset_y = 50;
-        } else if(wood_remaining_number ===1){
-            this.woodpile.setTexture('woodpile_01')
-            offset_y = 0;
-        }
-        this.woodpile.body.setSize(this.woodpile.width, offset_y, false);
-        this.woodpile.body.setOffset(0, offset_y);
-        scene.registerAsset(this.woodpile);
-        scene.physics.add.collider(this.playerSprite, this.woodpile);
+        // Woodpile_02
+        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02').setDepth(50); 
+        this.woodpile02.body.setImmovable(true);
+        this.woodpile02.held = false;
+        scene.registerAsset(this.woodpile02);
 
+        // Woodpile_01
+        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01').setDepth(50); 
+        this.woodpile01.body.setImmovable(true);
+        this.woodpile01.held = false;
+        scene.registerAsset(this.woodpile01);
+        scene.items.push(this.woodpile01); 
 
-
+        // Woodpile list
+        this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
+    
         // RainStone
 
-        this.rock = scene.add.sprite(2531, 200, 'rock_rolling');
+        this.rock = scene.physics.add.sprite(2600, 200, 'rock_rolling');
+        this.rock.body.setImmovable(true);
         scene.registerAsset(this.rock);
+        scene.physics.add.collider(this.playerSprite, this.rock);
+
         
-        this.rainStone = scene.physics.add.sprite(2532, 80, 'rain_stone');
+        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone');
         scene.items.push(this.rainStone);
         scene.tweens.add({
             targets: this.rainStone,
@@ -164,13 +169,8 @@ export default {
 
         // Bushes
         const hardBushPositions = [    
-        // Surrounded rock bushes                                                                   
-        { x: 2420, y: 64 },                                                                        
-        { x: 2410, y: 149 },
-        { x: 2400, y: 220 },                                                                       
-        { x: 2435, y: 292 },
-        {x: 2511, y:338},
         // one side of footpath
+        { x: 2420, y: 64 },    
         {x:2219,y:44},
         {x:2280, y:69},
         {x: 2345, y:74},
@@ -188,6 +188,7 @@ export default {
         { x: 2235, y: 414 },
         { x: 2373, y: 409 },
         { x: 2438, y: 374 },
+        {x: 2511, y:338},
 
         // Surrounded puddle
         { x: 17, y: 280 },
@@ -226,16 +227,25 @@ export default {
         { x: 1750, y: 735 },
         { x: 1829, y: 664 },
         { x: 1880, y: 570 },
-        {x: 590, y: 1897}
+        {x: 590, y: 1897},
+
+        // Surrounded rock bushes
+        {x: 2500, y: 160, scale: 0.8},
+        {x: 2510, y: 250, scale: 0.8}
 
         ];  
-        this.hardBushes = hardBushPositions.map(({x, y})=> {
+        this.hardBushes = hardBushPositions.map(({x, y, scale})=> {
             const bush = scene.physics.add.sprite(x, y, 'bush_02');
             bush.body.setImmovable(true);
+            if(scale){
+                bush.setScale(scale);
+            }
             scene.registerAsset(bush);
             return bush;
         });
         scene.physics.add.collider(this.playerSprite, this.hardBushes);
+
+        
 
         // Soft bush
         const softBushPositions = [
@@ -257,6 +267,8 @@ export default {
 
         // Apple tree
         this.apple_tree_1 = scene.add.sprite(1750, 120, 'apple_tree');
+        this.apple_on_tree_1 = scene.physics.add.sprite(1774, 52, 'apple_with_leaf').setScale(0.3).setAngle(-30);
+        scene.items.push(this.apple_on_tree_1);
 
     },
 
@@ -313,17 +325,21 @@ export default {
             });
         }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
-            '謝謝你',
+            '謝謝你，我終於看清楚了。',
+            '你們是⋯⋯心智的化身？',
+            '太好了⋯⋯這一切就靠你們了', 
             '大地久旱，河道乾涸，生靈塗炭',
             '70年前，當我還是隻小猴子時，大地綠意昂然，生機蓬勃',
             '當時東南方的祭壇仍完好無缺',
-            '後來發生了一場暴風雨，祭壇倒塌，那裡供俸的聖物四散',
+            '後來發生了一場沙塵暴，祭壇倒塌，那裡供俸的聖物四散',
             '聖物⋯⋯',
             '對⋯⋯！那些聖物，也許就是恢復一切的關鍵',
             '也許它就在雜草蔓生之盡頭⋯⋯',
             '⋯⋯',
+            '這是猴族代代相傳的魔法樹枝，它將助你一臂之力'
             
         ], ()=> {
+            scene.sharedState.wand_unlocked = true;
             this.isConversing = false;
         });
         } else if(this.wear_glasses &&this.isGetRainStone){
@@ -332,8 +348,9 @@ export default {
             '「祈天降雨之石」',
             '我想起來了！傳說中集齊6顆，天降甘霖',
             '試圖適應冒險中遇到的難題，',
-            '那些難題將觸動直覺的大象，而你作為騎象人，就是牠的夥伴',
+            '那些難題將觸動直覺的大象，而作為騎象人，你就是牠的夥伴',
             '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '小心點，這片大地上的動物有著與你截然不同的價值觀',
             '快去吧！尋找其他失散的5顆祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
@@ -358,16 +375,16 @@ export default {
             ])
         }
     },
-
+    
     update(scene) {
         // Detect if the player picked up the apple
-            if (scene.wandController.heldItem === this.apple_on_puddle) {
-                // Stop the floating tweens completely            
-                scene.tweens.killTweensOf(this.apple_on_puddle);                
-            }
-            if (scene.wandController.heldItem === this.rainStone){
-                scene.tweens.killTweensOf(this.rainStone);
-            }
+        if (scene.wandController.heldItem === this.apple_on_puddle) {
+            // Stop the floating tweens completely            
+            scene.tweens.killTweensOf(this.apple_on_puddle);                
+        }
+        if (scene.wandController.heldItem === this.rainStone){
+            scene.tweens.killTweensOf(this.rainStone);
+        }
             
         // 對話時鎖定主角
         if (this.isConversing){
@@ -444,7 +461,7 @@ export default {
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
-            if (distance > this.CONVERSATION_DISTANCE){
+            if (distance > 250){
                 this.shouldTriggerPartingDialogue = false;
                 this.isConversing = true;
                 DialogueSystem.show(scene, [
@@ -453,8 +470,31 @@ export default {
                     '做正確的選擇。'
                 ], () => {
                     this.isConversing = false;
-                })
-            };
+                });
+            }
+        }
+
+        // Woodpile
+        if (this.woodpiles.includes(scene.wandController.heldItem)){
+            for(let i = 0; i < this.woodpiles.length; i++) {
+                if (scene.wandController.heldItem === this.woodpiles[i])
+                {
+                    if (i === 3 && this.woodpile04Collider){
+                        this.woodpile04Collider.destroy();
+                        this.woodpile04Collider = null;
+                    }
+                    const nextWood = this.woodpiles[i + 1];
+                    if (nextWood && !scene.items.includes(nextWood)){
+                        scene.items.push(nextWood);
+                    }
+                    this.woodpiles[i].setDepth(3);
+                    
+                }
+
+
+            }
         }
     }
+
+
 };
