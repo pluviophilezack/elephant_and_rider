@@ -106,7 +106,7 @@ export class DevToolsManager {
             for (const sprite of Object.values(this.scene.registeredAssets)){
                 const bounds = sprite.getBounds(); 
                 if (bounds.contains(worldPoint.x, worldPoint.y)){
-                    console.log(`'${sprite.id}'  created by: ${sprite.createdEvent}`);
+                    console.log(`'${sprite.id}' at (${sprite.x}, ${sprite.y}), created by: ${sprite.createdEvent}`);
                 }
             }
 
