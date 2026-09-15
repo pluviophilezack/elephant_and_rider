@@ -158,17 +158,17 @@ export default {
     
         // RainStone
 
-        this.rock = scene.physics.add.sprite(2600, 200, 'rock_rolling');
+        this.rock = scene.physics.add.sprite(2600, 140, 'rock_rolling').setScale(0.6);
         this.rock.body.setImmovable(true);
         scene.registerAsset(this.rock);
         scene.physics.add.collider(this.playerSprite, this.rock);
 
         
-        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone');
+        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone').setScale(0.28);
         scene.items.push(this.rainStone);
         scene.tweens.add({
             targets: this.rainStone,
-            y: {start: 85, from: 70, to: 100},
+            y: {start: 85, from: 75, to: 90},
             ease: "Linear",
             yoyo: true,
             duration: 4000,
