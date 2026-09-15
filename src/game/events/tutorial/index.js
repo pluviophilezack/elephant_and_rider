@@ -10,7 +10,7 @@ export default {
     key: 'tutorial',
     setup(scene) {
         scene.items = scene.items || [];
-        this.CONVERSATION_DISTANCE = 100;
+        this.CONVERSATION_DISTANCE = 125;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
@@ -52,7 +52,7 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1652, 243, 'young_elephant').setScale(0.4).setDepth(10); // TODO 更換為giraffe texture
+        this.giraffe = scene.physics.add.sprite(1635, 220, 'young_elephant').setScale(0.4).setDepth(10); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
@@ -99,6 +99,15 @@ export default {
             }
         })
 
+        // // 確認眼鏡是否還在猴子臉上
+        // scene.input.keyboard.on('keydown-SPACE', () =>{
+        //     if (this.glasses && this.glasses.x === 1104 && this.glasses.y === 802) {
+        //         return;
+        //     } else if (scene.sharedState.wand_unlocked){
+        //         this.startConversationMonkeyEasterEgg(scene);
+        //     }
+
+        // })
 
         // 自言自語路段
         
@@ -143,7 +152,6 @@ export default {
         this.woodpile01.body.setImmovable(true);
         this.woodpile01.held = false;
         scene.registerAsset(this.woodpile01);
-        scene.items.push(this.woodpile01); 
 
         // Woodpile list
         this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
@@ -289,17 +297,12 @@ export default {
     startConversationGiraffe(scene) {
         if(this.isConversing) return;
         this.isConversing = true;
-        this.zoomInCamera(scene, ()=> {
             DialogueSystem.show(scene, [
             '我長得不夠高，',
             '吃不到樹上的蘋果⋯⋯'
             ], () => {
             this.isConversing = false;
-            this.zoomOutCamera(scene);
             })
-        });
-
-
     },
 
     startConversationMonkey(scene) {
@@ -307,7 +310,7 @@ export default {
         this.isConversing = true;
 
         if(this.turns_monkey === 0 ){
-            DialogueSystem.show(scene, [ // 改成自動推進對話
+            DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
                 '快過來',
                 '用空白鍵和我說說話'
@@ -355,10 +358,20 @@ export default {
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 this.isConversing = false;
+                scene.items.push(this.woodpile01);
             }) 
+           
         }
+        this.turns_monkey++;
+        
+    },
 
-    
+    startConversationMonkeyEasterEgg(scene) {     
+        if (this.isConversing) return;
+        DialogueSystem.show(scene, [
+            '我看不到了⋯⋯',
+            '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
+        ])
         this.turns_monkey++;
     },
     
@@ -395,8 +408,9 @@ export default {
             return;
         }
 
-        // 初始教學，自動開啟與monkey的對話
-        if(this.turns_monkey === 0 &&!this.isConversing){
+
+        // 自動開啟與monkey的對話: 初始教學＆搶眼鏡彩蛋
+        if(this.turns_monkey === 0){
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
@@ -488,7 +502,6 @@ export default {
                         scene.items.push(nextWood);
                     }
                     this.woodpiles[i].setDepth(3);
-                    
                 }
 
 
