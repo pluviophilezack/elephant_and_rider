@@ -47,19 +47,15 @@ export class Overworld extends Scene
         // ==========================================
         
         // 步驟 1: 動態讀取底圖尺寸
-        // 語法提示：
-        // const img = this.textures.get('background_01_plain').getSourceImage();
-        // const w = img.width;
-        // const h = img.height;
         const img = this.textures.get('background_01_plain').getSourceImage();
         const w = img.width;
         const h = img.height;
         
-        // 步驟 2: 計算物理世界總尺寸
+        // 計算物理世界總尺寸
         const worldWidth = w * 2;
         const worldHeight = h * 2;
         
-        // 步驟 3: 拼接四張大地圖
+        // 拼接四張大地圖(放棄此做法，改一單一張大圖)
         // 語法提示：
         // this.add.image(x座標, y座標, '貼圖Key').setOrigin(0, 0);
         // // 左上
@@ -71,12 +67,35 @@ export class Overworld extends Scene
         // // 右下
         // this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
 
+        // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
+        const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
+
+        // 判斷下雨與否，改變場景
+        this.events.once('state:rain', isRain => {
+            if (!isRain) return;
+
+            // 移除乾旱素材
+            dry_flow.destroy();
+
+            // 水流變化
+            const waterSprite = this.add.image(0, 0, 'water_flow_01').setOrigin(0, 0);
+            this.time.addEvent({
+                delay: 750,
+                loop: true,
+                callback: () => {
+                const nextTexture = (waterSprite.texture.key === 'water_flow_01') 
+                    ? 'water_flow_02' 
+                    : 'water_flow_01';
+                waterSprite.setTexture(nextTexture);
+                }
+            });
+        })
         
-        // 步驟 4: 動態設定物理世界邊界 (Physics Bounds) 
+        // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
-        // 步驟 5: 動態設定鏡頭移動邊界 (Camera Bounds)
+        // 動態設定鏡頭移動邊界 (Camera Bounds)
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
         // ==========================================
@@ -88,7 +107,7 @@ export class Overworld extends Scene
         this.currentActiveEventKey = null;
 
         // 共享state
-        this.sharedState = {
+        this.rawState = {
             wand_unlocked: false,
             rain: false,
             completedTutorial: false,
@@ -99,6 +118,16 @@ export class Overworld extends Scene
             authority_herd: false
         }
 
+        // sharedState 變更，用proxy攔截state變更
+        this.sharedState = new Proxy(this.rawState, {
+            set: (rawState, prop, value) => {
+                if (rawState[prop] === value) return true;
+
+                rawState[prop] = value;
+                this.events.emit(`state:${prop}`, value);
+                return true;
+            }
+        })
 
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
         this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
