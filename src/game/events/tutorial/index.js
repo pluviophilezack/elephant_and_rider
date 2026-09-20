@@ -135,6 +135,7 @@ export default {
 
         // flag for monkey
         this.wear_glasses = false;
+        this.easter_egg_triggered = false;
         this.turns_monkey = 0;
 
         if (!scene.sharedState.rain){
@@ -160,16 +161,6 @@ export default {
                 this.startConversationMonkey(scene);
             }
         })
-
-        // // 確認眼鏡是否還在猴子臉上
-        // scene.input.keyboard.on('keydown-SPACE', () =>{
-        //     if (this.glasses && this.glasses.x === 1104 && this.glasses.y === 802) {
-        //         return;
-        //     } else if (scene.sharedState.wand_unlocked){
-        //         this.startConversationMonkeyEasterEgg(scene);
-        //     }
-
-        // })
 
         // 自言自語路段
         
@@ -327,6 +318,23 @@ export default {
         this.apple_on_tree_1 = scene.physics.add.sprite(1774, 52, 'apple_with_leaf').setScale(0.3).setAngle(-30);
         scene.items.push(this.apple_on_tree_1);
 
+        // sign
+        this.sign_riverbed = scene.physics.add.sprite(290, 2373, 'sign_brown');
+        scene.physics.add.collider(this.playerSprite,this.sign_riverbed);
+        this.sign_riverbed.body.setImmovable(true);
+        const offsetY = 0; // Adjust vertical distance above the sign as needed                                                                                          
+        this.sign_riverbed_text = scene.add.text(                                                                                                                         
+            this.sign_riverbed.x,                                                                                                                                         
+            this.sign_riverbed.y - 40,
+            '危險！\n\n河床深',                                                                                                                                             
+            {                                                                                                                                                             
+                fontSize: '26px',                                                                                                                                         
+                color: '#ffffff',                                                                                                                                         
+                fontFamily: 'naikaifont',                                                                                                                                 
+                padding: { x: 8, y: 4 }                                                                                                                                   
+            }
+        ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
+
     },
 
     // 縮放鏡頭function      
@@ -416,11 +424,17 @@ export default {
     },
 
     startConversationMonkeyEasterEgg(scene) {     
-        if (this.isConversing) return;
+        if (this.isConversing || this.easter_egg_triggered) {
+            return;
+        }
+        this.isConversing = true;
+        this.easter_egg_triggered = true;
         DialogueSystem.show(scene, [
             '我看不到了⋯⋯',
             '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
-        ])
+        ], () => {
+            this.isConversing = false;
+        })
         this.turns_monkey++;
     },
     
@@ -428,8 +442,8 @@ export default {
         if (this.isConversing) return;
         if (this.isGetRainStone){
             DialogueSystem.show(scene, [
-                '（正確的選擇⋯⋯）', // 改成自動推進對話
-                '（什麼才是合乎道德的選擇？）',
+                '（木堆太高了，我們過不去）',
+                '（魔法樹枝派上用場了）' // 改成自動推進對話
             ])
         }else{
             DialogueSystem.show(scene, [
@@ -556,7 +570,12 @@ export default {
         // Glasses Logic
         if (scene.wandController.heldItem === this.glasses) {
             const playerSprite = scene.playerController.sprite;
+            this.wear_glasses = false;
             
+            if (scene.sharedState.wand_unlocked) {
+                this.startConversationMonkeyEasterEgg(scene);
+            }
+
             // Check distance between player and monkey
             const distance = Phaser.Math.Distance.Between(
                 playerSprite.x, playerSprite.y,
@@ -567,6 +586,7 @@ export default {
             if (distance <= this.CONVERSATION_DISTANCE) {
                 // 1. Set the flag to true (setting both names to be safe)
                 this.wear_glasses = true;
+                this.easter_egg_triggered = false;
 
                 // 2. Remove the held item from the player's trunk
                 scene.wandController.heldItem = null;
@@ -580,7 +600,7 @@ export default {
         }
 
         // rainStone Logic
-        if (scene.wandController.heldItem === this.rainStone) {
+        if (scene.wandController.heldItem === this.rainStone && this.wear_glasses) {
             const playerSprite = scene.playerController.sprite;
             
             // Check distance between player and monkey
