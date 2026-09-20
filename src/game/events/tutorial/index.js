@@ -105,10 +105,19 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1635, 220, 'young_elephant').setScale(0.4).setDepth(10); 
+        this.giraffe = scene.physics.add.sprite(1690, 175, 'giraffe').setScale(0.6).setDepth(10).setFlipX(true); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
+
+        scene.tweens.add({
+            targets: this.giraffe,
+            angle: {start: 0, from: -4, to: 3},
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            duration: 800,
+            repeat: -1
+        })
 
         // 開啟對話
         scene.input.keyboard.on('keydown-SPACE', () => {
@@ -177,8 +186,6 @@ export default {
             this.startConversationRider();
             triggerZone.destroy();
         }); 
-
-
         }
 
         // Woodpile_04
