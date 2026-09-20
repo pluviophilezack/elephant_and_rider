@@ -26,7 +26,7 @@ export default {
             ],
             // 第二條獨立折線
             [
-                { x: 1794, y: 543 },
+                { x: 1949, y: 450 },
                 { x: 1644, y: 713 },
                 { x: 1576, y: 808 },
                 { x: 1538, y: 886 },
@@ -60,12 +60,12 @@ export default {
         // ==========================================================
 
 
-
-
         // Bush compound
         scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
         scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+
+        // 根據主角在線段的左側或右側，設定與bush compound圖層
 
 
         // Floating apple
@@ -105,7 +105,7 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1690, 175, 'giraffe').setScale(0.6).setDepth(10).setFlipX(true); 
+        this.giraffe = scene.physics.add.sprite(1690, 175, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
@@ -439,6 +439,7 @@ export default {
     },
     
     update(scene) {
+
         // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
         // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
         const isDevSprinting = scene.devToolsManager?.isDevMode && scene.devToolsManager?.sprintKey?.isDown;
