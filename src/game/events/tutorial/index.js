@@ -63,9 +63,9 @@ export default {
 
 
         // Bush compound
-        scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(30);
+        scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
-        scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(30);
+        scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
 
 
         // Floating apple
@@ -173,26 +173,26 @@ export default {
         }
 
         // Woodpile_04
-        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04').setDepth(50); 
+        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04').setDepth(105); 
         this.woodpile04.body.setImmovable(true);
         this.woodpile04.held = false;
         scene.registerAsset(this.woodpile04);
         this.woodpile04Collider = scene.physics.add.collider(this.playerSprite, this.woodpile04);
 
         // Woodpile_03
-        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03').setDepth(50); 
+        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03').setDepth(105); 
         this.woodpile03.body.setImmovable(true);
         this.woodpile03.held = false;
         scene.registerAsset(this.woodpile03);
 
         // Woodpile_02
-        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02').setDepth(50); 
+        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02').setDepth(105); 
         this.woodpile02.body.setImmovable(true);
         this.woodpile02.held = false;
         scene.registerAsset(this.woodpile02);
 
         // Woodpile_01
-        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01').setDepth(50); 
+        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01').setDepth(105); 
         this.woodpile01.body.setImmovable(true);
         this.woodpile01.held = false;
         scene.registerAsset(this.woodpile01);
@@ -614,8 +614,6 @@ export default {
                     if (nextWood && !scene.items.includes(nextWood)){
                         scene.items.push(nextWood);
                     }
-                    this.woodpiles[i].setDepth(3);
-                    
                 }
 
 
