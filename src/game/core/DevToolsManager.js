@@ -54,6 +54,7 @@ export class DevToolsManager {
         
         // 畫出那筆的動作
         this.cross.strokePath();
+        this.cross.setDepth(9998);
 
         this.cross.setVisible(this.isDevMode);
     }
@@ -70,6 +71,7 @@ export class DevToolsManager {
         }
         this.hudText = this.scene.add.text(860, 10, '', styleObject)
         this.hudText.setScrollFactor(0);
+        this.hudText.setDepth(9999);
         this.hudText.setVisible(this.isDevMode);
     }
 

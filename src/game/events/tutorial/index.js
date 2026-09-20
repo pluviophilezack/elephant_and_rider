@@ -15,6 +15,59 @@ export default {
         this.isConversing = false;
         this.isGetRainStone = false;
 
+        // ====== 折線邊界群組（可包含多條獨立分開的折線） ======
+        this.roadPolylines = [
+            // 第一條折線
+            [
+                { x: 252, y: 136 },
+                { x: 782, y: 227 },
+                { x: 1025, y: 318 },
+                { x: 1223, y: 460 }
+            ],
+            // 第二條獨立折線
+            [
+                { x: 1794, y: 543 },
+                { x: 1644, y: 713 },
+                { x: 1576, y: 808 },
+                { x: 1538, y: 886 },
+                { x: 1493, y: 988 },
+                { x: 1417, y: 1094 },
+                { x: 1135, y: 1254 },
+                { x: 889, y: 1413 }
+            ]
+        ];
+
+        // 根據所有折線頂點串聯成線段放入碰撞池
+        this.boundaryLines = [];
+        this.roadPolylines.forEach(polyline => {
+            for (let i = 0; i < polyline.length - 1; i++) {
+                const p1 = polyline[i];
+                const p2 = polyline[i + 1];
+                this.boundaryLines.push(new Phaser.Geom.Line(p1.x, p1.y, p2.x, p2.y));
+            }
+        });
+
+        this.lastSafeX = this.playerSprite.x;
+        this.lastSafeY = this.playerSprite.y;
+
+        // [除錯用] 繪製所有獨立折線紅色線條，座標確認無誤後可將 visible 設為 false
+        this.roadDebugGraphics = scene.add.graphics().setDepth(999);
+        this.roadDebugGraphics.lineStyle(3, 0xff0000, 0.9);
+        this.boundaryLines.forEach(line => {
+            this.roadDebugGraphics.lineBetween(line.x1, line.y1, line.x2, line.y2);
+        });
+        this.roadDebugGraphics.setVisible(false);
+        // ==========================================================
+
+
+
+
+        // Bush compound
+        scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
+        scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
+        scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+
+
         // Floating apple
         this.puddle = scene.add.sprite(80, 160, 'puddle');
         scene.registerAsset(this.puddle);
@@ -129,26 +182,26 @@ export default {
         }
 
         // Woodpile_04
-        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04').setDepth(50); 
+        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04').setDepth(105); 
         this.woodpile04.body.setImmovable(true);
         this.woodpile04.held = false;
         scene.registerAsset(this.woodpile04);
         this.woodpile04Collider = scene.physics.add.collider(this.playerSprite, this.woodpile04);
 
         // Woodpile_03
-        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03').setDepth(50); 
+        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03').setDepth(105); 
         this.woodpile03.body.setImmovable(true);
         this.woodpile03.held = false;
         scene.registerAsset(this.woodpile03);
 
         // Woodpile_02
-        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02').setDepth(50); 
+        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02').setDepth(105); 
         this.woodpile02.body.setImmovable(true);
         this.woodpile02.held = false;
         scene.registerAsset(this.woodpile02);
 
         // Woodpile_01
-        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01').setDepth(50); 
+        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01').setDepth(105); 
         this.woodpile01.body.setImmovable(true);
         this.woodpile01.held = false;
         scene.registerAsset(this.woodpile01);
@@ -188,7 +241,7 @@ export default {
         {x:1851, y: 139},
         {x:1777, y: 189},
         // the other side of footpath
-        { x: 1897, y: 469 },
+        { x: 1850, y: 500 },
         { x: 1993, y: 412 },
         { x: 2069, y: 403 },
         { x: 2144, y: 398 },
@@ -203,43 +256,32 @@ export default {
         { x: 105, y: 251 },
         { x: 170, y: 228 },
         { x: 242, y: 203 },
-        { x: 280, y: 132 },
         { x: 201, y: 101 },
-        { x: 122, y: 83 },
-        { x: 54, y: 50 },
         { x: 28, y: 350 },
         { x: 114, y: 321 },
         { x: 200, y: 306 },
-        { x: 269, y: 268 },
 
         // Right side of road
-        { x: 1687, y: 195 },
-        { x: 1619, y: 157 },
         { x: 1554, y: 127 },
-        { x: 1485, y: 87 },
-        { x: 1416, y: 50 },
-        { x: 1353, y: 13 },
+        { x: 1435, y: 80 , scale: 0.85},
+        { x: 1370, y: 30 },
 
         // Right side of road (past footpath)
-        { x: 560, y: 1790 },
-        { x: 641, y: 1681 },
-        { x: 773, y: 1598 },
-        { x: 881, y: 1534 },
-        { x: 1062, y: 1427 },
-        { x: 1205, y: 1329 },
-        { x: 1340, y: 1251 },
-        { x: 1497, y: 1132 },
-        { x: 1550, y: 1017 },
-        { x: 1596, y: 895 },
-        { x: 1676, y: 805 },
-        { x: 1750, y: 735 },
-        { x: 1829, y: 664 },
-        { x: 1880, y: 570 },
+        { x: 570, y: 1815 },
+        { x: 687, y: 1588 },
+        { x: 750, y: 1520 },
+        { x: 589, y: 1730},
+        { x: 628, y: 1655 },
+        { x: 815, y: 1450 },
+ 
         {x: 590, y: 1897},
 
         // Surrounded rock bushes
         {x: 2500, y: 160, scale: 0.8},
-        {x: 2510, y: 250, scale: 0.8}
+        {x: 2510, y: 250, scale: 0.8},
+        // 右側道路的間隔bush
+        {x: 1466, y: 1034, scale: 0.8}
+
 
         ];  
         this.hardBushes = hardBushPositions.map(({x, y, scale})=> {
@@ -390,6 +432,91 @@ export default {
     },
     
     update(scene) {
+        // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
+        // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
+        const isDevSprinting = scene.devToolsManager?.isDevMode && scene.devToolsManager?.sprintKey?.isDown;
+
+        if (this.boundaryLines && this.boundaryLines.length > 0 && this.playerSprite && this.playerSprite.body) {
+            const player = this.playerSprite;
+            const body = player.body;
+
+            if (isDevSprinting) {
+                // 開發者模式穿越時，持續更新安全位置，避免放開 Shift 瞬間被拉回
+                this.lastSafeX = player.x;
+                this.lastSafeY = player.y;
+            } else {
+                // 輔助函式：判斷主角在 (testPlayerX, testPlayerY) 時其 body 是否與任一邊界折線相交
+            const bodyCollidesWithBoundary = (testPlayerX, testPlayerY) => {
+                const bodyOffsetX = body.x - player.x;
+                const bodyOffsetY = body.y - player.y;
+                const boxX = testPlayerX + bodyOffsetX;
+                const boxY = testPlayerY + bodyOffsetY;
+                const bodyRect = new Phaser.Geom.Rectangle(boxX, boxY, body.width, body.height);
+
+                for (let i = 0; i < this.boundaryLines.length; i++) {
+                    const line = this.boundaryLines[i];
+                    if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // 1. 預測下一影格（約 1/60 秒）的位移量
+            const dt = 1 / 60;
+            const predictDistX = body.velocity.x * dt;
+            const predictDistY = body.velocity.y * dt;
+
+            // 2. 檢測 X 軸移動：
+            if (predictDistX !== 0) {
+                const nextCollides = bodyCollidesWithBoundary(player.x + predictDistX, player.y);
+                const currentCollides = bodyCollidesWithBoundary(player.x, player.y);
+
+                // 如果當前沒碰但下一步會碰，或者往該方向移動會更嚴重，則阻擋 X
+                if (nextCollides && (!currentCollides || bodyCollidesWithBoundary(player.x + Math.sign(predictDistX) * 2, player.y))) {
+                    // 二分逼近法：往前貼近，但保留至少 1.5px 緩衝區避免黏死
+                    let step = predictDistX;
+                    while (Math.abs(step) > 1.5) {
+                        step *= 0.5;
+                        if (!bodyCollidesWithBoundary(player.x + step, player.y)) {
+                            player.x += step;
+                        }
+                    }
+                    body.velocity.x = 0; // 截斷該方向速度
+                }
+            }
+
+            // 3. 檢測 Y 軸移動：
+            if (predictDistY !== 0) {
+                const nextCollides = bodyCollidesWithBoundary(player.x, player.y + predictDistY);
+                const currentCollides = bodyCollidesWithBoundary(player.x, player.y);
+
+                if (nextCollides && (!currentCollides || bodyCollidesWithBoundary(player.x, player.y + Math.sign(predictDistY) * 2))) {
+                    let step = predictDistY;
+                    while (Math.abs(step) > 1.5) {
+                        step *= 0.5;
+                        if (!bodyCollidesWithBoundary(player.x, player.y + step)) {
+                            player.y += step;
+                        }
+                    }
+                    body.velocity.y = 0; // 截斷該方向速度
+                }
+            }
+
+            // 4. 安全保護：只有在持續卡入內部時才回退，且不抹除速度，讓玩家可以按反方向走出來
+            if (bodyCollidesWithBoundary(player.x, player.y)) {
+                player.x = this.lastSafeX;
+                player.y = this.lastSafeY;
+            } else {
+                this.lastSafeX = player.x;
+                this.lastSafeY = player.y;
+            }
+            }
+        }
+        // ========================================================
+
         // Detect if the player picked up the apple
         if (scene.wandController.heldItem === this.apple_on_puddle) {
             // Stop the floating tweens completely            
@@ -501,7 +628,6 @@ export default {
                     if (nextWood && !scene.items.includes(nextWood)){
                         scene.items.push(nextWood);
                     }
-                    this.woodpiles[i].setDepth(3);
                 }
 
 
