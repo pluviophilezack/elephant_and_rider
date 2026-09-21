@@ -20,7 +20,7 @@ export class DevToolsManager {
      */
     constructor(scene, worldWidth, worldHeight) {
         // 參數設定
-        this.isDevMode = true;
+        this.isDevMode = false;
         this.isSprinting = false;
         this.sprintMultiplier = 3;
         this.baseMoveSpeed = null;
@@ -29,12 +29,27 @@ export class DevToolsManager {
         this.scene = scene;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
+        this.getWand(scene);
         this.initCrossLine();
-        this.initInputs();
+        this.initInputs(scene);
         this.initHUD();
     }
 
-    
+    // 方便開發，預設會直接獲得魔杖，如要測試tutorial關卡，應關閉devMode
+    getWand(scene){
+        if(!this.isDevMode){
+            return;
+        }
+        scene.wand_unlocked = true;
+    }
+
+    removeWand(scene){
+        if(this.isDevMode){
+            return;
+        }
+        scene.wand_unlocked = false;
+    }
+
     // 十字線
 
     initCrossLine() {
@@ -75,7 +90,7 @@ export class DevToolsManager {
         this.hudText.setVisible(this.isDevMode);
     }
 
-    initInputs() {
+    initInputs(scene) {
 
         // 測試鍵盤輸入鍵
         // this.scene.input.keyboard.on('keydown', (event) => {
@@ -90,7 +105,9 @@ export class DevToolsManager {
             this.isDevMode = !this.isDevMode;
             if (!this.isDevMode) {
                 this.stopSprint();
+                this.removeWand(scene);
             }
+            this.getWand(scene);
             console.log("isDevModeOpen: ", this.isDevMode);
             this.cross.setVisible(this.isDevMode);
             this.hudText.setVisible(this.isDevMode);
