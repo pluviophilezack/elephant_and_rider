@@ -10,7 +10,7 @@ export default {
     key: 'tutorial',
     setup(scene) {
         scene.items = scene.items || [];
-        this.CONVERSATION_DISTANCE = 100;
+        this.CONVERSATION_DISTANCE = 125;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
@@ -26,7 +26,7 @@ export default {
             ],
             // 第二條獨立折線
             [
-                { x: 1794, y: 543 },
+                { x: 1949, y: 450 },
                 { x: 1644, y: 713 },
                 { x: 1576, y: 808 },
                 { x: 1538, y: 886 },
@@ -60,12 +60,12 @@ export default {
         // ==========================================================
 
 
-
-
         // Bush compound
         scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
         scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+
+        // 根據主角在線段的左側或右側，設定與bush compound圖層
 
 
         // Floating apple
@@ -105,10 +105,19 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1652, 243, 'young_elephant').setScale(0.4).setDepth(10); // TODO 更換為giraffe texture
+        this.giraffe = scene.physics.add.sprite(1690, 175, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
+
+        scene.tweens.add({
+            targets: this.giraffe,
+            angle: {start: 0, from: -4, to: 3},
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            duration: 800,
+            repeat: -1
+        })
 
         // 開啟對話
         scene.input.keyboard.on('keydown-SPACE', () => {
@@ -126,6 +135,7 @@ export default {
 
         // flag for monkey
         this.wear_glasses = false;
+        this.easter_egg_triggered = false;
         this.turns_monkey = 0;
 
         if (!scene.sharedState.rain){
@@ -152,7 +162,6 @@ export default {
             }
         })
 
-
         // 自言自語路段
         
         
@@ -168,8 +177,6 @@ export default {
             this.startConversationRider();
             triggerZone.destroy();
         }); 
-
-
         }
 
         // Woodpile_04
@@ -196,24 +203,23 @@ export default {
         this.woodpile01.body.setImmovable(true);
         this.woodpile01.held = false;
         scene.registerAsset(this.woodpile01);
-        scene.items.push(this.woodpile01); 
 
         // Woodpile list
         this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
     
         // RainStone
 
-        this.rock = scene.physics.add.sprite(2600, 200, 'rock_rolling');
+        this.rock = scene.physics.add.sprite(2600, 140, 'rock_rolling').setScale(0.6);
         this.rock.body.setImmovable(true);
         scene.registerAsset(this.rock);
         scene.physics.add.collider(this.playerSprite, this.rock);
 
         
-        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone');
+        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone').setScale(0.28);
         scene.items.push(this.rainStone);
         scene.tweens.add({
             targets: this.rainStone,
-            y: {start: 85, from: 70, to: 100},
+            y: {start: 85, from: 75, to: 90},
             ease: "Linear",
             yoyo: true,
             duration: 4000,
@@ -312,6 +318,23 @@ export default {
         this.apple_on_tree_1 = scene.physics.add.sprite(1774, 52, 'apple_with_leaf').setScale(0.3).setAngle(-30);
         scene.items.push(this.apple_on_tree_1);
 
+        // sign
+        this.sign_riverbed = scene.physics.add.sprite(290, 2373, 'sign_brown');
+        scene.physics.add.collider(this.playerSprite,this.sign_riverbed);
+        this.sign_riverbed.body.setImmovable(true);
+        const offsetY = 0; // Adjust vertical distance above the sign as needed                                                                                          
+        this.sign_riverbed_text = scene.add.text(                                                                                                                         
+            this.sign_riverbed.x,                                                                                                                                         
+            this.sign_riverbed.y - 40,
+            '危險！\n\n河床深',                                                                                                                                             
+            {                                                                                                                                                             
+                fontSize: '26px',                                                                                                                                         
+                color: '#ffffff',                                                                                                                                         
+                fontFamily: 'naikaifont',                                                                                                                                 
+                padding: { x: 8, y: 4 }                                                                                                                                   
+            }
+        ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
+
     },
 
     // 縮放鏡頭function      
@@ -331,17 +354,12 @@ export default {
     startConversationGiraffe(scene) {
         if(this.isConversing) return;
         this.isConversing = true;
-        this.zoomInCamera(scene, ()=> {
             DialogueSystem.show(scene, [
             '我長得不夠高，',
             '吃不到樹上的蘋果⋯⋯'
             ], () => {
             this.isConversing = false;
-            this.zoomOutCamera(scene);
             })
-        });
-
-
     },
 
     startConversationMonkey(scene) {
@@ -349,7 +367,7 @@ export default {
         this.isConversing = true;
 
         if(this.turns_monkey === 0 ){
-            DialogueSystem.show(scene, [ // 改成自動推進對話
+            DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
                 '快過來',
                 '用空白鍵和我說說話'
@@ -397,10 +415,26 @@ export default {
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 this.isConversing = false;
+                scene.items.push(this.woodpile01);
             }) 
+           
         }
+        this.turns_monkey++;
+        
+    },
 
-    
+    startConversationMonkeyEasterEgg(scene) {     
+        if (this.isConversing || this.easter_egg_triggered) {
+            return;
+        }
+        this.isConversing = true;
+        this.easter_egg_triggered = true;
+        DialogueSystem.show(scene, [
+            '我看不到了⋯⋯',
+            '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
+        ], () => {
+            this.isConversing = false;
+        })
         this.turns_monkey++;
     },
     
@@ -408,8 +442,8 @@ export default {
         if (this.isConversing) return;
         if (this.isGetRainStone){
             DialogueSystem.show(scene, [
-                '（正確的選擇⋯⋯）', // 改成自動推進對話
-                '（什麼才是合乎道德的選擇？）',
+                '（木堆太高了，我們過不去）',
+                '（魔法樹枝派上用場了）' // 改成自動推進對話
             ])
         }else{
             DialogueSystem.show(scene, [
@@ -419,6 +453,7 @@ export default {
     },
     
     update(scene) {
+
         // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
         // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
         const isDevSprinting = scene.devToolsManager?.isDevMode && scene.devToolsManager?.sprintKey?.isDown;
@@ -522,8 +557,9 @@ export default {
             return;
         }
 
-        // 初始教學，自動開啟與monkey的對話
-        if(this.turns_monkey === 0 &&!this.isConversing){
+
+        // 自動開啟與monkey的對話: 初始教學＆搶眼鏡彩蛋
+        if(this.turns_monkey === 0){
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
@@ -534,7 +570,12 @@ export default {
         // Glasses Logic
         if (scene.wandController.heldItem === this.glasses) {
             const playerSprite = scene.playerController.sprite;
+            this.wear_glasses = false;
             
+            if (scene.sharedState.wand_unlocked) {
+                this.startConversationMonkeyEasterEgg(scene);
+            }
+
             // Check distance between player and monkey
             const distance = Phaser.Math.Distance.Between(
                 playerSprite.x, playerSprite.y,
@@ -545,6 +586,7 @@ export default {
             if (distance <= this.CONVERSATION_DISTANCE) {
                 // 1. Set the flag to true (setting both names to be safe)
                 this.wear_glasses = true;
+                this.easter_egg_triggered = false;
 
                 // 2. Remove the held item from the player's trunk
                 scene.wandController.heldItem = null;
@@ -558,7 +600,7 @@ export default {
         }
 
         // rainStone Logic
-        if (scene.wandController.heldItem === this.rainStone) {
+        if (scene.wandController.heldItem === this.rainStone && this.wear_glasses) {
             const playerSprite = scene.playerController.sprite;
             
             // Check distance between player and monkey
