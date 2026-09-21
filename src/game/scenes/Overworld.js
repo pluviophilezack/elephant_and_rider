@@ -146,14 +146,13 @@ export class Overworld extends Scene
         if (eventKey && this.sharedState.hasOwnProperty(eventKey)) {
             this.sharedState[eventKey] = true;
         }
-        this.hud.addRainStone(1);
-        if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
-            this.sharedState["rain"] = true;
-            this.isEndingTriggered = true;
-            this.time.delayedCall(800, () => {
+        this.hud.addRainStone(1, () => {
+            if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
+                this.sharedState["rain"] = true;
+                this.isEndingTriggered = true;
                 this.scene.start('Ending');
-            });
-        }
+            }
+        });
     }
 
     // 供事件模組呼叫：於add sprite後，將該sprite建立到遊戲系統中
@@ -212,6 +211,9 @@ export class Overworld extends Scene
         // 最後更新除錯工具，避免事件模組覆蓋 Dev Mode 的衝刺速度
         if (this.devToolsManager) {
             this.devToolsManager.update();
+        }
+        if (this.hud) {
+            this.hud.update();
         }
     }
 }

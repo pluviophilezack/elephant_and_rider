@@ -7,6 +7,7 @@ export class ChoicePrompt {
         this.scene = scene;
         this.options = options;
         this.selectedIndex = 0;
+        this.inputEnabled = true;
         this._isConfirmed = false;          //是否已選擇選項
         this.onConfirm = onConfirm;         //儲存外部回調
 
@@ -29,7 +30,7 @@ export class ChoicePrompt {
             ////滑鼠點擊選擇
             text.on('pointerdown', () => { 
                 //if (event) event.preventDefault();////阻止瀏覽器預設行為（文字選取、拖曳等）
-                if (this._isConfirmed) return;
+                if (!this.inputEnabled || this._isConfirmed) return;
 
                 this.selectedIndex = i;
                 this._refreshHighlight();
@@ -38,7 +39,7 @@ export class ChoicePrompt {
             });
             ////滑鼠移動選取
             text.on('pointerover', () => {
-                if (this._isConfirmed) return;
+                if (!this.inputEnabled || this._isConfirmed) return;
                 this.selectedIndex = i; ////選取移動到的選項
                 this._refreshHighlight();
             });
@@ -89,7 +90,12 @@ export class ChoicePrompt {
         this._refreshHighlight();
     }
 
+    setInputEnabled(enabled) {
+        this.inputEnabled = enabled;
+    }
+
     moveCursor(direction) {
+        if (!this.inputEnabled) return;
         this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + direction, 0, this.options.length);
         this._refreshHighlight();
     }
@@ -111,7 +117,7 @@ export class ChoicePrompt {
 
     ////
     _confirmChoice() {
-        if (this._isConfirmed) return; 
+        if (!this.inputEnabled || this._isConfirmed) return;
         this._isConfirmed = true;
 
         const chosen = this.getSelected();

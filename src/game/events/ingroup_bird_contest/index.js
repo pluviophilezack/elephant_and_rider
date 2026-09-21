@@ -11,6 +11,7 @@ const NOTE_SCALE = 0.72;
 const FLOCK_DELIVERY_RADIUS = 105;
 const FIRST_GRAB_ESCAPE_DELAY_MS = 1000;
 const FIRST_GRAB_ESCAPE_MS = 320;
+const CHOICE_INPUT_LOCK_MS = 500;
 const ROCK_THROW_COOLDOWN_MS = 1500;
 const ROCK_THROW_COUNT = 4;
 const ROCK_THROW_STAGGER_MS = 170;
@@ -26,7 +27,8 @@ const CHASE_SPRINT_MS = 14000;
 const AREA = {
     flockCenter: { x: 2040, y: 1240 },
     loneStart: { x: 690, y: 850 },
-    firstEscapeSpot: { x: 525, y: 900 },
+    firstEscapeLeftSpot: { x: 525, y: 900 },
+    firstEscapeRightSpot: { x: 855, y: 900 },
     chaseBounds: new Phaser.Geom.Rectangle(180, 160, 1700, 1160)
 };
 
@@ -50,6 +52,7 @@ export default {
         this.hasShownReleaseReaction = false;
         this.isFlockAngry = false;
         this.hasTriggeredFirstGrab = false;
+        this.canRepeatFlockRequest = false;
         this.controlsLocked = false;
         this.wasHoldingLoneBird = false;
         this.nextRockThrowAt = 0;
@@ -84,6 +87,8 @@ export default {
             this._freezeControls(scene);
         }
 
+        this._updateFlockReminderAvailability(scene);
+        this._beginLoneBirdSearchAfterInputRelease(scene);
         this._syncWandGrabFallback(scene);
         this._updateLoneBirdGrabState(scene);
         this._updateCapture(scene);
@@ -179,10 +184,19 @@ export default {
 
     _handleFlockOverlap(scene) {
         if (this.state === 'waiting_flock') {
+            this.canRepeatFlockRequest = false;
             this.state = 'flock_dialogue';
             this._showDialogue(scene, dialogue.flock_request_lines, () => {
-                this.state = 'finding_lone';
-                this._addToItems(scene, this.loneBird);
+                this.state = 'waiting_lone_search_input';
+            });
+            return;
+        }
+
+        if (this.state === 'finding_lone' && this.canRepeatFlockRequest && !this.hasTriggeredFirstGrab) {
+            this.canRepeatFlockRequest = false;
+            this.state = 'flock_reminder_dialogue';
+            this._showDialogue(scene, dialogue.flock_request_lines, () => {
+                this.state = 'waiting_lone_search_input';
             });
             return;
         }
@@ -199,14 +213,38 @@ export default {
         }
     },
 
+    _updateFlockReminderAvailability(scene) {
+        if (this.state !== 'finding_lone' || this.canRepeatFlockRequest) return;
+
+        const playerBounds = scene.player?.getBounds();
+        const triggerBounds = this.flockTrigger?.getBounds();
+        if (!playerBounds || !triggerBounds) return;
+
+        if (!Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, triggerBounds)) {
+            this.canRepeatFlockRequest = true;
+        }
+    },
+
+    _beginLoneBirdSearchAfterInputRelease(scene) {
+        if (this.state !== 'waiting_lone_search_input') return;
+        if (scene.wandController?.cursors?.space?.isDown) return;
+
+        this.state = 'finding_lone';
+        this._addToItems(scene, this.loneBird);
+    },
+
     _syncWandGrabFallback(scene) {
         if (!['finding_lone', 'capture_chase'].includes(this.state)) return;
         if (!scene.wandController || scene.wandController.heldItem || !this.loneBird?.active) return;
         if (!scene.wandController.cursors?.space?.isDown) return;
+        if (scene.wandController.currentBodyLength <= 10) return;
+
+        const { tipX, tipY } = scene.wandController;
+        if (!Number.isFinite(tipX) || !Number.isFinite(tipY)) return;
 
         const distanceToTip = Phaser.Math.Distance.Between(
-            scene.wandController.tipX,
-            scene.wandController.tipY,
+            tipX,
+            tipY,
             this.loneBird.x,
             this.loneBird.y
         );
@@ -229,6 +267,7 @@ export default {
             if (this.state === 'finding_lone' && !this.hasTriggeredFirstGrab) {
                 this.hasTriggeredFirstGrab = true;
                 this.state = 'first_grab_hold';
+                this._setControlsLocked(scene, true);
                 this._removeFromItems(scene, this.loneBird);
                 scene.time.delayedCall(FIRST_GRAB_ESCAPE_DELAY_MS, () => {
                     this._escapeFirstGrab(scene);
@@ -248,11 +287,15 @@ export default {
         this._resetMovementInput(scene);
         scene.tweens.killTweensOf(this.loneBird);
         this.state = 'first_grab_escape';
+        const player = scene.playerController?.getPosition() ?? scene.player;
+        const escapeSpot = player.x >= AREA.loneStart.x
+            ? AREA.firstEscapeLeftSpot
+            : AREA.firstEscapeRightSpot;
 
         scene.tweens.add({
             targets: this.loneBird,
-            x: AREA.firstEscapeSpot.x,
-            y: AREA.firstEscapeSpot.y,
+            x: escapeSpot.x,
+            y: escapeSpot.y,
             angle: Phaser.Math.Between(-10, 10),
             duration: FIRST_GRAB_ESCAPE_MS,
             ease: 'Back.easeOut',
@@ -260,7 +303,7 @@ export default {
                 this.state = 'lone_dialogue';
                 this._showDialogue(scene, dialogue.lone_bird_lines, () => {
                     this._promptChoice(scene);
-                });
+                }, { keepControlsLocked: true });
             }
         });
     },
@@ -270,20 +313,24 @@ export default {
         this._setControlsLocked(scene, true);
         ChoiceSystem.prompt(scene, dialogue.choice_options, (choiceKey) => {
             scene.time.delayedCall(0, () => {
+                if (scene.playerController) {
+                    scene.playerController.enabled = true;
+                }
+
                 if (choiceKey === 'release') {
                     this._releaseLoneBird(scene);
                 } else {
                     this._startCapture(scene);
                 }
             });
-        });
+        }, { inputDelayMs: CHOICE_INPUT_LOCK_MS });
     },
 
     _releaseLoneBird(scene) {
         this.state = 'released';
         MoralState.add('ingroup', -1);
         scene.tweens.killTweensOf(this.loneBird);
-        this._awardRainStone(scene, this.loneBird.x, this.loneBird.y);
+        this._awardRainStone(scene);
 
         this._showDialogue(scene, dialogue.release_result_lines);
 
@@ -413,27 +460,13 @@ export default {
             repeat: 5
         });
 
-        this._awardRainStone(scene, AREA.flockCenter.x, AREA.flockCenter.y - 40);
+        this._awardRainStone(scene);
         this._showDialogue(scene, dialogue.capture_success_lines);
     },
 
-    _awardRainStone(scene, x, y) {
+    _awardRainStone(scene) {
         if (this.hasAwardedRainStone) return;
         this.hasAwardedRainStone = true;
-
-        const stone = scene.add.image(x, y - 44, 'rain_stone')
-            .setScale(0.28)
-            .setDepth(40);
-        scene.registerAsset(stone, 'ingroup_reward_rain_stone');
-
-        scene.tweens.add({
-            targets: stone,
-            y: stone.y - 36,
-            alpha: 0,
-            duration: 900,
-            ease: 'Sine.easeInOut',
-            onComplete: () => stone.destroy()
-        });
 
         scene.giveRainStone(this.key);
     },
@@ -670,10 +703,10 @@ export default {
         }
 
         scene.wandController?.wandBody?.setVisible(false);
-        scene.wandController?.wandTip?.setVisible(false);
+        scene.wandController?.wandTip?.setVisible(true);
     },
 
-    _showDialogue(scene, moves, onComplete) {
+    _showDialogue(scene, moves, onComplete, { keepControlsLocked = false } = {}) {
         const lines = moves.map((move) => {
             if (typeof move === 'string') return move;
             return move.text;
@@ -681,7 +714,9 @@ export default {
 
         this._setControlsLocked(scene, true);
         DialogueSystem.show(scene, lines, () => {
-            this._setControlsLocked(scene, false);
+            if (!keepControlsLocked) {
+                this._setControlsLocked(scene, false);
+            }
             if (onComplete) onComplete();
         });
     }
