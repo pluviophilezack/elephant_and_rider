@@ -8,6 +8,7 @@ export class WandController {
         this.heldItem = null;
         this.maxReachDistance = 150;
         this.currentBodyLength = 0;
+        this.forceHiddenUntil = 0;
 
         this.pointer = scene.input.activePointer;
         this.cursors = scene.input.keyboard.createCursorKeys();
@@ -32,7 +33,10 @@ export class WandController {
         if (this.cursors.space) {
             this.cursors.space.on('down', () => {
                 const isUnlocked = this.checkIsWandUnlocked();
-                const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
+                const isForceHidden = this.scene.time.now < this.forceHiddenUntil;
+                const isLocked = isForceHidden
+                    || this.scene.isDialogueActive
+                    || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
                 if (isLocked) return;
 
@@ -72,6 +76,16 @@ export class WandController {
         return 10;
     }
 
+    hideFor(durationMs) {
+        this.forceHiddenUntil = Math.max(
+            this.forceHiddenUntil,
+            this.scene.time.now + durationMs
+        );
+        this.currentBodyLength = 0;
+        this.wandBody.setVisible(false);
+        this.wandTip.setVisible(false);
+    }
+
     update() {
         const playerPos = this.player.getPosition();
         const pointerPos = { x: this.pointer.worldX, y: this.pointer.worldY };
@@ -87,7 +101,10 @@ export class WandController {
         const handY = playerPos.y + Math.sin(angle + Math.PI / 2) * handSideOffset + Math.sin(angle) * handHeightOffset;
 
         const hasUnlockedWand = this.checkIsWandUnlocked();
-        const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
+        const isForceHidden = this.scene.time.now < this.forceHiddenUntil;
+        const isLocked = isForceHidden
+            || this.scene.isDialogueActive
+            || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
         // -------------------------------------------------------------
         // 模式 A：未解鎖魔杖 (無魔杖狀態，走動與手持物品跟隨)
@@ -107,7 +124,7 @@ export class WandController {
         // -------------------------------------------------------------
         // 模式 B：已解鎖魔杖 (伸長魔杖與判定)
         // -------------------------------------------------------------
-        this.wandTip.setVisible(true);
+        this.wandTip.setVisible(!isForceHidden);
 
         // 按住空白鍵伸長魔杖；若未按住則縮回 (長度為 0)
         if (!isLocked && this.cursors.space && this.cursors.space.isDown) {

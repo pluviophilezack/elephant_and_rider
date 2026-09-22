@@ -12,48 +12,59 @@ const EVENT_CREDITS = [
         title: '教學階段',
         texture: 'monkey_elder_pleased',
         scale: 0.58,
-        x: 150,
+        x: 170,
         y: 205,
-        designer: '待補',
-        developer: '待補'
+        designer: 'Zack Yu',
+        developer: 'Zack Yu'
     },
     {
         title: '歌唱比賽的團隊精神',
         texture: 'bird_member_01',
         scale: 0.7,
-        x: 510,
-        y: 180,
-        designer: '待補',
+        x: 512,
+        y: 230,
+        designer: 'Zack Yu',
         developer: 'Ranger'
     },
     {
         title: '喝水事件',
         texture: 'antelope_stand',
         scale: 0.5,
-        x: 865,
+        x: 854,
         y: 210,
-        designer: '待補',
-        developer: '待補'
+        designer: 'yujueq',
+        developer: 'yujueq'
     },
     {
         title: '水域廢墟事件：被污染的聖物',
         texture: 'guard_saved',
         scale: 0.42,
-        x: 330,
+        x: 170,
         y: 590,
         designer: 'Ranger',
-        developer: '待補'
+        developer: 'Yuchi'
     },
     {
         title: '象群事件（跟隨事件＋王權事件）',
         texture: 'old_elephant_king',
         scale: 0.43,
-        x: 690,
-        y: 600,
-        designer: '待補',
-        developer: '待補'
+        x: 512,
+        y: 580,
+        designer: 'Yuchi',
+        developer: 'Andy'
     }
 ];
+
+const ART_CREDIT = {
+    role: 'art',
+    texture: 'rider',
+    scale: 0.4,
+    x: 854,
+    y: 580,
+    artist: 'ingrid'
+};
+
+const CREDITS = [...EVENT_CREDITS, ART_CREDIT];
 
 export class EventCredits extends Scene
 {
@@ -67,14 +78,14 @@ export class EventCredits extends Scene
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.cameras.main.setBackgroundColor(0x91b86a);
+        this.cameras.main.setBackgroundColor(0xeeb92e);
         this.physics.world.setBounds(0, 0, width, height);
-        this.createGreenField(width, height);
+        this.createSavannaBackdrop(width, height);
 
         this.playerController = new PlayerController(this, width / 2, height / 2);
         this.playerController.speed = 220;
 
-        this.creditActors = EVENT_CREDITS.map((credit, index) => {
+        this.creditActors = CREDITS.map((credit, index) => {
             const actor = this.add.sprite(credit.x, credit.y, credit.texture)
                 .setScale(credit.scale)
                 .setDepth(10);
@@ -95,9 +106,9 @@ export class EventCredits extends Scene
         this.createBackControl();
     }
 
-    createGreenField (width, height)
+    createSavannaBackdrop (width, height)
     {
-        this.add.rectangle(width / 2, height / 2, width, height, 0x91b86a)
+        this.add.rectangle(width / 2, height / 2, width, height, 0xeeb92e)
             .setDepth(-30);
 
         const decorations = [
@@ -179,10 +190,14 @@ export class EventCredits extends Scene
             return;
         }
 
-        this.creditsText.setText([
-            nearestCredit.title,
-            `關卡設計：${nearestCredit.designer}　程式實作：${nearestCredit.developer}`
-        ]);
+        if (nearestCredit.role === 'art') {
+            this.creditsText.setText(`美術設計：${nearestCredit.artist}`);
+        } else {
+            this.creditsText.setText([
+                nearestCredit.title,
+                `關卡設計：${nearestCredit.designer}　程式實作：${nearestCredit.developer}`
+            ]);
+        }
         this.creditsPanel.setVisible(true);
     }
 }
