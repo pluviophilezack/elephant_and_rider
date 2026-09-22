@@ -14,7 +14,7 @@ export class PlayerController {
         // 加入sprite
         scene.player = this.sprite.setScale(0.4); 
         // 設定圖層順序，避免被底圖覆蓋
-        this.sprite.setDepth(15);
+        this.sprite.setDepth(15);//0921
 
         //碰撞範圍
         const rawWidth = this.sprite.body.width;
