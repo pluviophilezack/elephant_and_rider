@@ -6,6 +6,9 @@
  */
 
 
+import { THEME_FONT } from './theme';
+import { installRiverTravel } from './RiverTravelModule';
+
 export class DevToolsManager {
     /**
      * 步驟 1: 宣告建構子與變數
@@ -33,6 +36,7 @@ export class DevToolsManager {
         this.initCrossLine();
         this.initInputs(scene);
         this.initHUD();
+        installRiverTravel(scene);
     }
 
     // 方便開發，預設會直接獲得魔杖，如要測試tutorial關卡，應關閉devMode
@@ -78,13 +82,13 @@ export class DevToolsManager {
         
         const styleObject = 
         {
-            fontFamily: 'monospace',
+            fontFamily: THEME_FONT,
             fontSize: '20px',
             color: '#3c00ff',
             backgroundColor: '#e2bdff',
             padding: { x: 8, y: 6 }
         }
-        this.hudText = this.scene.add.text(860, 10, '', styleObject)
+        this.hudText = this.scene.add.text(this.scene.scale.width - 16, 10, '', styleObject).setOrigin(1, 0);
         this.hudText.setScrollFactor(0);
         this.hudText.setDepth(9999);
         this.hudText.setVisible(this.isDevMode);
@@ -99,6 +103,10 @@ export class DevToolsManager {
 
         const toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
         this.sprintKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.decreaseStonesKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
+        this.increaseStonesKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F4);
+        this.decreaseStonesKey.on('down', () => this.adjustRainStones(-1));
+        this.increaseStonesKey.on('down', () => this.adjustRainStones(1));
 
         // Switch DevMode
         toggleKey.on('down', () => {
@@ -149,6 +157,13 @@ export class DevToolsManager {
                 navigator.clipboard.writeText(copyText);
             }
         })
+    }
+
+    adjustRainStones(amount) {
+        const hud = this.scene.hud;
+        if (!this.isDevMode || !hud || this.scene.time.now < hud.feedbackEndsAt) return;
+        // Set the test count directly: do not award an event or trigger the ending.
+        hud.setRainStoneCount(hud.rainStoneCount + amount);
     }
 
     startSprint() {
@@ -210,7 +225,7 @@ export class DevToolsManager {
         const worldPoint = pointerNow.positionToCamera(this.scene.cameras.main);
         const clickX = Math.round(worldPoint.x);
         const clickY = Math.round(worldPoint.y);
-        this.hudText.setText(`${clickX}, ${clickY}`);
+        this.hudText.setText(`${clickX}, ${clickY}\nF3：祈雨石 −1　F4：祈雨石 +1`);
         
     }
 }
