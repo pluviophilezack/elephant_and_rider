@@ -1,4 +1,3 @@
-import { THEME_FONT } from '../../core/theme';
 import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
@@ -331,7 +330,7 @@ export default {
             {                                                                                                                                                             
                 fontSize: '26px',                                                                                                                                         
                 color: '#ffffff',                                                                                                                                         
-                fontFamily: THEME_FONT,
+                fontFamily: 'naikaifont',                                                                                                                                 
                 padding: { x: 8, y: 4 }                                                                                                                                   
             }
         ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);

@@ -36,26 +36,23 @@ export default {
     this.currentForceX = -80;
     this.currentForceY = -45;
 
-    // The old altar (5400, 2800) was outside the 5161px map. Keep the ruins
-    // on the southern peninsula, reachable from the ferry's landing point.
-    this.pollutionOil = safeAddImage(scene, 4180, 2250, "pollution_oil", 1);
-    this.pollutionOil?.setScale(2.4, 1.6);
+    this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
     this.slowZone = createTriggerZone(scene, {
-      x: 4180,
-      y: 2250,
-      width: 650,
-      height: 300,
+      x: 4850,
+      y: 2675,
+      width: 1050,
+      height: 650,
     });
 
-    this.guard = safeAddSprite(scene, 4070, 2280, "guard_trapped", 2);
-    this.rockGuard = safeAddImage(scene, 4070, 2280, "rock_guard", 3);
+    this.guard = safeAddSprite(scene, 5000, 2800, "guard_trapped", 2);
+    this.rockGuard = safeAddImage(scene, 5000, 2800, "rock_guard", 3);
 
-    this.altar = safeAddImage(scene, 4370, 2220, "altar", 2);
-    this.lotusRelic = safeAddImage(scene, 4370, 2180, "lotus_relic_clean", 3);
+    this.altar = safeAddImage(scene, 5400, 2800, "altar", 2);
+    this.lotusRelic = safeAddImage(scene, 5400, 2760, "lotus_relic_clean", 3);
 
     const guardTrigger = createTriggerZone(scene, {
-      x: 4070,
-      y: 2280,
+      x: 5000,
+      y: 2800,
       width: 120,
       height: 120,
     });
@@ -110,8 +107,8 @@ export default {
     }
 
     const altarTrigger = createTriggerZone(scene, {
-      x: 4370,
-      y: 2220,
+      x: 5400,
+      y: 2800,
       width: 100,
       height: 100,
     });

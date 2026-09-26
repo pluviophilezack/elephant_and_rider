@@ -1,4 +1,3 @@
-import { THEME_FONT } from '../core/theme';
 import { Scene } from 'phaser';
 import { DialogueSystem } from '../core/DialogueSystem';
 
@@ -11,13 +10,13 @@ export class TestDialogueScene extends Scene {
         this.cameras.main.setBackgroundColor('#315d79');
 
         this.add.text(512, 120, 'Dialogue System Test', {
-            fontFamily: THEME_FONT,
+            fontFamily: 'Arial',
             fontSize: '42px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         this.add.text(512, 190, 'Click, Space, or Enter to advance.', {
-            fontFamily: THEME_FONT,
+            fontFamily: 'Arial',
             fontSize: '22px',
             color: '#ffffff'
         }).setOrigin(0.5);
@@ -38,7 +37,7 @@ export class TestDialogueScene extends Scene {
                 }
             ], () => {
                 this.add.text(512, 350, 'Dialogue completed!', {
-                    fontFamily: THEME_FONT,
+                    fontFamily: 'Arial',
                     fontSize: '30px',
                     color: '#ffe066'
                 }).setOrigin(0.5);

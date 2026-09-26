@@ -1,4 +1,3 @@
-import { THEME_FONT } from '../core/theme';
 // UI元件：事件分支選擇時顯示的左右選項與游標，供 ChoiceSystem 呼叫
 import * as Phaser from 'phaser';
 export class ChoicePrompt {
@@ -22,7 +21,7 @@ export class ChoicePrompt {
         this.optionTexts = options.map((option, i) => {
             const x = 512 + (i - (options.length - 1) / 2) * 320;////
             const text = scene.add.text(x, 600, option.label, {
-                fontFamily: THEME_FONT, //字形
+                fontFamily: 'naikaifont',//'Arial Black',  //字形
                 fontSize: 24, //大小
                 color: '#5c5a93', //顏色
                 align: 'center', //置中

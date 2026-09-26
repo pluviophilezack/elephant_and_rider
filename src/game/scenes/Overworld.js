@@ -6,8 +6,6 @@ import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
 import { HUD } from '../ui/HUD';
 import { DevToolsManager } from '../core/DevToolsManager';
-import { createTerrainCollision } from '../core/TerrainCollision';
-import { BoatTravel } from '../core/BoatTravel';
 import tutorial from '../events/tutorial';
 import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
@@ -49,15 +47,13 @@ export class Overworld extends Scene
         // ==========================================
         
         // 步驟 1: 動態讀取底圖尺寸
-        const img = this.textures.get('background_whole').getSourceImage();
+        const img = this.textures.get('background_01_plain').getSourceImage();
         const w = img.width;
         const h = img.height;
         
         // 計算物理世界總尺寸
-        // Use the actual stitched artwork so the boat camera cannot expose
-        // empty strips beyond the right/bottom edge of the map.
-        const worldWidth = w;
-        const worldHeight = h;
+        const worldWidth = w * 2;
+        const worldHeight = h * 2;
         
         // 拼接四張大地圖(放棄此做法，改一單一張大圖)
         // 語法提示：
@@ -74,13 +70,10 @@ export class Overworld extends Scene
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
-        this.terrainCollision = createTerrainCollision(this);
 
         // 判斷下雨與否，改變場景
-        let riverFlowing = false;
-        this.restoreRiverFlow = () => {
-            if (riverFlowing) return;
-            riverFlowing = true;
+        this.events.once('state:rain', isRain => {
+            if (!isRain) return;
 
             // 移除乾旱素材
             dry_flow.destroy();
@@ -97,10 +90,7 @@ export class Overworld extends Scene
                 waterSprite.setTexture(nextTexture);
                 }
             });
-        };
-        const onRain = isRain => { if (isRain) this.restoreRiverFlow(); };
-        this.events.on('state:rain', onRain);
-        this.events.once('shutdown', () => this.events.off('state:rain', onRain));
+        })
         
         // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
@@ -149,7 +139,6 @@ export class Overworld extends Scene
 
         // 建立開發者工具
         this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
-        this.boatTravel = new BoatTravel(this);
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
@@ -210,13 +199,6 @@ export class Overworld extends Scene
     }
 
     update () {
-        // Sailing owns movement/camera; event updates must not move the passenger
-        // or trigger dialogue/choices while the boat crosses their regions.
-        this.boatTravel?.update();
-        if (this.boatTravel?.isTravelling) {
-            this.hud?.update();
-            return;
-        }
         // 更新主角與魔杖控制邏輯
         if (this.playerController) {
             this.playerController.update();

@@ -7,6 +7,7 @@
 
 
 import { THEME_FONT } from './theme';
+import { installRiverTravel } from './RiverTravelModule';
 
 export class DevToolsManager {
     /**
@@ -35,6 +36,7 @@ export class DevToolsManager {
         this.initCrossLine();
         this.initInputs(scene);
         this.initHUD();
+        installRiverTravel(scene);
     }
 
     // 方便開發，預設會直接獲得魔杖，如要測試tutorial關卡，應關閉devMode

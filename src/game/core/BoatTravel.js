@@ -87,7 +87,8 @@ export class BoatTravel {
         player.body.enable = false;
         player.setVisible(false);
         scene.wandController?.hideFor(BOAT_TRIP_DURATION);
-        scene.restoreRiverFlow();
+        // Use the existing scene's one-shot river animation listener.
+        scene.events.emit('state:rain', true);
         const start = { x: player.x, y: player.y + player.displayHeight / 2 };
         this.passenger.setPosition(start.x, start.y).setVisible(true);
         scene.cameras.main.startFollow(this.passenger, true, 0.12, 0.12);
