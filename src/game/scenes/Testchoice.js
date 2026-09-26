@@ -1,3 +1,4 @@
+import { THEME_FONT } from '../core/theme';
 import * as Phaser from 'phaser';
 import { ChoiceSystem } from '../core/ChoiceSystem.js';
 
@@ -11,16 +12,16 @@ export class TestChoiceScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
 
-        // 背景與標題（使用粉圓字體）
+        // 背景與標題（使用統一字體）
         this.add.text(width/2, 60, '🌿 森林中的抉擇', {
-            fontFamily: 'Huninn',
+            fontFamily: THEME_FONT,
             fontSize: '42px',
             color: '#f7d794'
         }).setOrigin(0.5);
 
         // 故事敘述區（顯示劇情文字）
         this.storyText = this.add.text(width/2, 180, '', {
-            fontFamily: 'Huninn',
+            fontFamily: THEME_FONT,
             fontSize: '28px',
             color: '#f5f5f5',
             align: 'center',
@@ -29,7 +30,7 @@ export class TestChoiceScene extends Phaser.Scene {
 
         // 結果文字（顯示最終結局）
         this.resultText = this.add.text(width/2, 500, '', {
-            fontFamily: 'Huninn',
+            fontFamily: THEME_FONT,
             fontSize: '32px',
             color: '#ffdd44',
             align: 'center',
@@ -38,7 +39,7 @@ export class TestChoiceScene extends Phaser.Scene {
 
         // 提示操作
         this.add.text(width/2, height - 60, '🖱️ 點擊選項 或 按 A/D 移動，Space 確認', {
-            fontFamily: 'Huninn',
+            fontFamily: THEME_FONT,
             fontSize: '18px',
             color: '#aaaaaa'
         }).setOrigin(0.5);
@@ -162,7 +163,7 @@ export class TestChoiceScene extends Phaser.Scene {
 
         // 重玩按鈕
         const replay = this.add.text(this.scale.width/2, 650, '🔄 重玩故事', {
-            fontFamily: 'Huninn',
+            fontFamily: THEME_FONT,
             fontSize: '26px',
             color: '#88ddff',
             backgroundColor: '#333',

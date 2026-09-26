@@ -1,3 +1,4 @@
+import { THEME_FONT } from '../core/theme';
 // UI元件：畫面上方的抬頭顯示，目前顯示玩家已蒐集的祈雨石數量（目標六顆）
 const CAMERA_ZOOM_IN_MS = 1200;
 const DANCE_END_AT_MS = 4200;
@@ -47,7 +48,7 @@ export class HUD {
             .setScale(0.26);
 
         this.text = scene.add.text(58, 10, this._formatText(), {
-            fontFamily: 'Arial Black',
+            fontFamily: THEME_FONT,
             fontSize: 22,
             color: '#ffffff',
             stroke: '#000000',

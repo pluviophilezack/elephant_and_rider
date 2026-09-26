@@ -1,3 +1,4 @@
+import { THEME_FONT } from '../../core/theme';
 import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
@@ -107,7 +108,7 @@ export default {
 
     startFirstDrink(scene) {
         const hintText = scene.add.text(state.pondZone.x, state.pondZone.y - 50, '按下空白鍵喝一口水', {
-            fontSize: '16px', color: '#ffffff', backgroundColor: '#00000088'
+            fontFamily: THEME_FONT, fontSize: '16px', color: '#ffffff', backgroundColor: '#00000088'
         }).setOrigin(0.5).setDepth(100);
 
         const spaceKey = scene.input.keyboard.addKey('SPACE');
@@ -209,7 +210,7 @@ export default {
         scene.physics.add.existing(state.tileSelfish, true);
 
         state.textSelf = scene.add.text(selfishX, selfishY - 75, '獨佔 (喝光水)', { 
-            fontSize: '18px', color: '#ffaaaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 } 
+            fontFamily: THEME_FONT, fontSize: '18px', color: '#ffaaaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 }
         }).setOrigin(0.5).setDepth(101);
 
         const shareX = state.pondZone.x + 100;
@@ -219,7 +220,7 @@ export default {
         scene.physics.add.existing(state.tileShare, true);
 
         state.textShare = scene.add.text(shareX, shareY - 75, '分享 (一同飲用)', { 
-            fontSize: '18px', color: '#aaffaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 } 
+            fontFamily: THEME_FONT, fontSize: '18px', color: '#aaffaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 }
         }).setOrigin(0.5).setDepth(101);
 
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
@@ -305,7 +306,7 @@ export default {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
         const hint = scene.add.text(playerTarget.x, playerTarget.y - 50, '連按 3 次空白鍵喝光水 (0/3)', {
-            fontSize: '14px', color: '#ffaaaa', backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
+            fontFamily: THEME_FONT, fontSize: '14px', color: '#ffaaaa', backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
         }).setOrigin(0.5).setDepth(102);
 
         const spaceKey = scene.input.keyboard.addKey('SPACE');
