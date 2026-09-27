@@ -54,22 +54,22 @@ export class Overworld extends Scene
         // 計算物理世界總尺寸
         const worldWidth = w * 2;
         const worldHeight = h * 2;
-        
-        // 拼接四張大地圖(放棄此做法，改一單一張大圖)
-        // 語法提示：
-        // this.add.image(x座標, y座標, '貼圖Key').setOrigin(0, 0);
-        // // 左上
-        // this.add.image(0, 0, 'background_01_plain').setOrigin(0,0);
-        // // 左下
-        // this.add.image(0, worldHeight, 'background_02_plain').setOrigin(0, 1);
-        // // 右上
-        // this.add.image(worldWidth, 0, 'background_03_plain').setOrigin(1, 0);
-        // // 右下
-        // this.add.image(worldWidth, worldHeight, 'background_04_plain').setOrigin(1, 1)
+    
 
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
+
+        // 拼接四張樹木
+        // 左上
+        this.add.image(0, 0, 'trees_01').setOrigin(0,0);
+        // 左下
+        this.add.image(0, worldHeight, 'trees_02').setOrigin(0, 1);
+        // 右上
+        this.add.image(worldWidth, 0, 'trees_03').setOrigin(1, 0);
+        // 右下
+        this.add.image(worldWidth, worldHeight, 'trees_04').setOrigin(1, 1)
+
 
         // 判斷下雨與否，改變場景
         this.events.once('state:rain', isRain => {
