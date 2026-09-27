@@ -177,6 +177,19 @@ export class DevToolsManager {
 
         playerController.speed = this.baseMoveSpeed * this.sprintMultiplier;
         this.disableBushCollisions();
+        this.disableTerrainCollisions();
+    }
+
+    disableTerrainCollisions() {
+        if (this.scene.terrainCollision?.collider) {
+            this.scene.terrainCollision.collider.active = false;
+        }
+    }
+
+    restoreTerrainCollisions() {
+        if (this.scene.terrainCollision?.collider) {
+            this.scene.terrainCollision.collider.active = true;
+        }
     }
 
     disableBushCollisions() {
@@ -205,6 +218,7 @@ export class DevToolsManager {
             }
         });
         this.disabledBushBodies.clear();
+        this.restoreTerrainCollisions();
         this.baseMoveSpeed = null;
         this.isSprinting = false;
     }
