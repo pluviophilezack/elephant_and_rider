@@ -8,7 +8,6 @@ export default {
     _boundaries: null,
 
     setup(scene) {
-        // ---------- 建立所有角色 Sprite（預設隱藏） ----------
         const sprites = {};
         // 前山谷
         sprites.mountain01_01 = scene.add.sprite(3150, 700, 'mountain_01')
@@ -75,7 +74,8 @@ export default {
         }
 
         // 年輕象領袖（顏色較深）
-        sprites.youngLeader = scene.physics.add.sprite(3120, 280, 'young_elephant_leader')
+        // sprites.youngLeader = scene.physics.add.sprite(3120, 280, 'young_elephant_leader')//2890,290
+        sprites.youngLeader = scene.physics.add.sprite(2890, 290, 'young_elephant_leader')//2890,290
             .setScale(0.4)
             .setVisible(false)
             .setImmovable(true); 
@@ -85,7 +85,8 @@ export default {
         // 年輕象 × 3
         sprites.youngs = [];
         for (let i = 0; i < 3; i++) {
-            const s = scene.physics.add.sprite(3080 + i * 35, 310, 'young_elephant')
+            // const s = scene.physics.add.sprite(3080 + i * 35, 310, 'young_elephant')//2850,320
+            const s = scene.physics.add.sprite(2850 + i * 35, 320, 'young_elephant')//2850,320
                 .setScale(0.4)
                 .setVisible(false)
                 .setImmovable(true); 
@@ -95,7 +96,8 @@ export default {
         }
 
         // 小象
-        sprites.little = scene.physics.add.sprite(3130, 350, 'little_elephant_weak')
+        // sprites.little = scene.physics.add.sprite(3130, 350, 'little_elephant_weak')//2900,360
+        sprites.little = scene.physics.add.sprite(2900, 360, 'little_elephant_weak')//2900,360
             .setScale(0.6)
             .setVisible(false)
             .setImmovable(true); 
@@ -105,7 +107,7 @@ export default {
         // 祈雨石（可能在事件結尾獲得，先不顯示）
         sprites.rainStone = scene.add.sprite(3240, 380, 'rain_stone')
             .setScale(0.6)
-            //d.setVisible(false);
+            .setVisible(false);
         scene.registerAsset(sprites.rainStone);
         sprites.rainStone.setDepth(1000);
 
@@ -136,7 +138,7 @@ export default {
         });
 
         // ---------- 第一階段：偵測玩家走到 (2500, 400)，生成象群 ----------
-        const spawnZone = createTriggerZone(scene, { x: 2600, y: 450, width: 200, height: 200 });
+        const spawnZone = createTriggerZone(scene, { x: 2500, y: 650, width: 400, height: 400 });
         let spawned = false;
 
         scene.physics.add.overlap(scene.player, spawnZone, () => {
@@ -166,15 +168,19 @@ export default {
 
         sprites.king.setVisible(true).setPosition(3200, 200);
         sprites.normals.forEach((s, i) => s.setVisible(true).setPosition(3400 + i * 40, 280 - i*40).setFlipX(true));
-        sprites.youngLeader.setVisible(true).setPosition(2900, 30);
-        sprites.youngs.forEach((s, i) => s.setVisible(true).setPosition(3050 + i * 35, 120-i*35).setFlipX(true));
-        sprites.little.setVisible(true).setPosition(3000, 50);
+        // sprites.youngLeader.setVisible(true).setPosition(2900, 30);
+        sprites.youngLeader.setVisible(true).setPosition(2750, 380);
+        // sprites.youngs.forEach((s, i) => s.setVisible(true).setPosition(3050 + i * 35, 120-i*35).setFlipX(true));        
+        sprites.youngs.forEach((s, i) => s.setVisible(true).setPosition(2900 + i * 35, 470-i*35).setFlipX(true));
+        // sprites.little.setVisible(true).setPosition(3000, 50);
+        sprites.little.setVisible(true).setPosition(2850, 400);
         // sprites.crown.setVisible(true).setPosition(3200, 180);
 
         console.log('[authority_herd] 象群已生成在 (3200, 200)');
 
         // ---- 建立「碰到象王觸發動畫與對話」的碰撞偵測 ----
-        const triggerZone = createTriggerZone(scene, { x: 2800, y: 350, width: 200, height: 200 });
+        // const triggerZone = createTriggerZone(scene, { x: 2800, y: 350, width: 200, height: 200 }); //2950,300
+        const triggerZone = createTriggerZone(scene, { x: 3100, y: 300, width: 200, height: 200 }); //2950,300
         let triggered = false;
 
         scene.physics.add.overlap(scene.player, triggerZone, () => {
@@ -189,7 +195,8 @@ export default {
         });
 
         //年輕象對話彩蛋
-        const youngLeaderTrigger = createTriggerZone(scene, { x: 2900, y: 120, width: 100, height: 100 });
+        // const youngLeaderTrigger = createTriggerZone(scene, { x: 2900, y: 120, width: 100, height: 100 });
+        const youngLeaderTrigger = createTriggerZone(scene, { x: 2750, y: 500, width: 200, height: 200 });
         let eggTriggered = false;
 
         scene.physics.add.overlap(scene.player, youngLeaderTrigger, () => {
@@ -350,10 +357,12 @@ export default {
                                     ease: 'Sine.easeInOut',
                                     onComplete: () => {
                                         const easterLines = [
+                                            {speaker:  '小象', text:  '呼...呼...'},
                                             { speaker: '年輕象A', text: '小象好久沒喝水了...再繞路會不會花費太久?' },
                                             { speaker: '年輕象B', text: '那條山路我們還沒有走過，看起來還算安全，要走走看嗎...' },
                                             { speaker: '年輕象領', text: '可能得試試看...了嗎...' },
                                             { speaker: '年輕象ABC', text: '......' },
+                                            {speaker:  '小象', text:  '呼...(不安)'},
                                         ];
 
                                         DialogueSystem.show(scene, easterLines, () => {
@@ -415,7 +424,8 @@ export default {
 // ---- 建立道路選擇的觸發區（岔路口） ----
 _setupChoiceTrigger(scene) {
     // 在岔路口位置 (4000, 800) 建立一個觸發區域
-    const choiceZone = createTriggerZone(scene, { x: 2950, y: 300, width: 200, height: 200 });
+    // const choiceZone = createTriggerZone(scene, { x: 2950, y: 300, width: 200, height: 200 });
+    const choiceZone = createTriggerZone(scene, { x: 3100, y: 300, width: 200, height: 200 });
     let choiceTriggered = false;
 
     // 偵測玩家進入
@@ -435,64 +445,66 @@ _setupChoiceTrigger(scene) {
 
 // ---- 第一個抉擇：跟隨 vs. 穿山 ----
 _showFirstChoice(scene) {
-    const options = [
-        { key: "follow", label: '服從象王\n走平地繞遠路' },
-        { key: "direct", label: '婉拒\n走山中捷徑' }
-    ];
+    scene.time.delayedCall(2000, () => {
+        const options = [
+            { key: "follow", label: '服從象王\n走平地繞遠路' },
+            { key: "direct", label: '婉拒\n走山中捷徑' }
+        ];
 
-    ChoiceSystem.prompt(scene, options, (chosenKey) => {
-        // 選擇後解鎖玩家（移動動畫會再鎖一次）
-        //scene.playerController.enable();
+        ChoiceSystem.prompt(scene, options, (chosenKey) => {
+            // 選擇後解鎖玩家（移動動畫會再鎖一次）
+            //scene.playerController.enable();
 
-        scene.sharedState = scene.sharedState || {};
-        scene.sharedState.authority_choice = chosenKey;
+            scene.sharedState = scene.sharedState || {};
+            scene.sharedState.authority_choice = chosenKey;
 
-        if (chosenKey === 'follow') {
-            MoralState.add('authority', 1);
-            this.choose_Far_Way = true;
-        } else {
-            MoralState.add('fairness', 1);
-            this.choose_Far_Way = false;
-        }
+            if (chosenKey === 'follow') {
+                MoralState.add('authority', 1);
+                this.choose_Far_Way = true;
+            } else {
+                MoralState.add('fairness', 1);
+                this.choose_Far_Way = false;
+            }
 
-        // ---- 決定移動的 Sprite 集合 ----
-        //let moveSprites = {};
-        if (chosenKey === 'follow') {
-            scene.playerController.disable();
-            const kinghappy = [
-                {speaker:'王', text:'明智的抉擇，一起走吧'},
-                {speaker:'王', text:'......'},
-            ];
+            // ---- 決定移動的 Sprite 集合 ----
+            //let moveSprites = {};
+            if (chosenKey === 'follow') {
+                scene.playerController.disable();
+                const kinghappy = [
+                    {speaker:'王', text:'明智的抉擇，一起走吧'},
+                    {speaker:'王', text:'......'},
+                ];
 
-            DialogueSystem.show(scene, kinghappy, () => {
-                // 對話結束，解鎖玩家
-                //scene.playerController.enable();
-                console.log('into mountain road');
-                this._choice_0_animate(scene);
-            });
-    ///
-        } else {
-            
-            scene.playerController.disable();
-            const kingwarn = [
-                {speaker:'王', text:'......'},
-                {speaker:'王', text:'............'},
-                {speaker:'王', text:'你，不屬於我們族群，我，管不了你...'},
-                {speaker:'王', text:'但是，我們，可不冒險'},
-                {speaker:'王', text:'......'},
-                {speaker:'王', text:'隨你高興吧。保重。'},
-                {speaker:'王', text:'......'},
-            ];
+                DialogueSystem.show(scene, kinghappy, () => {
+                    // 對話結束，解鎖玩家
+                    //scene.playerController.enable();
+                    console.log('into mountain road');
+                    this._choice_0_animate(scene);
+                });
+        ///
+            } else {
+                
+                scene.playerController.disable();
+                const kingwarn = [
+                    {speaker:'王', text:'......'},
+                    {speaker:'王', text:'............'},
+                    {speaker:'王', text:'你，不屬於我們族群，我，管不了你...'},
+                    {speaker:'王', text:'但是，我們，可不冒險'},
+                    {speaker:'王', text:'......'},
+                    {speaker:'王', text:'隨你高興吧。保重。'},
+                    {speaker:'王', text:'......'},
+                ];
 
-            DialogueSystem.show(scene, kingwarn, () => {
-                // 對話結束，解鎖玩家
-                scene.playerController.enable();
-                console.log('into mountain road');
-                this._choice_1_animate(scene);
-            });
+                DialogueSystem.show(scene, kingwarn, () => {
+                    // 對話結束，解鎖玩家
+                    scene.playerController.enable();
+                    console.log('into mountain road');
+                    this._choice_1_animate_0(scene);
+                });
 
-        };
-    });
+            };
+        });
+    })
 },
 
     _choice_0_animate(scene){
@@ -525,9 +537,11 @@ _showFirstChoice(scene) {
 
             //0908
             onUpdate: () => {
-                shakeTime1 += 0.1;
-                const shakeOffset = Math.sin(shakeTime1 * 0.5) * 5;
-                this.sprites.king.y += shakeOffset;  // 在目標 y 上疊加偏移
+                const elapsed = scene.time.now / 500; // 秒
+                const shakeOffsetY = Math.sin(elapsed * 3) * 5 *0.5;                            
+                const shakeOffsetX = Math.cos(elapsed ) * 5 *(-0.5); 
+                this.sprites.king.y += shakeOffsetY;  
+                this.sprites.king.x += shakeOffsetX;  
             },
             onStart: () => {
                 scene.time.delayedCall(2000, () => {
@@ -539,9 +553,11 @@ _showFirstChoice(scene) {
                         ease: 'Sine.easeInOut',
                         //0908
                         onUpdate: () => {
-                            shakeTime1 += 0.1;
-                            const shakeOffset = Math.sin(shakeTime1 * 0.5) * 5;
-                            scene.player.y += shakeOffset;  // 在目標 y 上疊加偏移
+                            const elapsed = scene.time.now / 500; // 秒
+                            const shakeOffsetY = Math.sin(elapsed * 3) * 5 *(-0.5);                            
+                            const shakeOffsetX = Math.cos(elapsed ) * 5 *(0.5); 
+                            scene.player.y += shakeOffsetY;  
+                            scene.player.x += shakeOffsetX;  // 在目標 y 上疊加偏移
                         },
 
                         onComplete: () => {
@@ -716,6 +732,185 @@ _showFirstChoice(scene) {
         });
     },
 
+    _choice_1_animate_0(scene){
+
+        //mountain deep
+        this.sprites.mountain01_01.setDepth(100);
+        this.sprites.mountain01_02.setDepth(100);
+        //this.sprites.mountain01_03.setDepth(1000);
+        this.sprites.mountain02_01.setDepth(5);
+        this.sprites.mountain02_02.setDepth(5);
+        this.sprites.mountain02_03.setDepth(5);
+
+        const moveSprites = [
+            scene.player
+        ];
+        let shakeTime1 = 0;
+        let both = false;
+        // ---- 與小象會合
+        scene.tweens.add({
+            targets: moveSprites,
+            x: 3050,
+            y: 450,
+            duration: 2000,
+            ease: 'Linear',
+            onStart: () => {
+                scene.time.delayedCall(2000, () => {
+                    this._kingmove(scene);
+                })
+            },
+            onUpdate: () => {
+                shakeTime1 += 0.05;
+                const shakeOffsetX = Math.cos(shakeTime1 * 0.1) * 2.5;
+                const shakeOffsetY = Math.sin(shakeTime1 * 0.5) * 2.5;
+                scene.player.y += shakeOffsetY;  
+                scene.player.x -= shakeOffsetX;  
+            },
+            onComplete: ()=>{       
+                const wanttogethertalk = [
+                    {speaker:'年輕象領', text:'等等!'},
+                    {speaker:'年輕象領', text:'我們，跟你一起，可以嗎...'},
+                    {speaker:'player', text:'...我無所謂'},
+                    {speaker:'年輕象領', text:'謝謝...'},
+                ];             
+                DialogueSystem.show(scene, wanttogethertalk, () => {
+                    //集合
+                //youngleader
+                    scene.tweens.add({
+                        targets: this.sprites.youngLeader,
+                        x: 3050,
+                        y: 400,
+                        duration: 2000,
+                        ease: 'Linear',
+                        onUpdate: () => {
+                            shakeTime1 += 0.05;
+                            const shakeOffsetX = Math.cos(shakeTime1 * 0.1) * 2.5;
+                            const shakeOffsetY = Math.sin(shakeTime1 * 0.5) * 2.5;
+                            this.sprites.youngLeader.y += shakeOffsetY;  
+                            this.sprites.youngLeader.x -= shakeOffsetX;  
+                        },
+                        onComplete: ()=>{       
+                        }
+                    });
+
+                //little
+                    scene.tweens.add({
+                        targets: this.sprites.little,
+                        x: 3000,
+                        y: 450,
+                        duration: 2000,
+                        ease: 'Linear',
+                        onUpdate: () => {
+                            shakeTime1 += 0.05;
+                            const shakeOffsetX = Math.cos(shakeTime1 * 0.1) * 2.5;
+                            const shakeOffsetY = Math.sin(shakeTime1 * 0.5) * 2.5;
+                            this.sprites.little.y += shakeOffsetY;  
+                            this.sprites.little.x -= shakeOffsetX;  
+                        },
+                        onComplete: ()=>{       
+                            this._choice_1_animate_1(scene);
+                        }
+                    });
+
+                //youngs
+                    const moveSprites = [
+                        ...this.sprites.youngs,
+                    ];
+                    moveSprites.forEach((sprite, index) => {
+                        sprite.setFlipX(false);
+                    })
+                    //
+                    //this._choice_1_animate_1(scene);
+                });
+            }
+        });
+    },
+
+    _choice_1_animate_1(scene){
+
+        //mountain deep
+        this.sprites.mountain01_01.setDepth(100);
+        this.sprites.mountain01_02.setDepth(100);
+        //this.sprites.mountain01_03.setDepth(1000);
+        this.sprites.mountain02_01.setDepth(5);
+        this.sprites.mountain02_02.setDepth(5);
+        this.sprites.mountain02_03.setDepth(5);
+
+        const moveSprites = [
+            // this.sprites.rock,
+            scene.player,
+            this.sprites.little,
+            ...this.sprites.youngs,
+            this.sprites.youngLeader,
+        ];
+        let shakeTime1 = 0;
+        let both = false;
+
+        let offsetX = 550;
+        let offsetY = 300;        
+
+        const targets = moveSprites.map(sprite => ({
+            x: sprite.x + offsetX,
+            y: sprite.y + offsetY
+        }));
+
+        //let shakeTime3 = 0;
+        moveSprites.forEach((sprite, index) => {
+            scene.tweens.add({
+                targets: sprite,
+                x: targets[index].x,
+                y: targets[index].y,
+                duration: 8000,
+                ease: 'Sine.easeInOut',
+                //0926
+                onUpdate: () => {
+                    const elapsed = scene.time.now / 500; // 秒
+                    const shakeOffsetX = Math.sin(elapsed) * 5 *(index%2-0.5); 
+                    const shakeOffsetY = Math.cos(elapsed * 3) * 5 *(index%2-0.5);
+                    moveSprites[index].x += shakeOffsetX;  
+                    moveSprites[index].y += shakeOffsetY;  
+                },
+                onStart: () => {
+                    // this._kingmove(scene);
+                    if(index==1){
+                        scene.time.delayedCall(2000, () => {
+                            const selftalk = [
+                                {speaker:'小象',text:'(好不舒服...)'},
+                                {speaker:'年輕象領',text:'(需要儘快，找到水...)'},
+                                {speaker:'player', text:'山路應該會，比較快的吧...'},
+                                {speaker:'player', text:'...啊!糟糕!'},
+                            ];
+
+                            DialogueSystem.show(scene, selftalk, () => {
+                                // 對話結束，解鎖玩家
+                                //scene.playerController.enable();
+                                if(index==1){
+                                    if(both==true){
+                                        this._rock_animate(scene);
+                                    }
+                                    else{
+                                        both = true;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                },
+                onComplete: ()=>{                    
+                    //scene.playerController.enable();
+                    if(index==1){
+                        if(both==true){
+                            this._rock_animate(scene);
+                        }
+                        else{
+                            both = true;
+                        }
+                    }
+                }
+            });
+        })
+    },
+
     _choice_1_animate(scene){
 
         //mountain deep
@@ -780,31 +975,12 @@ _showFirstChoice(scene) {
         });
     },
 
-    // _rock_animate(scene){
-    //     this.sprites.rock.setPosition(3400,1200);
-    //     this.sprites.rock.setVisible(true);
-    //     scene.tweens.add({
-    //         targets: this.sprites.rock,
-    //         x: 4500,
-    //         y: 400,   // 保持同一水平線，或者稍微變化
-    //         rotation: Math.PI * 2, // 旋轉一圈
-    //         duration: 3000,
-    //         ease: 'Linear',
-    //         onComplete: () => {
-    //             // // 移動結束後，確保石頭隱藏
-    //             if (this.sprites.rock) this.sprites.rock.setVisible(false);
-
-    //             //scene.playerController.enable();
-    //             this._choice_1_animate2(scene);
-    //         }
-    //     });
-    // },
     _rock_animate(scene){
         const curve = new Phaser.Curves.CubicBezier(
-            new Phaser.Math.Vector2(3200, 460),  // 起點
-            new Phaser.Math.Vector2(4250, 1500),   // 控制點 1
-            new Phaser.Math.Vector2(4200, 100),   // 控制點 2
-            new Phaser.Math.Vector2(4500, 400)    // 終點
+            new Phaser.Math.Vector2(3200, 560),  // 起點
+            new Phaser.Math.Vector2(4250, 1600),   // 控制點 1
+            new Phaser.Math.Vector2(4200, 200),   // 控制點 2
+            new Phaser.Math.Vector2(4500, 500)    // 終點
         );
 
         const point = new Phaser.Math.Vector2();
@@ -835,55 +1011,124 @@ _showFirstChoice(scene) {
     },
 
     _choice_1_animate2(scene){
-        // 穿山路線：所有象群移動（原設計）
         const moveSprites = [
-            this.sprites.rock,
-            scene.player
+            // this.sprites.rock,
+            scene.player,
+            this.sprites.little,
+            ...this.sprites.youngs,
+            this.sprites.youngLeader,
         ];
         let shakeTime1 = 0;
         let both = false;
-        scene.tweens.add({
-            targets: moveSprites,
-            x: 4500,
-            y: 1200,
-            duration: 8000,
-            ease: 'Linear',
-            //0908
-            onUpdate: () => {
-                shakeTime1 += 0.05;
-                const shakeOffset = Math.sin(shakeTime1 * 0.5) * 2.5;
-                scene.player.y += shakeOffset;  // 在目標 y 上疊加偏移
-                scene.player.x -= shakeOffset;  // 在目標 y 上疊加偏移
-            },
 
-            onStart: () => {
-                scene.time.delayedCall(2000, () => {
-                    const selftalk = [
-                        {speaker:'player', text:'剛剛，好危險...'},
-                        {speaker:'player', text:'...'},
-                    ];
+        let offsetX = 900;
+        let offsetY = 450;        
 
-                    DialogueSystem.show(scene, selftalk, () => {
-                        // 對話結束，解鎖玩家
+        const targets = moveSprites.map(sprite => ({
+            x: sprite.x + offsetX,
+            y: sprite.y + offsetY
+        }));
+
+        //let shakeTime3 = 0;
+        moveSprites.forEach((sprite, index) => {
+            scene.tweens.add({
+                targets: sprite,
+                x: targets[index].x,
+                y: targets[index].y,
+                duration: 8000,
+                ease: 'Sine.easeInOut',
+                //0926
+                onUpdate: () => {
+                    const elapsed = scene.time.now / 500; // 秒
+                    const shakeOffsetX = Math.sin(elapsed) * 5 *(index%2-0.5); 
+                    const shakeOffsetY = Math.cos(elapsed * 3) * 5 *(index%2-0.5);
+                    moveSprites[index].x += shakeOffsetX;  
+                    moveSprites[index].y += shakeOffsetY;  
+                },
+                onStart: () => {
+                    if(index==1){
+                        scene.time.delayedCall(2000, () => {
+                            const selftalk = [
+                                {speaker:'player', text:'剛剛，好危險...'},
+                                {speaker:'player', text:'...'},
+                                {speaker:'年輕象ABC', text:'(山路真的，比較危險...)'},
+                            ];
+
+                            DialogueSystem.show(scene, selftalk, () => {
+                                // 對話結束，解鎖玩家
+                                if(both==true){
+                                    scene.playerController.enable();
+                                    this._choice_0_2_0(scene);
+                                }
+                                else{
+                                    both = true;
+                                }
+                            });
+                        });
+                    }
+                },
+                onComplete: ()=>{   
+                    if(index==1){
                         if(both==true){
                             scene.playerController.enable();
                             this._choice_0_2_0(scene);
-                        }
+                        }   
                         else{
-                            both = true;
-                        }
-                    });
-                });
-            },
-            onComplete: ()=>{   
-                if(both==true){
-                    scene.playerController.enable();
-                    this._choice_0_2_0(scene);
-                }   
-                else{
-                    both=true;
-                }              
-            }
+                            both=true;
+                        }     
+                    }         
+                }
+            });
+        // })
+        // 穿山路線：所有象群移動（原設計）
+        // const moveSprites = [
+        //     this.sprites.rock,
+        //     scene.player
+        // ];
+        // let shakeTime1 = 0;
+        // let both = false;
+        // scene.tweens.add({
+        //     targets: moveSprites,
+        //     x: 4500,
+        //     y: 1200,
+        //     duration: 8000,
+        //     ease: 'Linear',
+        //     //0908
+        //     onUpdate: () => {
+        //         shakeTime1 += 0.05;
+        //         const shakeOffset = Math.sin(shakeTime1 * 0.5) * 2.5;
+        //         scene.player.y += shakeOffset;  // 在目標 y 上疊加偏移
+        //         scene.player.x -= shakeOffset;  // 在目標 y 上疊加偏移
+        //     },
+
+        //     onStart: () => {
+        //         scene.time.delayedCall(2000, () => {
+        //             const selftalk = [
+        //                 {speaker:'player', text:'剛剛，好危險...'},
+        //                 {speaker:'player', text:'...'},
+        //             ];
+
+        //             DialogueSystem.show(scene, selftalk, () => {
+        //                 // 對話結束，解鎖玩家
+        //                 if(both==true){
+        //                     scene.playerController.enable();
+        //                     this._choice_0_2_0(scene);
+        //                 }
+        //                 else{
+        //                     both = true;
+        //                 }
+        //             });
+        //         });
+        //     },
+        //     onComplete: ()=>{   
+        //         if(both==true){
+        //             scene.playerController.enable();
+        //             this._choice_0_2_0(scene);
+        //         }   
+        //         else{
+        //             both=true;
+        //         }              
+        //     }
         });
     },
 
@@ -899,13 +1144,12 @@ _showFirstChoice(scene) {
             {speaker:'player', text:'......'},
             {speaker:'player', text:'這裡就是河谷了...要快點才行...'},
             {speaker:'player', text:'趕快找到...下個寶石...水域廢墟...'},
-            {speaker:'player', text:'......'},
         ];
 
         DialogueSystem.show(scene, easterLines, () => {
             // 對話結束，解鎖玩家
             //scene.playerController.enable();
-            this._youngArrive(scene);
+            this._youngarrive2(scene);
         });
     },
 
@@ -920,8 +1164,8 @@ _showFirstChoice(scene) {
 ///
         let x = this.choose_Far_Way?15000:10000;
         // 兩段路線：先到終點，再到水邊
-        const offsetX = 1500;   // 向右偏移
-        const offsetY = 1250;  // 向下偏移
+        const offsetX = 1650;   // 向右偏移
+        const offsetY = 900;  // 向下偏移
 
         const targets = moveSprites.map(sprite => ({
             x: sprite.x + offsetX,
@@ -1012,7 +1256,7 @@ _showFirstChoice(scene) {
 
         const teamarrive = [
             {speaker:'青年象A', text:'到了，居然，快了好多...'},
-            {speaker:'青年象領', text:'...'},
+            {speaker:'青年象B', text:'是最短時間的一次'},
             {speaker:'青年象領', text:'帶小象去水邊吧，趕快'},
             {speaker:'青年象領', text:'...'},
         ];
@@ -1025,7 +1269,7 @@ _showFirstChoice(scene) {
                 this.sprites.little,
             ];
             const offsetX = 0;   // 向右偏移
-            const offsetY = 450;  // 向下偏移
+            const offsetY = 550;  // 向下偏移
             const targets = moveSprites.map(sprite => ({
                 x: sprite.x + offsetX,
                 y: sprite.y + offsetY
@@ -1095,7 +1339,7 @@ _showFirstChoice(scene) {
                 targets: sprite,
                 x: targets[index].x,
                 y: targets[index].y,
-                duration: 3000,
+                duration: 1000,
                 ease: 'Sine.easeInOut',
                 //0908
                 onUpdate: () => {
@@ -1121,7 +1365,7 @@ _showFirstChoice(scene) {
                             targets: sprite,
                             x: targets[index].x,
                             y: targets[index].y,
-                            duration: 15000,
+                            duration: 10000,
                             ease: 'Sine.easeInOut',
                             //0908
                             onUpdate: () => {
@@ -1134,7 +1378,7 @@ _showFirstChoice(scene) {
 
                             onComplete:()=>{
                                 if(index==3){
-                                    const triggerZone = createTriggerZone(scene, { x: 4500, y: 1300, width: 400, height: 400 });
+                                    const triggerZone = createTriggerZone(scene, { x: 4400, y: 1300, width: 300, height: 300 });
 
                                     scene.physics.add.overlap(scene.player, triggerZone, () => {
                                         if (this._KingArriveTriggered) return;
@@ -1276,7 +1520,7 @@ _showFirstChoice(scene) {
                     this._youngssWatch(scene);
                     // this._showSecondChoice(scene);
                     
-                    const triggerZone = createTriggerZone(scene, { x: 4500, y: 1600, width: 200, height: 200 });
+                    const triggerZone = createTriggerZone(scene, { x: 4500, y: 1600, width: 300, height: 300 });
                     //let a03_triggered = false;
                     //this._argumentTriggerZone = triggerZone;
 
@@ -1316,32 +1560,33 @@ _showFirstChoice(scene) {
             { speaker: 'player', text: '(誰的說法，比較支持)' },
             { speaker: 'player', text: '(......)' },
         ];
-        DialogueSystem.show(scene, thinking, () => {
-            const options = [
-                { key: 'king', label: '王\n有理' },
-                { key: 'young', label: '年輕象\n有理' }
-            ];
+        scene.time.delayedCall(2000, () => {
+            DialogueSystem.show(scene, thinking, () => {
+                const options = [
+                    { key: 'king', label: '王\n有理' },
+                    { key: 'young', label: '年輕象\n有理' }
+                ];
 
-            //scene.playerController.disable();
+                //scene.playerController.disable();
 
-            ChoiceSystem.prompt(scene, options, (chosenKey) => {
-                scene.sharedState.argument_choice = chosenKey;
+                ChoiceSystem.prompt(scene, options, (chosenKey) => {
+                    scene.sharedState.argument_choice = chosenKey;
 
-                if (chosenKey === 'king') {
-                    MoralState.add('authority', 2);
-                } else {
-                    MoralState.add('fairness', 2);
-                    MoralState.add('ingroup', 1);
-                }
+                    if (chosenKey === 'king') {
+                        MoralState.add('authority', 2);
+                    } else {
+                        MoralState.add('fairness', 2);
+                        MoralState.add('ingroup', 1);
+                    }
 
-                if (chosenKey === 'king') {
-                    this._kingEnding(scene);
-                } else {
-                    this._youngEnding(scene);
-                }
+                    if (chosenKey === 'king') {
+                        this._kingEnding(scene);
+                    } else {
+                        this._youngEnding(scene);
+                    }
+                });
             });
-        });
-
+        })
 
     },
 
@@ -1408,7 +1653,7 @@ _showFirstChoice(scene) {
         DialogueSystem.show(scene, thanks, () => {
             //this._giveRainStone(scene, 'king');
             //this.sprites.rainStone.setVisible(false);
-            //scene.playerController.enable();
+            scene.playerController.enable();
         });
     },
 
