@@ -15,7 +15,7 @@ export class MainMenu extends Scene
     init ()
     {
         // 跳過Menu動畫，方便方便快速開發
-        this.debugSkipMenu = false;
+        this.debugSkipMenu = true;
 
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
