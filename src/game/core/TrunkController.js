@@ -28,29 +28,40 @@ export class WandController {
         this.hitboxRadius = 12;
         this.wandTip.body.setCircle(this.hitboxRadius);
 
-        // 綁定空白鍵按下事件（負責：手拉/放開物品、切換抓取）
-        if (this.cursors.space) {
-            this.cursors.space.on('down', () => {
-                const isUnlocked = this.checkIsWandUnlocked();
-                const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
+        // 統一處理抓取/釋放觸發動作
+        const handleInteractionPress = () => {
+            const isUnlocked = this.checkIsWandUnlocked();
+            const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
-                if (isLocked) return;
+            if (isLocked) return;
 
-                // 未解鎖魔杖時的按鍵處理
-                if (!isUnlocked) {
-                    if (this.heldItem) {
-                        this.releaseItem();
-                    } else {
-                        const playerPos = this.player.getPosition();
-                        this.checkBodyPickup(playerPos);
-                    }
-                    return;
+            // 未解鎖魔杖時：近身按鍵拾取/放下
+            if (!isUnlocked) {
+                if (this.heldItem) {
+                    this.releaseItem();
+                } else {
+                    const playerPos = this.player.getPosition();
+                    this.checkBodyPickup(playerPos);
                 }
+                return;
+            }
 
-                // 已解鎖魔杖時：有拿物品就放下，沒拿物品就嘗試抓取
-                this.toggleGrab();
-            });
+            // 已解鎖魔杖時：切換抓取與放下
+            this.toggleGrab();
+        };
+
+        // 綁定 1：空白鍵按下事件
+        if (this.cursors.space) {
+            this.cursors.space.on('down', handleInteractionPress);
         }
+
+        // 💡 綁定 2：滑鼠左鍵按下事件
+        scene.input.on('pointerdown', (pointer) => {
+            // 只響應左鍵 (button === 0)
+            if (pointer.button === 0) {
+                handleInteractionPress();
+            }
+        });
     }
 
     // 核心判定：以 Overworld.js 的 sharedState.wand_unlocked 為主
@@ -109,8 +120,11 @@ export class WandController {
         // -------------------------------------------------------------
         this.wandTip.setVisible(true);
 
-        // 按住空白鍵伸長魔杖；若未按住則縮回 (長度為 0)
-        if (!isLocked && this.cursors.space && this.cursors.space.isDown) {
+        // 💡 關鍵：按住【空白鍵】或【滑鼠左鍵】均可伸長魔杖
+        const isSpaceDown = this.cursors.space && this.cursors.space.isDown;
+        const isMouseDown = this.pointer.isDown;
+
+        if (!isLocked && (isSpaceDown || isMouseDown)) {
             this.currentBodyLength = Math.min(distance, this.maxReachDistance);
         } else {
             this.currentBodyLength = 0;
@@ -181,9 +195,15 @@ export class WandController {
 
         const items = this.getItemsList();
         const grabRadius = 35;
+        const currentTime = this.scene.time.now;
 
         for (const itm of items) {
             if (!itm || !itm.active) continue;
+
+            // 剛被放下未滿 0.5 秒 (500ms) 跳過不抓取
+            if (itm.lastDroppedTime && (currentTime - itm.lastDroppedTime < 500)) {
+                continue;
+            }
 
             const dist = Phaser.Math.Distance.Between(this.wandTip.body.center.x, this.wandTip.body.center.y, itm.x, itm.y);
             if (dist < grabRadius) {
@@ -243,11 +263,11 @@ export class WandController {
         if (this.wandBody) this.wandBody.setDepth(baseDepth + 5);
         if (this.wandTip) this.wandTip.setDepth(baseDepth + 6);
         
-        // 物品疊在魔杖尖端的最上層 (比魔杖尖端再高 1 層)
+        // 物品疊在魔杖尖端的最上層
         this.heldItem.setDepth(baseDepth + 100);
     }
 
-   // 釋放/放下手上的物品
+    // 釋放/放下手上的物品
     releaseItem() {
         if (!this.heldItem) return;
 
@@ -279,7 +299,7 @@ export class WandController {
 
         // 放下時，強制將物品 Depth 設為比主角還低的層級 (低於主角)
         const playerDepth = this.getPlayerDepth();
-        const groundDepth = Math.max(1, playerDepth - 5); // 確保在地上且低於主角
+        const groundDepth = Math.max(1, playerDepth - 5);
         item.setDepth(groundDepth);
 
         // 紀錄防二次吸附冷卻時間
@@ -287,30 +307,6 @@ export class WandController {
 
         // 4. 清空手持狀態
         this.heldItem = null;
-    }
-
-    // 魔杖伸長時自動觸發抓取
-    autoCheckWandGrab() {
-        if (this.currentBodyLength <= 10) return;
-
-        const items = this.getItemsList();
-        const grabRadius = 35;
-        const currentTime = this.scene.time.now;
-
-        for (const itm of items) {
-            if (!itm || !itm.active) continue;
-
-            // 💡 關鍵檢查：如果這個物品剛被放下未滿 0.5 秒 (500ms)，跳過不抓取！
-            if (itm.lastDroppedTime && (currentTime - itm.lastDroppedTime < 500)) {
-                continue;
-            }
-
-            const dist = Phaser.Math.Distance.Between(this.wandTip.body.center.x, this.wandTip.body.center.y, itm.x, itm.y);
-            if (dist < grabRadius) {
-                this.attachItem(itm);
-                break;
-            }
-        }
     }
 
     getItemsList() {
