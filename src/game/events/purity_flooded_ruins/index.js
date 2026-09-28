@@ -28,7 +28,7 @@ export default {
 
     this.currentForceX = -20;
     this.currentForceY = -10;
-    this.conversationDistance = 100;
+    this.conversationDistance = 125;
 
     // 1. 背景裝飾與黑油水流區域
     this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
@@ -59,7 +59,7 @@ export default {
       if (!scene.player || DialogueSystem.isShowing() || ChoiceSystem.isShowing()) return;
 
       // 與守衛對話觸發
-      if (this.guard && !this.isGuardRescued) {
+      if (this.guard && !this.isGuardRescued && !this.isTalked) {
         const distance = Phaser.Math.Distance.Between(
           scene.player.x,
           scene.player.y,
@@ -107,9 +107,9 @@ export default {
 
   triggerGuardDialogue(scene) {
     const dialogs = dialogueData || [];
-    this.isTalked = true;
 
     DialogueSystem.show(scene, dialogs[0] || [], () => {
+          this.isTalked = true;
       const options = [
         { key: "leave", label: "不救並離開" },
         { key: "save", label: "用象鼻移開石塊救牠" },

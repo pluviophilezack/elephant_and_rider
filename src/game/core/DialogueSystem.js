@@ -6,6 +6,7 @@ export const DialogueSystem = {
     _isZooming: false, // 運鏡中狀態
     _isZoomed: false,  // 鏡頭是否處於 1.5x 狀態
     _baseZoom: 1,      // 原始鏡頭縮放比例
+    _isCooldown: false,
 
     show(scene, lines, onComplete) {
         const normalizedLines = (Array.isArray(lines) ? lines : [])

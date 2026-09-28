@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { DialogueSystem } from '../core/DialogueSystem';
+import { ChoiceSystem } from '../core/ChoiceSystem';
 
 export class WandController {
     constructor(scene, playerController) {
@@ -46,6 +48,14 @@ export class WandController {
         }
     }
 
+    isLocked() {
+        const isDialogueActive =
+            DialogueSystem?.isShowing?.() ||
+            ChoiceSystem?.isShowing?.();
+
+        return Boolean(isDialogueActive);
+    }
+
     checkIsWandUnlocked() {
         if (this.scene.hasUnlockedWand || this.scene.hasRainStone) {
             return true;
@@ -76,7 +86,7 @@ export class WandController {
         const handY = playerPos.y + Math.sin(angle + Math.PI / 2) * handSideOffset + Math.sin(angle) * handHeightOffset;
 
         const hasUnlockedWand = this.checkIsWandUnlocked();
-        const isLocked = this.scene.isDialogueActive || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
+        const isLocked = this.scene.isDialogueActive || this.isLocked || (this.player && (this.player.isInteracting || this.player.isAutoMoving));
 
         // -------------------------------------------------------------
         // 模式 A：未解鎖魔杖 (靠身體接近拾取)
