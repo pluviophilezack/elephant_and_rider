@@ -245,6 +245,11 @@ export class WandController {
         
         // 物品疊在魔杖尖端的最上層 (比魔杖尖端再高 1 層)
         this.heldItem.setDepth(baseDepth + 100);
+
+        // 發送撿起物品事件
+        if (this.scene && this.scene.events) {
+            this.scene.events.emit('pick_item', this.heldItem);
+        }
     }
 
    // 釋放/放下手上的物品
@@ -287,6 +292,11 @@ export class WandController {
 
         // 4. 清空手持狀態
         this.heldItem = null;
+
+        // 5. 放下物品事件
+        if (this.scene && this.scene.events) {
+            this.scene.events.emit('place_item', item);
+        }
     }
 
     // 魔杖伸長時自動觸發抓取
