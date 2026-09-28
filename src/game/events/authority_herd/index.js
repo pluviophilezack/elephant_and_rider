@@ -459,7 +459,7 @@ _setupChoiceTrigger(scene) {
 
 // ---- 第一個抉擇：跟隨 vs. 穿山 ----
 _showFirstChoice(scene) {
-    scene.time.delayedCall(2000, () => {
+    // scene.time.delayedCall(2000, () => {
         const options = [
             { key: "follow", label: '服從象王\n走平地繞遠路' },
             { key: "direct", label: '婉拒\n走山中捷徑' }
@@ -518,7 +518,7 @@ _showFirstChoice(scene) {
 
             };
         });
-    })
+    // })
 },
 
     _choice_0_animate(scene){
@@ -1574,7 +1574,7 @@ _showFirstChoice(scene) {
             { speaker: 'player', text: '(誰的說法，比較支持)' },
             { speaker: 'player', text: '(......)' },
         ];
-        scene.time.delayedCall(2000, () => {
+        // scene.time.delayedCall(2000, () => {
             DialogueSystem.show(scene, thinking, () => {
                 const options = [
                     { key: 'king', label: '王\n有理' },
@@ -1600,7 +1600,7 @@ _showFirstChoice(scene) {
                     }
                 });
             });
-        })
+        // })
 
     },
 
