@@ -105,7 +105,7 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1690, 175, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true); 
+        this.giraffe = scene.physics.add.sprite(1690, 225, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true).setOrigin(0.5, 0.75); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
@@ -335,6 +335,20 @@ export default {
             }
         ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
 
+        // 監聽撿起的物品 (恢復原本亮度)
+        scene.events.on('pick_item', (item) => {
+            if (this.woodpiles.includes(item)){
+                item.clearTint();
+            }
+        });
+
+        // 監聽放下的物品 (調暗)
+        scene.events.on('place_item', (item) => {
+            if (this.woodpiles.includes(item)){
+                item.setTint(0x777777);
+            }
+        });
+
     },
 
     // 縮放鏡頭function      
@@ -378,7 +392,7 @@ export default {
             DialogueSystem.show(scene, [
                 '我老花，看不到⋯⋯',
                 '⋯⋯',
-                '用空白鍵，可以撿起身邊的東西',
+                '點擊左鍵，撿起身邊的東西',
                 '幫我找找那個我需要的東西'
             ], ()=> {
                 this.isConversing = false;
@@ -396,7 +410,8 @@ export default {
             '對⋯⋯！那些聖物，也許就是恢復一切的關鍵',
             '也許它就在雜草蔓生之盡頭⋯⋯',
             '⋯⋯',
-            '這是猴族代代相傳的魔法樹枝，它將助你一臂之力'
+            '這是猴族代代相傳的魔法樹枝，',
+            '它將助你一臂之力，按下左鍵伸長樹枝，吸附物品'
             
         ], ()=> {
             scene.sharedState.wand_unlocked = true;
