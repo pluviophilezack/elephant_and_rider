@@ -14,6 +14,7 @@ const config = {
     height: 768,
     parent: 'game-container',
     backgroundColor: '#ffffff',
+    disableContextMenu: true, 
     scale: {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH

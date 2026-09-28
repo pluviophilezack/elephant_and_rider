@@ -6,3 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     StartGame('game-container');
 
 });
+
+document.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+});
