@@ -335,6 +335,13 @@ export default {
             }
         ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
 
+        // 監聽放下的物品
+        scene.events.on('place_item', (item) => {
+            if (this.woodpiles.includes(item)){
+                item.setTint(0xcccccc);
+            }
+        })
+
     },
 
     // 縮放鏡頭function      
