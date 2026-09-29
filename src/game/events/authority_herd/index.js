@@ -20,6 +20,11 @@ export default {
             .setAngle(15)   
             .setVisible(true);
         scene.registerAsset(sprites.mountain01_02);
+        sprites.mountain01_03 = scene.add.sprite(4000, 1450, 'mountain_01')
+            .setScale(1)
+            .setAngle(15)   
+            .setVisible(true);
+        scene.registerAsset(sprites.mountain01_03);
         //scene.physics.add.collider(scene.player, sprites.mountain01);   
 
         // 後山谷
@@ -45,9 +50,18 @@ export default {
             walls.push(scene.add.zone(2800+i*75, 600+i*50, 100, 100),);
             walls.push(scene.add.zone(3200+i*75, 425+i*40, 100, 100),);
         }
+        const walls2=[];
+        for(let i=0;i<5;i++){
+            walls2.push(scene.add.zone(3775+i*75, 1400+i*50, 100, 100),);
+        }
         //walls.push(scene.add.zone(3400, 850, 100, 150),);
 
         this._boundaries = walls.map(wall => {
+            scene.physics.add.existing(wall, true);
+            const collider = scene.physics.add.collider(scene.player, wall);
+            return { wall, collider };
+        });
+        this._boundaries = walls2.map(wall => {
             scene.physics.add.existing(wall, true);
             const collider = scene.physics.add.collider(scene.player, wall);
             return { wall, collider };
@@ -97,7 +111,7 @@ export default {
 
         // 小象
         // sprites.little = scene.physics.add.sprite(3130, 350, 'little_elephant_weak')//2900,360
-        sprites.little = scene.physics.add.sprite(2900, 360, 'little_elephant_weak')//2900,360
+        sprites.little = scene.physics.add.sprite(2900, 360, 'elephant_sick')//2900,360
             .setScale(0.6)
             .setVisible(false)
             .setImmovable(true); 
@@ -445,7 +459,7 @@ _setupChoiceTrigger(scene) {
 
 // ---- 第一個抉擇：跟隨 vs. 穿山 ----
 _showFirstChoice(scene) {
-    scene.time.delayedCall(2000, () => {
+    // scene.time.delayedCall(2000, () => {
         const options = [
             { key: "follow", label: '服從象王\n走平地繞遠路' },
             { key: "direct", label: '婉拒\n走山中捷徑' }
@@ -504,7 +518,7 @@ _showFirstChoice(scene) {
 
             };
         });
-    })
+    // })
 },
 
     _choice_0_animate(scene){
@@ -1560,7 +1574,7 @@ _showFirstChoice(scene) {
             { speaker: 'player', text: '(誰的說法，比較支持)' },
             { speaker: 'player', text: '(......)' },
         ];
-        scene.time.delayedCall(2000, () => {
+        // scene.time.delayedCall(2000, () => {
             DialogueSystem.show(scene, thinking, () => {
                 const options = [
                     { key: 'king', label: '王\n有理' },
@@ -1586,7 +1600,7 @@ _showFirstChoice(scene) {
                     }
                 });
             });
-        })
+        // })
 
     },
 
@@ -1895,7 +1909,7 @@ _showFirstChoice(scene) {
             ...this.sprites.youngs,
             this.sprites.little,
             //this.sprites.rainStone,
-            scene.player,
+            //scene.player,
             this.sprites.rock,
             //this.sprites.mountain01_01,
             //this.sprites.mountain01_02,
@@ -1904,7 +1918,7 @@ _showFirstChoice(scene) {
             //this.sprites.mountain02_03,
         ].filter(s => s && s.active);
 
-        const depthOffset = 10;
+        const depthOffset = 15;
         spritesToSort.forEach(sprite => {
             sprite.setDepth(depthOffset - (scene.player.y - sprite.y)/50);
             //console.log(scene.player.y - sprite.y);
