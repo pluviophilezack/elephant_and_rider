@@ -6,6 +6,9 @@
  */
 
 
+import { THEME_FONT } from './theme';
+import { installRiverTravel } from './RiverTravelModule';
+
 export class DevToolsManager {
     /**
      * 步驟 1: 宣告建構子與變數
@@ -20,7 +23,7 @@ export class DevToolsManager {
      */
     constructor(scene, worldWidth, worldHeight) {
         // 參數設定
-        this.isDevMode = true;
+        this.isDevMode = false;
         this.isSprinting = false;
         this.sprintMultiplier = 3;
         this.baseMoveSpeed = null;
@@ -29,12 +32,28 @@ export class DevToolsManager {
         this.scene = scene;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
+        this.getWand(scene);
         this.initCrossLine();
-        this.initInputs();
+        this.initInputs(scene);
         this.initHUD();
+        installRiverTravel(scene);
     }
 
-    
+    // 方便開發，預設會直接獲得魔杖，如要測試tutorial關卡，應關閉devMode
+    getWand(scene){
+        if(!this.isDevMode){
+            return;
+        }
+        scene.wand_unlocked = true;
+    }
+
+    removeWand(scene){
+        if(this.isDevMode){
+            return;
+        }
+        scene.wand_unlocked = false;
+    }
+
     // 十字線
 
     initCrossLine() {
@@ -54,6 +73,7 @@ export class DevToolsManager {
         
         // 畫出那筆的動作
         this.cross.strokePath();
+        this.cross.setDepth(9998);
 
         this.cross.setVisible(this.isDevMode);
     }
@@ -62,18 +82,19 @@ export class DevToolsManager {
         
         const styleObject = 
         {
-            fontFamily: 'monospace',
+            fontFamily: THEME_FONT,
             fontSize: '20px',
             color: '#3c00ff',
             backgroundColor: '#e2bdff',
             padding: { x: 8, y: 6 }
         }
-        this.hudText = this.scene.add.text(860, 10, '', styleObject)
+        this.hudText = this.scene.add.text(this.scene.scale.width - 16, 10, '', styleObject).setOrigin(1, 0);
         this.hudText.setScrollFactor(0);
+        this.hudText.setDepth(9999);
         this.hudText.setVisible(this.isDevMode);
     }
 
-    initInputs() {
+    initInputs(scene) {
 
         // 測試鍵盤輸入鍵
         // this.scene.input.keyboard.on('keydown', (event) => {
@@ -82,13 +103,19 @@ export class DevToolsManager {
 
         const toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
         this.sprintKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.decreaseStonesKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
+        this.increaseStonesKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F4);
+        this.decreaseStonesKey.on('down', () => this.adjustRainStones(-1));
+        this.increaseStonesKey.on('down', () => this.adjustRainStones(1));
 
         // Switch DevMode
         toggleKey.on('down', () => {
             this.isDevMode = !this.isDevMode;
             if (!this.isDevMode) {
                 this.stopSprint();
+                this.removeWand(scene);
             }
+            this.getWand(scene);
             console.log("isDevModeOpen: ", this.isDevMode);
             this.cross.setVisible(this.isDevMode);
             this.hudText.setVisible(this.isDevMode);
@@ -132,6 +159,13 @@ export class DevToolsManager {
         })
     }
 
+    adjustRainStones(amount) {
+        const hud = this.scene.hud;
+        if (!this.isDevMode || !hud || this.scene.time.now < hud.feedbackEndsAt) return;
+        // Set the test count directly: do not award an event or trigger the ending.
+        hud.setRainStoneCount(hud.rainStoneCount + amount);
+    }
+
     startSprint() {
         const playerController = this.scene.playerController;
         if (!playerController) return;
@@ -143,6 +177,19 @@ export class DevToolsManager {
 
         playerController.speed = this.baseMoveSpeed * this.sprintMultiplier;
         this.disableBushCollisions();
+        this.disableTerrainCollisions();
+    }
+
+    disableTerrainCollisions() {
+        if (this.scene.terrainCollision?.collider) {
+            this.scene.terrainCollision.collider.active = false;
+        }
+    }
+
+    restoreTerrainCollisions() {
+        if (this.scene.terrainCollision?.collider) {
+            this.scene.terrainCollision.collider.active = true;
+        }
     }
 
     disableBushCollisions() {
@@ -171,6 +218,7 @@ export class DevToolsManager {
             }
         });
         this.disabledBushBodies.clear();
+        this.restoreTerrainCollisions();
         this.baseMoveSpeed = null;
         this.isSprinting = false;
     }
@@ -191,7 +239,7 @@ export class DevToolsManager {
         const worldPoint = pointerNow.positionToCamera(this.scene.cameras.main);
         const clickX = Math.round(worldPoint.x);
         const clickY = Math.round(worldPoint.y);
-        this.hudText.setText(`${clickX}, ${clickY}`);
+        this.hudText.setText(`${clickX}, ${clickY}\nF3：祈雨石 −1　F4：祈雨石 +1`);
         
     }
 }

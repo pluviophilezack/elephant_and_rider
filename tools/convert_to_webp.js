@@ -13,7 +13,8 @@ fs.readdirSync(inputDir)
     .filter(file => {
     const isPng = path.extname(file).toLowerCase() === '.png';
     const startsWithBg = file.toLowerCase().startsWith('background');
-    return isPng && startsWithBg;
+    const startsWithWa = file.toLocaleLowerCase().startsWith('water');
+    return isPng && startsWithBg || startsWithWa;
     })
     .forEach(file => {
     const inputPath = path.join(inputDir, file);

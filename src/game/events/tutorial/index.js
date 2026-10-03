@@ -10,10 +10,63 @@ export default {
     key: 'tutorial',
     setup(scene) {
         scene.items = scene.items || [];
-        this.CONVERSATION_DISTANCE = 100;
+        this.CONVERSATION_DISTANCE = 125;
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
+
+        // ====== 折線邊界群組（可包含多條獨立分開的折線） ======
+        this.roadPolylines = [
+            // 第一條折線
+            [
+                { x: 252, y: 136 },
+                { x: 782, y: 227 },
+                { x: 1025, y: 318 },
+                { x: 1223, y: 460 }
+            ],
+            // 第二條獨立折線
+            [
+                { x: 1949, y: 450 },
+                { x: 1644, y: 713 },
+                { x: 1576, y: 808 },
+                { x: 1538, y: 886 },
+                { x: 1493, y: 988 },
+                { x: 1417, y: 1094 },
+                { x: 1135, y: 1254 },
+                { x: 889, y: 1413 }
+            ]
+        ];
+
+        // 根據所有折線頂點串聯成線段放入碰撞池
+        this.boundaryLines = [];
+        this.roadPolylines.forEach(polyline => {
+            for (let i = 0; i < polyline.length - 1; i++) {
+                const p1 = polyline[i];
+                const p2 = polyline[i + 1];
+                this.boundaryLines.push(new Phaser.Geom.Line(p1.x, p1.y, p2.x, p2.y));
+            }
+        });
+
+        this.lastSafeX = this.playerSprite.x;
+        this.lastSafeY = this.playerSprite.y;
+
+        // [除錯用] 繪製所有獨立折線紅色線條，座標確認無誤後可將 visible 設為 false
+        this.roadDebugGraphics = scene.add.graphics().setDepth(999);
+        this.roadDebugGraphics.lineStyle(3, 0xff0000, 0.9);
+        this.boundaryLines.forEach(line => {
+            this.roadDebugGraphics.lineBetween(line.x1, line.y1, line.x2, line.y2);
+        });
+        this.roadDebugGraphics.setVisible(false);
+        // ==========================================================
+
+
+        // Bush compound
+        scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
+        scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
+        scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+
+        // 根據主角在線段的左側或右側，設定與bush compound圖層
+
 
         // Floating apple
         this.puddle = scene.add.sprite(80, 160, 'puddle');
@@ -52,10 +105,19 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1652, 243, 'young_elephant').setScale(0.4).setDepth(10); // TODO 更換為giraffe texture
+        this.giraffe = scene.physics.add.sprite(1690, 225, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true).setOrigin(0.5, 0.75); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
+
+        scene.tweens.add({
+            targets: this.giraffe,
+            angle: {start: 0, from: -4, to: 3},
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            duration: 800,
+            repeat: -1
+        })
 
         // 開啟對話
         scene.input.keyboard.on('keydown-SPACE', () => {
@@ -73,6 +135,7 @@ export default {
 
         // flag for monkey
         this.wear_glasses = false;
+        this.easter_egg_triggered = false;
         this.turns_monkey = 0;
 
         if (!scene.sharedState.rain){
@@ -85,7 +148,7 @@ export default {
         scene.physics.add.collider(this.playerSprite, this.monkeyElder);
         this.monkeyElder.body.setImmovable(true);
 
-        this.glasses = scene.physics.add.sprite(222, 724, 'glasses');
+        this.glasses = scene.physics.add.sprite(222, 724, 'glasses').setScale(0.75);
         scene.registerAsset(this.glasses);
         scene.items.push(this.glasses);
 
@@ -98,7 +161,6 @@ export default {
                 this.startConversationMonkey(scene);
             }
         })
-
 
         // 自言自語路段
         
@@ -115,47 +177,49 @@ export default {
             this.startConversationRider();
             triggerZone.destroy();
         }); 
-
-
         }
 
-        /// Woodpile
-        this.woodpile = scene.physics.add.sprite(285, 1884, 'woodpile_04').setDepth(15); 
-        this.woodpile.body.setImmovable(true);
+        // Woodpile_04
+        this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04_catch').setDepth(105); 
+        this.woodpile04.body.setImmovable(true);
+        this.woodpile04.held = false;
+        scene.registerAsset(this.woodpile04);
+        this.woodpile04Collider = scene.physics.add.collider(this.playerSprite, this.woodpile04);
 
-        //TODO: Change texture when player take one wood
-        let offset_y = 150;
-        let wood_remaining_number =4;
+        // Woodpile_03
+        this.woodpile03 = scene.physics.add.sprite(285, 1900, 'woodpile_03_catch').setDepth(105); 
+        this.woodpile03.body.setImmovable(true);
+        this.woodpile03.held = false;
+        scene.registerAsset(this.woodpile03);
 
-        // 3. Set the custom collider size (w, h)
-        // (Using raw width is safer for dynamic body calculations)
-        if (wood_remaining_number === 3){
-            this.woodpile.setTexture('woodpile_03');
-            offset_y = 100;
-        } else if(wood_remaining_number ===2){
-            this.woodpile.setTexture('woodpile_02');
-            offset_y = 50;
-        } else if(wood_remaining_number ===1){
-            this.woodpile.setTexture('woodpile_01')
-            offset_y = 0;
-        }
-        this.woodpile.body.setSize(this.woodpile.width, offset_y, false);
-        this.woodpile.body.setOffset(0, offset_y);
-        scene.registerAsset(this.woodpile);
-        scene.physics.add.collider(this.playerSprite, this.woodpile);
+        // Woodpile_02
+        this.woodpile02 = scene.physics.add.sprite(285, 1850, 'woodpile_02_catch').setDepth(105); 
+        this.woodpile02.body.setImmovable(true);
+        this.woodpile02.held = false;
+        scene.registerAsset(this.woodpile02);
 
+        // Woodpile_01
+        this.woodpile01 = scene.physics.add.sprite(285, 1800, 'woodpile_01_catch').setDepth(105); 
+        this.woodpile01.body.setImmovable(true);
+        this.woodpile01.held = false;
+        scene.registerAsset(this.woodpile01);
 
-
+        // Woodpile list
+        this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
+    
         // RainStone
 
-        this.rock = scene.add.sprite(2531, 200, 'rock_rolling');
+        this.rock = scene.physics.add.sprite(2600, 140, 'rock_rolling').setScale(0.6);
+        this.rock.body.setImmovable(true);
         scene.registerAsset(this.rock);
+        scene.physics.add.collider(this.playerSprite, this.rock);
+
         
-        this.rainStone = scene.physics.add.sprite(2532, 80, 'rain_stone');
+        this.rainStone = scene.physics.add.sprite(2600, 80, 'rain_stone').setScale(0.28);
         scene.items.push(this.rainStone);
         scene.tweens.add({
             targets: this.rainStone,
-            y: {start: 85, from: 70, to: 100},
+            y: {start: 85, from: 75, to: 90},
             ease: "Linear",
             yoyo: true,
             duration: 4000,
@@ -164,13 +228,8 @@ export default {
 
         // Bushes
         const hardBushPositions = [    
-        // Surrounded rock bushes                                                                   
-        { x: 2420, y: 64 },                                                                        
-        { x: 2410, y: 149 },
-        { x: 2400, y: 220 },                                                                       
-        { x: 2435, y: 292 },
-        {x: 2511, y:338},
         // one side of footpath
+        { x: 2420, y: 64 },    
         {x:2219,y:44},
         {x:2280, y:69},
         {x: 2345, y:74},
@@ -180,7 +239,7 @@ export default {
         {x:1851, y: 139},
         {x:1777, y: 189},
         // the other side of footpath
-        { x: 1897, y: 469 },
+        { x: 1850, y: 500 },
         { x: 1993, y: 412 },
         { x: 2069, y: 403 },
         { x: 2144, y: 398 },
@@ -188,54 +247,53 @@ export default {
         { x: 2235, y: 414 },
         { x: 2373, y: 409 },
         { x: 2438, y: 374 },
+        {x: 2511, y:338},
 
         // Surrounded puddle
         { x: 17, y: 280 },
         { x: 105, y: 251 },
         { x: 170, y: 228 },
         { x: 242, y: 203 },
-        { x: 280, y: 132 },
         { x: 201, y: 101 },
-        { x: 122, y: 83 },
-        { x: 54, y: 50 },
         { x: 28, y: 350 },
         { x: 114, y: 321 },
         { x: 200, y: 306 },
-        { x: 269, y: 268 },
 
         // Right side of road
-        { x: 1687, y: 195 },
-        { x: 1619, y: 157 },
         { x: 1554, y: 127 },
-        { x: 1485, y: 87 },
-        { x: 1416, y: 50 },
-        { x: 1353, y: 13 },
+        { x: 1435, y: 80 , scale: 0.85},
+        { x: 1370, y: 30 },
 
         // Right side of road (past footpath)
-        { x: 560, y: 1790 },
-        { x: 641, y: 1681 },
-        { x: 773, y: 1598 },
-        { x: 881, y: 1534 },
-        { x: 1062, y: 1427 },
-        { x: 1205, y: 1329 },
-        { x: 1340, y: 1251 },
-        { x: 1497, y: 1132 },
-        { x: 1550, y: 1017 },
-        { x: 1596, y: 895 },
-        { x: 1676, y: 805 },
-        { x: 1750, y: 735 },
-        { x: 1829, y: 664 },
-        { x: 1880, y: 570 },
-        {x: 590, y: 1897}
+        { x: 570, y: 1815 },
+        { x: 687, y: 1588 },
+        { x: 750, y: 1520 },
+        { x: 589, y: 1730},
+        { x: 628, y: 1655 },
+        { x: 815, y: 1450 },
+ 
+        {x: 590, y: 1897},
+
+        // Surrounded rock bushes
+        {x: 2500, y: 160, scale: 0.8},
+        {x: 2510, y: 250, scale: 0.8},
+        // 右側道路的間隔bush
+        {x: 1466, y: 1034, scale: 0.8}
+
 
         ];  
-        this.hardBushes = hardBushPositions.map(({x, y})=> {
+        this.hardBushes = hardBushPositions.map(({x, y, scale})=> {
             const bush = scene.physics.add.sprite(x, y, 'bush_02');
             bush.body.setImmovable(true);
+            if(scale){
+                bush.setScale(scale);
+            }
             scene.registerAsset(bush);
             return bush;
         });
         scene.physics.add.collider(this.playerSprite, this.hardBushes);
+
+        
 
         // Soft bush
         const softBushPositions = [
@@ -257,6 +315,39 @@ export default {
 
         // Apple tree
         this.apple_tree_1 = scene.add.sprite(1750, 120, 'apple_tree');
+        this.apple_on_tree_1 = scene.physics.add.sprite(1774, 52, 'apple_with_leaf').setScale(0.3).setAngle(-30);
+        scene.items.push(this.apple_on_tree_1);
+
+        // sign
+        this.sign_riverbed = scene.physics.add.sprite(290, 2373, 'sign_brown');
+        scene.physics.add.collider(this.playerSprite,this.sign_riverbed);
+        this.sign_riverbed.body.setImmovable(true);
+        const offsetY = 0; // Adjust vertical distance above the sign as needed                                                                                          
+        this.sign_riverbed_text = scene.add.text(                                                                                                                         
+            this.sign_riverbed.x,                                                                                                                                         
+            this.sign_riverbed.y - 40,
+            '危險！\n\n河床深',                                                                                                                                             
+            {                                                                                                                                                             
+                fontSize: '26px',                                                                                                                                         
+                color: '#ffffff',                                                                                                                                         
+                fontFamily: 'naikaifont',                                                                                                                                 
+                padding: { x: 8, y: 4 }                                                                                                                                   
+            }
+        ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
+
+        // 監聽撿起的物品 (恢復原本亮度)
+        scene.events.on('pick_item', (item) => {
+            if (this.woodpiles.includes(item)){
+                item.clearTint();
+            }
+        });
+
+        // 監聽放下的物品 (調暗)
+        scene.events.on('place_item', (item) => {
+            if (this.woodpiles.includes(item)){
+                item.setTint(0x777777);
+            }
+        });
 
     },
 
@@ -277,17 +368,12 @@ export default {
     startConversationGiraffe(scene) {
         if(this.isConversing) return;
         this.isConversing = true;
-        this.zoomInCamera(scene, ()=> {
             DialogueSystem.show(scene, [
             '我長得不夠高，',
             '吃不到樹上的蘋果⋯⋯'
             ], () => {
             this.isConversing = false;
-            this.zoomOutCamera(scene);
             })
-        });
-
-
     },
 
     startConversationMonkey(scene) {
@@ -295,7 +381,7 @@ export default {
         this.isConversing = true;
 
         if(this.turns_monkey === 0 ){
-            DialogueSystem.show(scene, [ // 改成自動推進對話
+            DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
                 '快過來',
                 '用空白鍵和我說說話'
@@ -306,24 +392,29 @@ export default {
             DialogueSystem.show(scene, [
                 '我老花，看不到⋯⋯',
                 '⋯⋯',
-                '用空白鍵，可以撿起身邊的東西',
+                '點擊左鍵，撿起身邊的東西',
                 '幫我找找那個我需要的東西'
             ], ()=> {
                 this.isConversing = false;
             });
         }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
-            '謝謝你',
+            '謝謝你，我終於看清楚了。',
+            '你們是⋯⋯心智的化身？',
+            '太好了⋯⋯這一切就靠你們了', 
             '大地久旱，河道乾涸，生靈塗炭',
             '70年前，當我還是隻小猴子時，大地綠意昂然，生機蓬勃',
             '當時東南方的祭壇仍完好無缺',
-            '後來發生了一場暴風雨，祭壇倒塌，那裡供俸的聖物四散',
+            '後來發生了一場沙塵暴，祭壇倒塌，那裡供俸的聖物四散',
             '聖物⋯⋯',
             '對⋯⋯！那些聖物，也許就是恢復一切的關鍵',
             '也許它就在雜草蔓生之盡頭⋯⋯',
             '⋯⋯',
+            '這是猴族代代相傳的魔法樹枝，',
+            '它將助你一臂之力，按下左鍵伸長樹枝，吸附物品'
             
         ], ()=> {
+            scene.sharedState.wand_unlocked = true;
             this.isConversing = false;
         });
         } else if(this.wear_glasses &&this.isGetRainStone){
@@ -332,16 +423,33 @@ export default {
             '「祈天降雨之石」',
             '我想起來了！傳說中集齊6顆，天降甘霖',
             '試圖適應冒險中遇到的難題，',
-            '那些難題將觸動直覺的大象，而你作為騎象人，就是牠的夥伴',
+            '那些難題將觸動直覺的大象，而作為騎象人，你就是牠的夥伴',
             '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '小心點，這片大地上的動物有著與你截然不同的價值觀',
             '快去吧！尋找其他失散的5顆祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 this.isConversing = false;
+                scene.items.push(this.woodpile01);
             }) 
+           
         }
+        this.turns_monkey++;
+        
+    },
 
-    
+    startConversationMonkeyEasterEgg(scene) {     
+        if (this.isConversing || this.easter_egg_triggered) {
+            return;
+        }
+        this.isConversing = true;
+        this.easter_egg_triggered = true;
+        DialogueSystem.show(scene, [
+            '我看不到了⋯⋯',
+            '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
+        ], () => {
+            this.isConversing = false;
+        })
         this.turns_monkey++;
     },
     
@@ -349,8 +457,8 @@ export default {
         if (this.isConversing) return;
         if (this.isGetRainStone){
             DialogueSystem.show(scene, [
-                '（正確的選擇⋯⋯）', // 改成自動推進對話
-                '（什麼才是合乎道德的選擇？）',
+                '（木堆太高了，我們過不去）',
+                '（魔法樹枝派上用場了）' // 改成自動推進對話
             ])
         }else{
             DialogueSystem.show(scene, [
@@ -358,16 +466,102 @@ export default {
             ])
         }
     },
-
+    
     update(scene) {
+
+        // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
+        // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
+        const isDevSprinting = scene.devToolsManager?.isDevMode && scene.devToolsManager?.sprintKey?.isDown;
+
+        if (this.boundaryLines && this.boundaryLines.length > 0 && this.playerSprite && this.playerSprite.body) {
+            const player = this.playerSprite;
+            const body = player.body;
+
+            if (isDevSprinting) {
+                // 開發者模式穿越時，持續更新安全位置，避免放開 Shift 瞬間被拉回
+                this.lastSafeX = player.x;
+                this.lastSafeY = player.y;
+            } else {
+                // 輔助函式：判斷主角在 (testPlayerX, testPlayerY) 時其 body 是否與任一邊界折線相交
+            const bodyCollidesWithBoundary = (testPlayerX, testPlayerY) => {
+                const bodyOffsetX = body.x - player.x;
+                const bodyOffsetY = body.y - player.y;
+                const boxX = testPlayerX + bodyOffsetX;
+                const boxY = testPlayerY + bodyOffsetY;
+                const bodyRect = new Phaser.Geom.Rectangle(boxX, boxY, body.width, body.height);
+
+                for (let i = 0; i < this.boundaryLines.length; i++) {
+                    const line = this.boundaryLines[i];
+                    if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // 1. 預測下一影格（約 1/60 秒）的位移量
+            const dt = 1 / 60;
+            const predictDistX = body.velocity.x * dt;
+            const predictDistY = body.velocity.y * dt;
+
+            // 2. 檢測 X 軸移動：
+            if (predictDistX !== 0) {
+                const nextCollides = bodyCollidesWithBoundary(player.x + predictDistX, player.y);
+                const currentCollides = bodyCollidesWithBoundary(player.x, player.y);
+
+                // 如果當前沒碰但下一步會碰，或者往該方向移動會更嚴重，則阻擋 X
+                if (nextCollides && (!currentCollides || bodyCollidesWithBoundary(player.x + Math.sign(predictDistX) * 2, player.y))) {
+                    // 二分逼近法：往前貼近，但保留至少 1.5px 緩衝區避免黏死
+                    let step = predictDistX;
+                    while (Math.abs(step) > 1.5) {
+                        step *= 0.5;
+                        if (!bodyCollidesWithBoundary(player.x + step, player.y)) {
+                            player.x += step;
+                        }
+                    }
+                    body.velocity.x = 0; // 截斷該方向速度
+                }
+            }
+
+            // 3. 檢測 Y 軸移動：
+            if (predictDistY !== 0) {
+                const nextCollides = bodyCollidesWithBoundary(player.x, player.y + predictDistY);
+                const currentCollides = bodyCollidesWithBoundary(player.x, player.y);
+
+                if (nextCollides && (!currentCollides || bodyCollidesWithBoundary(player.x, player.y + Math.sign(predictDistY) * 2))) {
+                    let step = predictDistY;
+                    while (Math.abs(step) > 1.5) {
+                        step *= 0.5;
+                        if (!bodyCollidesWithBoundary(player.x, player.y + step)) {
+                            player.y += step;
+                        }
+                    }
+                    body.velocity.y = 0; // 截斷該方向速度
+                }
+            }
+
+            // 4. 安全保護：只有在持續卡入內部時才回退，且不抹除速度，讓玩家可以按反方向走出來
+            if (bodyCollidesWithBoundary(player.x, player.y)) {
+                player.x = this.lastSafeX;
+                player.y = this.lastSafeY;
+            } else {
+                this.lastSafeX = player.x;
+                this.lastSafeY = player.y;
+            }
+            }
+        }
+        // ========================================================
+
         // Detect if the player picked up the apple
-            if (scene.wandController.heldItem === this.apple_on_puddle) {
-                // Stop the floating tweens completely            
-                scene.tweens.killTweensOf(this.apple_on_puddle);                
-            }
-            if (scene.wandController.heldItem === this.rainStone){
-                scene.tweens.killTweensOf(this.rainStone);
-            }
+        if (scene.wandController.heldItem === this.apple_on_puddle) {
+            // Stop the floating tweens completely            
+            scene.tweens.killTweensOf(this.apple_on_puddle);                
+        }
+        if (scene.wandController.heldItem === this.rainStone){
+            scene.tweens.killTweensOf(this.rainStone);
+        }
             
         // 對話時鎖定主角
         if (this.isConversing){
@@ -378,8 +572,9 @@ export default {
             return;
         }
 
-        // 初始教學，自動開啟與monkey的對話
-        if(this.turns_monkey === 0 &&!this.isConversing){
+
+        // 自動開啟與monkey的對話: 初始教學＆搶眼鏡彩蛋
+        if(this.turns_monkey === 0){
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
@@ -390,7 +585,12 @@ export default {
         // Glasses Logic
         if (scene.wandController.heldItem === this.glasses) {
             const playerSprite = scene.playerController.sprite;
+            this.wear_glasses = false;
             
+            if (scene.sharedState.wand_unlocked) {
+                this.startConversationMonkeyEasterEgg(scene);
+            }
+
             // Check distance between player and monkey
             const distance = Phaser.Math.Distance.Between(
                 playerSprite.x, playerSprite.y,
@@ -401,6 +601,7 @@ export default {
             if (distance <= this.CONVERSATION_DISTANCE) {
                 // 1. Set the flag to true (setting both names to be safe)
                 this.wear_glasses = true;
+                this.easter_egg_triggered = false;
 
                 // 2. Remove the held item from the player's trunk
                 scene.wandController.heldItem = null;
@@ -414,7 +615,7 @@ export default {
         }
 
         // rainStone Logic
-        if (scene.wandController.heldItem === this.rainStone) {
+        if (scene.wandController.heldItem === this.rainStone && this.wear_glasses) {
             const playerSprite = scene.playerController.sprite;
             
             // Check distance between player and monkey
@@ -444,7 +645,7 @@ export default {
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
-            if (distance > this.CONVERSATION_DISTANCE){
+            if (distance > 250){
                 this.shouldTriggerPartingDialogue = false;
                 this.isConversing = true;
                 DialogueSystem.show(scene, [
@@ -453,8 +654,29 @@ export default {
                     '做正確的選擇。'
                 ], () => {
                     this.isConversing = false;
-                })
-            };
+                });
+            }
+        }
+
+        // Woodpile
+        if (this.woodpiles.includes(scene.wandController.heldItem)){
+            for(let i = 0; i < this.woodpiles.length; i++) {
+                if (scene.wandController.heldItem === this.woodpiles[i])
+                {
+                    if (i === 3 && this.woodpile04Collider){
+                        this.woodpile04Collider.destroy();
+                        this.woodpile04Collider = null;
+                    }
+                    const nextWood = this.woodpiles[i + 1];
+                    if (nextWood && !scene.items.includes(nextWood)){
+                        scene.items.push(nextWood);
+                    }
+                }
+
+
+            }
         }
     }
+
+
 };
