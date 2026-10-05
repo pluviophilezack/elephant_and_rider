@@ -9,6 +9,8 @@ const RAIN_STONE_SEQUENCE_MS = CAMERA_RESTORED_AT_MS + STONE_FLIGHT_MS + HUD_FLA
 const CELEBRATION_ZOOM = 1.55;
 const FLYING_STONE_START_SCALE = 1.0;
 const FLYING_STONE_END_SCALE = 0.3;
+const RAIN_START_STONES = 5;
+const WATER_FRAME_MS = 750;
 
 export class HUD {
 
@@ -29,6 +31,10 @@ export class HUD {
         this.flashEndTimer = null;
         this.flyingStoneTween = null;
         this.flyingStone = null;
+        this.dryFlow = null;
+        this.waterSprite = null;
+        this.waterAnimationTimer = null;
+        this.hasTriggeredRain = false;
 
         this.container = scene.add.container(20, 20)
             .setScrollFactor(0)
@@ -107,6 +113,19 @@ export class HUD {
     setRainStoneCount(count) {
         this.rainStoneCount = Math.max(0, Math.min(count, this.maxRainStones));
         this.text.setText(this._formatText());
+
+        if (this.rainStoneCount >= RAIN_START_STONES) {
+            this._startRain();
+        } else {
+            this._stopRain();
+        }
+    }
+
+    bindRiverFlow(dryFlow) {
+        this.dryFlow = dryFlow;
+        if (this.rainStoneCount >= RAIN_START_STONES) {
+            this._startRain();
+        }
     }
 
     resetRainStones() {
@@ -119,6 +138,49 @@ export class HUD {
 
     _formatText() {
         return `${this.rainStoneCount} / ${this.maxRainStones}`;
+    }
+
+    _startRain() {
+        if (!this.hasTriggeredRain) {
+            this.hasTriggeredRain = true;
+            if (this.scene.sharedState) {
+                this.scene.sharedState.rain = true;
+            }
+        }
+
+        if (!this.dryFlow?.active || this.waterSprite?.active) return;
+
+        this.dryFlow.setVisible(false);
+        this.waterSprite = this.scene.add.image(0, 0, 'water_flow_01').setOrigin(0, 0);
+        this.waterAnimationTimer = this.scene.time.addEvent({
+            delay: WATER_FRAME_MS,
+            loop: true,
+            callback: () => {
+                const nextTexture = this.waterSprite.texture.key === 'water_flow_01'
+                    ? 'water_flow_02'
+                    : 'water_flow_01';
+                this.waterSprite.setTexture(nextTexture);
+            }
+        });
+    }
+
+    _stopRain() {
+        if (!this.hasTriggeredRain && !this.waterSprite?.active) return;
+
+        this.hasTriggeredRain = false;
+        if (this.scene.sharedState) {
+            this.scene.sharedState.rain = false;
+        }
+
+        this.waterAnimationTimer?.remove(false);
+        this.waterAnimationTimer = null;
+        this.waterSprite?.destroy();
+        this.waterSprite = null;
+        if (this.dryFlow?.active) {
+            this.dryFlow.setVisible(true);
+        } else {
+            this.dryFlow = this.scene.add.image(0, 0, 'water_flow_dry').setOrigin(0, 0);
+        }
     }
 
     _playRainStoneFeedback(targetCount, onComplete) {

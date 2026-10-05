@@ -59,6 +59,7 @@ export class Overworld extends Scene
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
+        this.hud.bindRiverFlow(dry_flow);
 
         // 拼接四張樹木
         // 左上
@@ -70,28 +71,6 @@ export class Overworld extends Scene
         // 右下
         this.add.image(worldWidth, worldHeight, 'trees_04').setOrigin(1, 1)
 
-
-        // 判斷下雨與否，改變場景
-        this.events.once('state:rain', isRain => {
-            if (!isRain) return;
-
-            // 移除乾旱素材
-            dry_flow.destroy();
-
-            // 水流變化
-            const waterSprite = this.add.image(0, 0, 'water_flow_01').setOrigin(0, 0);
-            this.time.addEvent({
-                delay: 750,
-                loop: true,
-                callback: () => {
-                const nextTexture = (waterSprite.texture.key === 'water_flow_01') 
-                    ? 'water_flow_02' 
-                    : 'water_flow_01';
-                waterSprite.setTexture(nextTexture);
-                }
-            });
-        })
-        
         // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
@@ -148,7 +127,6 @@ export class Overworld extends Scene
         }
         this.hud.addRainStone(1, () => {
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
-                this.sharedState["rain"] = true;
                 this.isEndingTriggered = true;
                 this.scene.start('Ending');
             }
