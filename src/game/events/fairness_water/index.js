@@ -10,7 +10,7 @@ let state = {
     giverAntelope: null,     
     pondSprite: null,        
     pondZone: null,
-    pondStoneSprite: null, // 💡 新增：湖上的石頭 Sprite
+    pondStoneSprite: null, //  新增：湖上的石頭 Sprite
     tileSelfish: null,
     tileShare: null,
     textSelf: null,
@@ -38,7 +38,7 @@ export default {
 
         // 1. 池塘背景 (Depth 1)
         state.pondSprite = scene.add.sprite(1484, 1946, 'pond_01').setDepth(1).setScale(1.7);
-        state.pondZone = scene.add.zone(1484, 1946, 1000, 350);
+        state.pondZone = scene.add.zone(1484, 1946, 1050, 400);
         scene.physics.add.existing(state.pondZone, true);
 
         // 2. 湖邊石頭外觀 (Depth 2)
@@ -46,7 +46,7 @@ export default {
             .setDepth(2)
             .setScale(1.1);
 
-        // 💡 3. 建立擋住湖面中央與右上邊界的碰撞牆 (特意避開左下角缺口 1137, 2111)
+        //  3. 建立擋住湖面中央與右上邊界的碰撞牆 (特意避開左下角缺口 1137, 2111)
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
         // 湖心障礙物 (防止直接跨湖)
@@ -59,11 +59,11 @@ export default {
         scene.physics.add.existing(lakeRightBlock, true);
         scene.physics.add.collider(playerTarget, lakeRightBlock);
 
-        // 🎥 4. 遠處羚羊
+        //  4. 遠處羚羊
         const farAwayPositions = [
-            { x: 2750, y: 850 },
-            { x: 2820, y: 830 },
-            { x: 2710, y: 880 }
+            { x: 2430, y: 2174 },
+            { x: 2492, y: 2131 },
+            { x: 2514, y: 2252 }
         ];
 
         if (scene.textures.exists('antelope_moving_01') && scene.textures.exists('antelope_moving_02')) {
@@ -177,7 +177,7 @@ export default {
                     state.pondSprite.setTexture('pond_02');
                 }
 
-                // 🎥 羚羊漫步過來 (聚集於缺口右側)
+                //  羚羊漫步過來 (聚集於缺口右側)
                 state.antelopes.forEach((ant, idx) => {
                     const stopX = standing_point.x + 160 + (idx * 40);
                     const stopY = standing_point.y + (idx * 15 - 10);
@@ -230,7 +230,7 @@ export default {
                     targets: playerSprite,
                     x: 2085,
                     y: 1850,
-                    duration: 1200,
+                    duration: 1500,
                     ease: 'Linear',
                     onComplete: () => {
                         updateFacingDirection(2085, 1799);
@@ -241,7 +241,7 @@ export default {
                     targets: playerSprite,
                     x: 1799,
                     y: 2171,
-                    duration: 1200,
+                    duration: 1500,
                     ease: 'Linear',
                     paused: true, // 先暫停，等 tween1 結束才播放
                     onComplete: () => {
@@ -269,7 +269,7 @@ export default {
                     targets: playerSprite,
                     x: 1137,
                     y: 2280,
-                    duration: 1800,
+                    duration: 1500,
                     ease: 'Linear',
                     onComplete: () => {
                         updateFacingDirection(1137, 1137);
@@ -292,7 +292,7 @@ export default {
                     targets: playerSprite,
                     x: 774,
                     y: 1870,
-                    duration: 1200,
+                    duration: 1500,
                     ease: 'Linear',
                     onComplete: () => {
                         updateFacingDirection(774, 1870);
@@ -303,7 +303,7 @@ export default {
                     targets: playerSprite,
                     x: 980,
                     y: 2228,
-                    duration: 1200,
+                    duration: 1500,
                     ease: 'Linear',
                     paused: true, // 先暫停，等 tween1 結束才播放
                     onComplete: () => {
@@ -390,7 +390,7 @@ export default {
             ], () => {
                 scene.isDialogueActive = false;
                 
-                // 💡 祈雨石生成於 pond_stone 的位置上方 (或傳入預設 coordinates)
+                // 祈雨石生成於 pond_stone 的位置上方
                 const stoneX = state.pondStoneSprite ? state.pondStoneSprite.x - 300: state.pondZone.x;
                 const stoneY = state.pondStoneSprite ? state.pondStoneSprite.y + 300 : state.pondZone.y;
 
@@ -473,7 +473,7 @@ export default {
         spaceKey.on('down', pressHandler);
     },
 
-    // 💡 祈雨石生成邏輯：預設置於 pond_stone 上（Depth 設為 20 確保高於石頭）
+    // 祈雨石生成邏輯：預設置於 pond_stone 上（Depth 設為 20 確保高於石頭）
     giveRainStone(scene, x, y) {
         const stoneX = x !== undefined ? x : (state.pondStoneSprite ? state.pondStoneSprite.x : 1484);
         const stoneY = y !== undefined ? y : (state.pondStoneSprite ? state.pondStoneSprite.y - 10 : 1900);
@@ -498,7 +498,7 @@ export default {
             state.isPlayerInPondZone = scene.physics.overlap(playerTarget, state.pondZone);
         }
 
-        // 祈雨石「伸長抓取 -> 縮回魔杖」收納機制
+        // 魔杖抓取祈雨石並縮回時，呼叫 HUD 
         if (state.rainStoneInstance && scene.wandController) {
             const isHoldingThisStone = (scene.wandController.heldItem === state.rainStoneInstance);
             const currentWandLength = scene.wandController.currentBodyLength || 0;
@@ -510,7 +510,15 @@ export default {
             if (isHoldingThisStone && state.hasExtendedWhileHolding && currentWandLength === 0) {
                 scene.wandController.heldItem = null;
 
-                if (typeof scene.giveRainStone === 'function') {
+                // 銷毀場景上的實體祈雨石
+                state.rainStoneInstance.destroy();
+                state.rainStoneInstance = null;
+                state.hasExtendedWhileHolding = false;
+
+                // 呼叫場景上的 HUD 觸發 addRainStone() 
+                if (scene.hud && typeof scene.hud.addRainStone === 'function') {
+                    scene.hud.addRainStone(1);
+                } else if (typeof scene.giveRainStone === 'function') {
                     scene.giveRainStone();
                 } else {
                     scene.hasRainStone = true;
@@ -518,11 +526,12 @@ export default {
                         scene.sharedState.rainStoneCount = (scene.sharedState.rainStoneCount || 0) + 1;
                     }
                 }
-
-                state.rainStoneInstance.destroy();
-                state.rainStoneInstance = null;
-                state.hasExtendedWhileHolding = false;
             }
+        }
+
+        // 保持每影格更新 HUD 的動畫狀態
+        if (scene.hud && typeof scene.hud.update === 'function') {
+            scene.hud.update();
         }
     }
 };
