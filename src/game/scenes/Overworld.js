@@ -115,7 +115,8 @@ export class Overworld extends Scene
             ingroup_bird_contest: false,
             fairness_water: false,
             purity_flooded_ruins: false,
-            authority_herd: false
+            authority_herd: false,
+            apples_achievement: false
         }
 
         // sharedState 變更，用proxy攔截state變更
