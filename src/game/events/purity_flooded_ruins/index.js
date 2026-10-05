@@ -128,12 +128,13 @@ export default {
               }
               safeSetTexture(this.guard, "guard_saved");
 
-              MoralState?.add?.("purity", -1);
               MoralState?.add?.("harm", 1);
 
               DialogueSystem.show(scene, dialogs[2] || [], () => {});
             } else if (choice === "leave") {
               this.isTrunkPolluted = false;
+              MoralState?.add?.("purity", 1);
+
               DialogueSystem.show(scene, dialogs[1] || [], () => {});
             }
           });
