@@ -10,6 +10,7 @@ let state = {
     giverAntelope: null,     
     pondSprite: null,        
     pondZone: null,
+    pondStoneSprite: null, // 💡 新增：湖上的石頭 Sprite
     tileSelfish: null,
     tileShare: null,
     textSelf: null,
@@ -17,7 +18,9 @@ let state = {
     isDeciding: false,
     spaceDrinkCount: 0,
     isPlayerInPondZone: false,
-    boundaries: []          // 新增：儲存鎖定區域用的空氣牆
+    boundaries: [],
+    rainStoneInstance: null,
+    hasExtendedWhileHolding: false
 };
 
 export default {
@@ -30,13 +33,33 @@ export default {
         state.isPlayerInPondZone = false;
         state.antelopes = [];
         state.boundaries = [];
+        state.rainStoneInstance = null;
+        state.hasExtendedWhileHolding = false;
 
-        // 1. 池塘與重疊區域
+        // 1. 池塘背景 (Depth 1)
         state.pondSprite = scene.add.sprite(1484, 1946, 'pond_01').setDepth(1).setScale(1.7);
         state.pondZone = scene.add.zone(1484, 1946, 1000, 350);
         scene.physics.add.existing(state.pondZone, true);
 
-        // 🎥 2. 營造遠處感受
+        // 2. 湖邊石頭外觀 (Depth 2)
+        state.pondStoneSprite = scene.add.sprite(1484, 1946, 'pond_stone')
+            .setDepth(2)
+            .setScale(1.1);
+
+        // 💡 3. 建立擋住湖面中央與右上邊界的碰撞牆 (特意避開左下角缺口 1137, 2111)
+        const playerTarget = scene.player.sprite || scene.player.player || scene.player;
+
+        // 湖心障礙物 (防止直接跨湖)
+        const lakeCenterBlock = scene.add.zone(1484, 1900, 450, 200);
+        scene.physics.add.existing(lakeCenterBlock, true);
+        scene.physics.add.collider(playerTarget, lakeCenterBlock);
+
+        // 右側障礙物 (擋住右半邊)
+        const lakeRightBlock = scene.add.zone(1750, 1950, 200, 250);
+        scene.physics.add.existing(lakeRightBlock, true);
+        scene.physics.add.collider(playerTarget, lakeRightBlock);
+
+        // 🎥 4. 遠處羚羊
         const farAwayPositions = [
             { x: 2750, y: 850 },
             { x: 2820, y: 830 },
@@ -67,36 +90,30 @@ export default {
         });
         if (!state.giverAntelope) state.giverAntelope = state.antelopes[0];
 
-        const playerTarget = scene.player.sprite || scene.player.player || scene.player;
-
+        // 觸發事件區域
         scene.physics.add.overlap(playerTarget, state.pondZone, () => {
             state.isPlayerInPondZone = true;
             if (!state.hasTriggered) {
                 state.hasTriggered = true;
-                // 🔒 一踏入事件區域，立刻鎖定玩家離場邊界
                 this.lockBoundary(scene);
                 this.startFirstDrink(scene);
             }
         });
     },
-
-    // 🔒 建立離場空氣牆（封鎖周圍通路）
     lockBoundary(scene) {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
-        // 建立左側與右側封鎖牆 (依據池塘區域範圍圍住)
         const leftWall = scene.add.zone(state.pondZone.x - 700, state.pondZone.y, 50, 1000);
         const rightWall = scene.add.zone(state.pondZone.x + 700, state.pondZone.y, 50, 1000);
         const topWall = scene.add.zone(state.pondZone.x, state.pondZone.y - 500, 1400, 50);
 
         [leftWall, rightWall, topWall].forEach(wall => {
-            scene.physics.add.existing(wall, true); // 建立靜態物理牆
-            const collider = scene.physics.add.collider(playerTarget, wall); // 與玩家產生碰撞硬阻擋
+            scene.physics.add.existing(wall, true);
+            const collider = scene.physics.add.collider(playerTarget, wall);
             state.boundaries.push({ wall, collider });
         });
     },
 
-    // 🔓 事件完成時解鎖邊界
     unlockBoundary(scene) {
         state.boundaries.forEach(item => {
             if (item.collider) scene.physics.world.removeCollider(item.collider);
@@ -118,82 +135,196 @@ export default {
             spaceKey.off('down', drinkListener);
             hintText.destroy();
 
-            const player = scene.player;
+            const playerController = scene.playerController || scene.player;
+            const playerSprite = playerController.sprite || (playerController.player ? playerController.player : playerController);
 
             if (scene.textures.exists('main_character_moving_01') && scene.textures.exists('main_character_moving_02')) {
-                if (!scene.anims.exists('walk')) {
+                if (!scene.anims.exists('slow_walk')) {
                     scene.anims.create({
-                        key: 'walk',
+                        key: 'slow_walk',
                         frames: [{ key: 'main_character_moving_01' }, { key: 'main_character_moving_02' }],
-                        frameRate: 6,
+                        frameRate: 3,
                         repeat: -1
                     });
                 }
             }
 
-            player.isAutoMoving = true;
-            if (player.body) player.body.enable = false;
+            if (playerController) playerController.isAutoMoving = true;
+            if (playerSprite.body) playerSprite.body.enable = false;
 
-            const targetX = 1470;
-            const targetY = 2160;
+            // 目的地：左下角缺口 (1137, 2111)
+            const standing_point = { x: 1137, y: 2111 };
 
-            const moveDistance = Phaser.Math.Distance.Between(player.x, player.y, targetX, targetY);
-            const playerMoveDuration = (moveDistance / 150) * 1000;
-
-            player.play('walk', true);
-
-            scene.tweens.add({
-                targets: player,
-                x: targetX,
-                y: targetY,
-                duration: Math.max(playerMoveDuration, 800),
-                onComplete: () => {
-                    player.isAutoMoving = false;
-                    player.stop();
-                    player.setTexture('main_character_moving_01');
-                    if (player.body) player.body.enable = true;
-
-                    if (state.pondSprite && scene.textures.exists('pond_02')) {
-                        state.pondSprite.setTexture('pond_02');
-                    }
-
-                    // 🎥 羚羊漫步過來
-                    state.antelopes.forEach((ant, idx) => {
-                        const stopX = player.x + 200 + (idx * 45);
-                        const stopY = player.y + (idx * 15 - 10);
-                        const duration = 2500 + (idx * 200);
-
-                        ant.play('antelope_walk');
-                        scene.tweens.add({
-                            targets: ant,
-                            x: stopX,
-                            y: stopY,
-                            scale: 0.5,
-                            alpha: 1.0,
-                            duration: duration,
-                            ease: 'Quad.easeOut',
-                            onComplete: () => {
-                                ant.stop();
-                                ant.setTexture('antelope_stand');
-
-                                if (idx === state.antelopes.length - 1) {
-                                    scene.isDialogueActive = true;
-                                    scene.time.delayedCall(100, () => {
-                                        DialogueSystem.show(scene, [
-                                            '我們好久沒看到水了',
-                                            '好累...',
-                                            '可不可以分我們一點水?'
-                                        ], () => {
-                                            scene.isDialogueActive = false;
-                                            this.spawnChoiceTiles(scene);
-                                        });
-                                    });
-                                }
-                            }
-                        });
-                    });
+            // 方向翻轉控制
+            const updateFacingDirection = (fromX, toX) => {
+                if (toX < fromX - 5) {
+                    playerSprite.setFlipX(true);  // 面向左
+                } else if (toX > fromX + 5) {
+                    playerSprite.setFlipX(false); // 面向右
                 }
-            });
+            };
+
+            // 抵達缺口後的邏輯
+            const onReachWater = () => {
+                playerSprite.stop();
+                playerSprite.setTexture('main_character_moving_01');
+                playerSprite.setFlipX(false); // 站在缺口面向右側湖水
+
+                if (playerController) playerController.isAutoMoving = false;
+                if (playerSprite.body) playerSprite.body.enable = true;
+
+                if (state.pondSprite && scene.textures.exists('pond_02')) {
+                    state.pondSprite.setTexture('pond_02');
+                }
+
+                // 🎥 羚羊漫步過來 (聚集於缺口右側)
+                state.antelopes.forEach((ant, idx) => {
+                    const stopX = standing_point.x + 160 + (idx * 40);
+                    const stopY = standing_point.y + (idx * 15 - 10);
+                    const duration = 2200 + (idx * 200);
+
+                    ant.play('antelope_walk');
+                    scene.tweens.add({
+                        targets: ant,
+                        x: stopX,
+                        y: stopY,
+                        scale: 0.5,
+                        alpha: 1.0,
+                        duration: duration,
+                        ease: 'Quad.easeOut',
+                        onComplete: () => {
+                            ant.stop();
+                            ant.setTexture('antelope_stand');
+
+                            if (idx === state.antelopes.length - 1) {
+                                scene.isDialogueActive = true;
+                                scene.time.delayedCall(100, () => {
+                                    DialogueSystem.show(scene, [
+                                        '我們好久沒看到水了',
+                                        '好累...',
+                                        '可不可以分我們一點水?'
+                                    ], () => {
+                                        scene.isDialogueActive = false;
+                                        this.spawnChoiceTiles(scene);
+                                    });
+                                });
+                            }
+                        }
+                    });
+                });
+            };
+
+            if (scene.anims.exists('slow_walk')) {
+                playerSprite.play('slow_walk', true);
+            }
+
+            const startX = playerSprite.x;
+            const startY = playerSprite.y;
+
+            // 根據觸發位置分支選取最適路線
+            if (startX > 1600 &&startY < 1870) {
+                // 情境 1：從右側觸發 (先走到右側轉折點 -> 再繞到湖底 -> 缺口)
+                updateFacingDirection(startX, 2085);
+
+                const tween1 = scene.tweens.add({
+                    targets: playerSprite,
+                    x: 2085,
+                    y: 1850,
+                    duration: 1200,
+                    ease: 'Linear',
+                    onComplete: () => {
+                        updateFacingDirection(2085, 1799);
+                    }
+                });
+
+                const tween2 = scene.tweens.add({
+                    targets: playerSprite,
+                    x: 1799,
+                    y: 2171,
+                    duration: 1200,
+                    ease: 'Linear',
+                    paused: true, // 先暫停，等 tween1 結束才播放
+                    onComplete: () => {
+                        updateFacingDirection(1799, 1137);
+                        if (scene.anims.exists('slow_walk')) playerSprite.play('slow_walk', true);
+
+                        // 階段三：走往缺口 (1137, 2111)
+                        scene.tweens.add({
+                            targets: playerSprite,
+                            x: 1137,
+                            y: 2111,
+                            duration: 1500,
+                            ease: 'Linear',
+                            onComplete: onReachWater
+                        });
+                    }
+                });
+
+                // 鏈式播放
+                tween1.on('complete', () => tween2.play());
+            } else if (startY >= 1870) {
+                // 情境 2：從正下方觸發 (先向左移至 1137, 2280 -> 垂直向上進入缺口)
+                updateFacingDirection(startX, 1137);
+                scene.tweens.add({
+                    targets: playerSprite,
+                    x: 1137,
+                    y: 2280,
+                    duration: 1800,
+                    ease: 'Linear',
+                    onComplete: () => {
+                        updateFacingDirection(1137, 1137);
+                        if (scene.anims.exists('slow_walk')) playerSprite.play('slow_walk', true);
+
+                        scene.tweens.add({
+                            targets: playerSprite,
+                            x: standing_point.x,
+                            y: standing_point.y,
+                            duration: 1800,
+                            ease: 'Linear',
+                            onComplete: onReachWater
+                        });
+                    }
+                });
+            } else {
+                // 情境 3：從左側觸發 (距離缺口近，直接走過去)
+                updateFacingDirection(startX, standing_point.x);
+                const tween1 = scene.tweens.add({
+                    targets: playerSprite,
+                    x: 774,
+                    y: 1870,
+                    duration: 1200,
+                    ease: 'Linear',
+                    onComplete: () => {
+                        updateFacingDirection(774, 1870);
+                    }
+                });
+
+                const tween2 = scene.tweens.add({
+                    targets: playerSprite,
+                    x: 980,
+                    y: 2228,
+                    duration: 1200,
+                    ease: 'Linear',
+                    paused: true, // 先暫停，等 tween1 結束才播放
+                    onComplete: () => {
+                        updateFacingDirection(980, 2228);
+                        if (scene.anims.exists('slow_walk')) playerSprite.play('slow_walk', true);
+
+                        // 階段三：走往缺口 (1137, 2111)
+                        scene.tweens.add({
+                            targets: playerSprite,
+                            x: 1137,
+                            y: 2111,
+                            duration: 1500,
+                            ease: 'Linear',
+                            onComplete: onReachWater
+                        });
+                    }
+                });
+
+                // 鏈式播放
+                tween1.on('complete', () => tween2.play());
+            }
         };
 
         spaceKey.on('down', drinkListener);
@@ -248,7 +379,6 @@ export default {
         if (state.tileShare) { state.tileShare.destroy(); state.tileShare = null; }
     },
 
-    // 路線 A：分享
     handleShareChoice(scene) {
         scene.isDialogueActive = true;
 
@@ -259,14 +389,13 @@ export default {
                 '禮物！'
             ], () => {
                 scene.isDialogueActive = false;
-                const playerTarget = scene.player.sprite || scene.player.player || scene.player;
-                const giveX = state.giverAntelope ? state.giverAntelope.x - 20 : playerTarget.x + 60;
-                const giveY = state.giverAntelope ? state.giverAntelope.y + 20 : playerTarget.y;
                 
-                // 生成祈雨石
-                this.giveRainStone(scene, giveX - 150, giveY);
+                // 💡 祈雨石生成於 pond_stone 的位置上方 (或傳入預設 coordinates)
+                const stoneX = state.pondStoneSprite ? state.pondStoneSprite.x - 300: state.pondZone.x;
+                const stoneY = state.pondStoneSprite ? state.pondStoneSprite.y + 300 : state.pondZone.y;
 
-                // 羚羊分散到湖周圍飲水
+                this.giveRainStone(scene, stoneX, stoneY);
+
                 const drinkSpots = [
                     { x: state.pondZone.x + 220, y: state.pondZone.y - 80,  flip: false },
                     { x: state.pondZone.x - 200, y: state.pondZone.y - 100, flip: true  },
@@ -294,13 +423,11 @@ export default {
                     });
                 });
 
-                // 🔓 【事件完成】解鎖離場邊界，恢復自由移動
                 this.unlockBoundary(scene);
             });
         });
     },
 
-    // 路線 B：喝光 (連按三次空白鍵)
     handleSelfishChoice(scene) {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
@@ -333,9 +460,12 @@ export default {
                     });
                 });
 
-                this.giveRainStone(scene, state.pondZone.x, state.pondZone.y);
+                // 💡 祈雨石生成於 pond_stone 的位置上方
+                const stoneX = state.pondStoneSprite ? state.pondStoneSprite.x : state.pondZone.x;
+                const stoneY = state.pondStoneSprite ? state.pondStoneSprite.y - 10 : state.pondZone.y;
 
-                // 🔓 【事件完成】解鎖離場邊界，恢復自由移動
+                this.giveRainStone(scene, stoneX, stoneY);
+
                 this.unlockBoundary(scene);
             }
         };
@@ -343,11 +473,15 @@ export default {
         spaceKey.on('down', pressHandler);
     },
 
+    // 💡 祈雨石生成邏輯：預設置於 pond_stone 上（Depth 設為 20 確保高於石頭）
     giveRainStone(scene, x, y) {
-        scene.hasRainStone = true;
+        const stoneX = x !== undefined ? x : (state.pondStoneSprite ? state.pondStoneSprite.x : 1484);
+        const stoneY = y !== undefined ? y : (state.pondStoneSprite ? state.pondStoneSprite.y - 10 : 1900);
 
-        const stone = scene.physics.add.sprite(x, y, 'rain_stone');
+        const stone = scene.physics.add.sprite(stoneX, stoneY, 'rain_stone').setScale(0.5);
         stone.setDepth(20);
+        state.rainStoneInstance = stone;
+        state.hasExtendedWhileHolding = false;
 
         if (!scene.items) {
             scene.items = [stone];
@@ -362,6 +496,33 @@ export default {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
         if (state.pondZone && playerTarget && playerTarget.body) {
             state.isPlayerInPondZone = scene.physics.overlap(playerTarget, state.pondZone);
+        }
+
+        // 祈雨石「伸長抓取 -> 縮回魔杖」收納機制
+        if (state.rainStoneInstance && scene.wandController) {
+            const isHoldingThisStone = (scene.wandController.heldItem === state.rainStoneInstance);
+            const currentWandLength = scene.wandController.currentBodyLength || 0;
+
+            if (isHoldingThisStone && currentWandLength > 10) {
+                state.hasExtendedWhileHolding = true;
+            }
+
+            if (isHoldingThisStone && state.hasExtendedWhileHolding && currentWandLength === 0) {
+                scene.wandController.heldItem = null;
+
+                if (typeof scene.giveRainStone === 'function') {
+                    scene.giveRainStone();
+                } else {
+                    scene.hasRainStone = true;
+                    if (scene.sharedState) {
+                        scene.sharedState.rainStoneCount = (scene.sharedState.rainStoneCount || 0) + 1;
+                    }
+                }
+
+                state.rainStoneInstance.destroy();
+                state.rainStoneInstance = null;
+                state.hasExtendedWhileHolding = false;
+            }
         }
     }
 };
