@@ -61,9 +61,9 @@ export default {
 
 
         // Bush compound
-        scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
+        this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
-        scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
 
         // 根據主角在線段的左側或右側，設定與bush compound圖層
 
@@ -105,10 +105,11 @@ export default {
         })
 
         // Giraffe (Guide) 
-        this.giraffe = scene.physics.add.sprite(1690, 225, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true).setOrigin(0.5, 0.75); 
+        this.giraffe = scene.physics.add.sprite(1665, 210, 'giraffe').setScale(0.6).setDepth(2).setFlipX(true).setOrigin(0.5, 0.75); 
         scene.registerAsset(this.giraffe);
         this.giraffe.body.setImmovable(true);
         scene.physics.add.collider(this.playerSprite, this.giraffe);
+        this.remaining_apple = 3;
 
         scene.tweens.add({
             targets: this.giraffe,
@@ -162,22 +163,15 @@ export default {
             }
         })
 
-        // 自言自語路段
-        
-        
-        if (!this.isGetRainStone){
-            const triggerZone = createTriggerZone(scene, { x: 300, y: 1600, width: 400, height: 1 });
-            scene.physics.add.overlap(scene.player, triggerZone, ()=>{
+        // 自言自語路段 (靠近木堆觸發對話，左上(100,1580)、右上(500,1580)、左下(86,1925)、右下(551,1925)；拿起第一塊木頭後銷毀)
+        this.woodpileTriggerZone = createTriggerZone(scene, { x: 318.5, y: 1752.5, width: 465, height: 345 });
+        this.isPlayerInWoodpileZone = false;
+        scene.physics.add.overlap(this.playerSprite, this.woodpileTriggerZone, () => {
+            if (!this.isPlayerInWoodpileZone) {
+                this.isPlayerInWoodpileZone = true;
                 this.startConversationRider(scene);
-                triggerZone.destroy();
-            })
-        }else{
-            const triggerZone = createTriggerZone(scene, { x: 700, y: 1400, width: 100, height: 400 });
-            scene.physics.add.overlap(scene.player, triggerZone, () => {
-            this.startConversationRider();
-            triggerZone.destroy();
-        }); 
-        }
+            }
+        });
 
         // Woodpile_04
         this.woodpile04 = scene.physics.add.sprite(285, 1950, 'woodpile_04_catch').setDepth(105); 
@@ -318,6 +312,11 @@ export default {
         this.apple_on_tree_1 = scene.physics.add.sprite(1774, 52, 'apple_with_leaf').setScale(0.3).setAngle(-30);
         scene.items.push(this.apple_on_tree_1);
 
+        // Apple tree on ruin
+        this.apple_tree_2 = scene.add.sprite(3470, 1948, 'apple_tree');
+        this.apple_on_tree_2 = scene.physics.add.sprite(3504, 1867, 'apple_with_leaf').setScale(0.3).setAngle(30);
+        scene.items.push(this.apple_on_tree_2);
+
         // sign
         this.sign_riverbed = scene.physics.add.sprite(290, 2373, 'sign_brown');
         scene.physics.add.collider(this.playerSprite,this.sign_riverbed);
@@ -335,10 +334,14 @@ export default {
             }
         ).setOrigin(0.5).setDepth(this.sign_riverbed.depth + 1);
 
-        // 監聽撿起的物品 (恢復原本亮度)
+        // 監聽撿起的物品 (恢復原本亮度，且拿起木堆時取消觸發區)
         scene.events.on('pick_item', (item) => {
             if (this.woodpiles.includes(item)){
                 item.clearTint();
+                if (this.woodpileTriggerZone) {
+                    this.woodpileTriggerZone.destroy();
+                    this.woodpileTriggerZone = null;
+                }
             }
         });
 
@@ -368,12 +371,62 @@ export default {
     startConversationGiraffe(scene) {
         if(this.isConversing) return;
         this.isConversing = true;
+
+        if(scene.wandController.heldItem === this.apple_on_tree_1){
+            scene.wandController.heldItem = null;
+            this.apple_on_tree_1.destroy();
+            this.remaining_apple--;
             DialogueSystem.show(scene, [
-            '我長得不夠高，',
-            '吃不到樹上的蘋果⋯⋯'
+                '謝謝你們，我已經好幾天沒吃東西了',
+                '這棵樹上的其他蘋果都還沒成熟，',
+            ])
+        }
+        else if(scene.wandController.heldItem === this.apple_on_puddle){
+            scene.wandController.heldItem = null;
+            this.apple_on_puddle.destroy();
+            this.remaining_apple--;
+            DialogueSystem.show(scene, [
+                '哇這蘋果真大，你們是在哪找到它的？',
+                '我吃得好滿足',
+            ])
+        }
+        else if(scene.wandController.heldItem === this.apple_on_tree_2){
+            scene.wandController.heldItem = null;
+            this.apple_on_tree_2.destroy();
+            this.remaining_apple--;
+            DialogueSystem.show(scene, [
+                '謝謝你們',
+                '這顆蘋果真好吃，吃起來像是高山蘋果',
+            ])
+        }
+        else{
+            DialogueSystem.show(scene, [
+                '我長得不夠高，',
+                '吃不到樹上的蘋果⋯⋯'
             ], () => {
-            this.isConversing = false;
+                this.isConversing = false;
             })
+        }
+
+
+        if (0 < this.remaining_apple && this.remaining_apple <= 2) {  
+            DialogueSystem.show(scene, [
+                '能請你們再幫我找找其他蘋果嗎？',
+                `我還需要${this.remaining_apple}顆蘋果才吃得飽`
+            ], ()=>{
+                this.isConversing = false;
+            })
+        }else if(this.remaining_apple === 0){
+            DialogueSystem.show(scene, [
+                `好吃好吃`,
+                `這是我這輩子吃過最好吃的三顆蘋果`,
+                `如今天降甘霖，很快大地將恢復生機，我再也不愁吃了。`,
+                `謝謝你們。`
+            ], ()=>{
+                this.isConversing = false;
+                scene.sharedState.apples_achievement = true;
+            })
+        }
     },
 
     startConversationMonkey(scene) {
@@ -455,15 +508,20 @@ export default {
     
     startConversationRider(scene){
         if (this.isConversing) return;
+        this.isConversing = true;
         if (this.isGetRainStone){
             DialogueSystem.show(scene, [
                 '（木堆太高了，我們過不去）',
                 '（魔法樹枝派上用場了）' // 改成自動推進對話
-            ])
+            ], () => {
+                this.isConversing = false;
+            });
         }else{
             DialogueSystem.show(scene, [
                 '（木堆太高了，我們過不去）'
-            ])
+            ], () => {
+                this.isConversing = false;
+            });
         }
     },
     
@@ -582,6 +640,27 @@ export default {
                 this.startConversationMonkey(scene);
             }
         }
+
+        // 離開木堆 TriggerZone 區域後重置觸發狀態，讓下次靠近時能再次觸發
+        if (this.isPlayerInWoodpileZone && this.woodpileTriggerZone && this.woodpileTriggerZone.body) {
+            const isStillOverlapping = scene.physics.overlap(this.playerSprite, this.woodpileTriggerZone);
+            if (!isStillOverlapping) {
+                this.isPlayerInWoodpileZone = false;
+            }
+        }
+        // Apple delivery to Giraffe Logic (靠近自動觸發或避免按空白鍵時被先釋放)
+        if (scene.wandController.heldItem === this.apple_on_tree_1 || 
+            scene.wandController.heldItem === this.apple_on_puddle || 
+            scene.wandController.heldItem === this.apple_on_tree_2) {
+            const distance = Phaser.Math.Distance.Between(
+                this.playerSprite.x, this.playerSprite.y,
+                this.giraffe.x, this.giraffe.y
+            );
+            if (distance <= this.CONVERSATION_DISTANCE) {
+                this.startConversationGiraffe(scene);
+            }
+        }
+
         // Glasses Logic
         if (scene.wandController.heldItem === this.glasses) {
             const playerSprite = scene.playerController.sprite;
@@ -674,6 +753,93 @@ export default {
                 }
 
 
+            }
+        }
+
+        // bush_compound_02 圖層深度動態調整：
+        // 判斷主角相對於「第一條折線」的位置
+        if (this.bushCompound02 && this.playerSprite) {
+            const firstPolyline = this.roadPolylines[0];
+            const px = this.playerSprite.x;
+            const py = this.playerSprite.y;
+            let isUpperRight = false;
+
+            // 第一條折線在 x 範圍內單調遞增，以線段上的 y 做分界
+            if (px < firstPolyline[0].x) {
+                // 在第一段起點左方，沿用第一段直線延伸比較
+                const p0 = firstPolyline[0];
+                const p1 = firstPolyline[1];
+                const lineY = p0.y + ((p1.y - p0.y) / (p1.x - p0.x)) * (px - p0.x);
+                isUpperRight = (py <= lineY);
+            } else if (px > firstPolyline[firstPolyline.length - 1].x) {
+                // 在最後一段終點右方，沿用最後一段直線延伸比較
+                const pLast = firstPolyline[firstPolyline.length - 1];
+                const pPrev = firstPolyline[firstPolyline.length - 2];
+                const lineY = pPrev.y + ((pLast.y - pPrev.y) / (pLast.x - pPrev.x)) * (px - pPrev.x);
+                isUpperRight = (py <= lineY);
+            } else {
+                for (let i = 0; i < firstPolyline.length - 1; i++) {
+                    const p1 = firstPolyline[i];
+                    const p2 = firstPolyline[i + 1];
+                    if (px >= p1.x && px <= p2.x) {
+                        const lineY = p1.y + ((p2.y - p1.y) / (p2.x - p1.x)) * (px - p1.x);
+                        isUpperRight = (py <= lineY);
+                        break;
+                    }
+                }
+            }
+
+            // 主角預設深度為 15
+            // 右上方時在主角之前 (depth 105)；左下方時在主角之後 (depth 5)
+            const targetDepth = isUpperRight ? 105 : 5;
+            if (this.bushCompound02.depth !== targetDepth) {
+                this.bushCompound02.setDepth(targetDepth);
+            }
+        }
+
+        // bush_compound_04 圖層深度動態調整：
+        // 判斷主角相對於「第二條折線」的位置
+        if (this.bushCompound04 && this.playerSprite) {
+            const secondPolyline = this.roadPolylines[1];
+            const px = this.playerSprite.x;
+            const py = this.playerSprite.y;
+            let isUpperLeft = false;
+
+            // 第二條折線頂點 y 座標單調遞增 (y: 450 -> 1413)，以線段上的 x 做分界判定左上方/右下方
+            const firstPt = secondPolyline[0];
+            const lastPt = secondPolyline[secondPolyline.length - 1];
+
+            if (py < firstPt.y) {
+                // 在起點上方，沿用第一線段延伸
+                const p0 = secondPolyline[0];
+                const p1 = secondPolyline[1];
+                const lineX = p0.x + ((p1.x - p0.x) / (p1.y - p0.y)) * (py - p0.y);
+                isUpperLeft = (px <= lineX);
+            } else if (py > lastPt.y) {
+                // 在終點下方，沿用最後線段延伸
+                const pLast = secondPolyline[secondPolyline.length - 1];
+                const pPrev = secondPolyline[secondPolyline.length - 2];
+                const lineX = pPrev.x + ((pLast.x - pPrev.x) / (pLast.y - pPrev.y)) * (py - pPrev.y);
+                isUpperLeft = (px <= lineX);
+            } else {
+                for (let i = 0; i < secondPolyline.length - 1; i++) {
+                    const p1 = secondPolyline[i];
+                    const p2 = secondPolyline[i + 1];
+                    const minY = Math.min(p1.y, p2.y);
+                    const maxY = Math.max(p1.y, p2.y);
+                    if (py >= minY && py <= maxY) {
+                        const lineX = p1.x + ((p2.x - p1.x) / (p2.y - p1.y)) * (py - p1.y);
+                        isUpperLeft = (px <= lineX);
+                        break;
+                    }
+                }
+            }
+
+            // 主角預設深度為 15
+            // 折線左上方時維持在主角之前 (depth 105)；折線右下方時移至主角之後 (depth 5)
+            const targetDepth = isUpperLeft ? 105 : 5;
+            if (this.bushCompound04.depth !== targetDepth) {
+                this.bushCompound04.setDepth(targetDepth);
             }
         }
     }
