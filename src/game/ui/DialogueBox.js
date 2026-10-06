@@ -9,13 +9,13 @@ export class DialogueBox {
     this.options = {
       maxWidth: options.maxWidth ?? 720,
       maxCharsPerLine: options.maxCharsPerLine ?? 20,
-      bottomMargin: options.bottomMargin ?? 28,
+      bottomMargin: options.bottomMargin ?? 140,
       paddingX: options.paddingX ?? 32,
       paddingY: options.paddingY ?? 20,
       speakerLeftMargin: options.speakerLeftMargin ?? 16,
       speakerPaddingX: options.speakerPaddingX ?? 16,
       speakerPaddingY: options.speakerPaddingY ?? 6,
-      roughness: options.roughness ?? 2.5, // 手繪波浪起伏程度
+      cooldownMs: options.cooldownMs ?? 1500, // 內建冷卻時間 (預設 1.5 秒)
     };
 
     this.container = scene.add
@@ -23,7 +23,6 @@ export class DialogueBox {
       .setScrollFactor(0)
       .setDepth(1000);
 
-    // 使用 Graphics 物件繪製手繪風格多邊形
     this.background = scene.add.graphics();
     this.speakerBg = scene.add.graphics();
 
@@ -61,6 +60,7 @@ export class DialogueBox {
     this._handleKeyDown = this._handleKeyDown.bind(this);
     this._handleResize = this._handleResize.bind(this);
 
+    // 全螢幕點擊（左鍵）與鍵盤推進
     scene.input.on("pointerdown", this._handleAdvance);
     scene.input.keyboard?.on("keydown", this._handleKeyDown);
     scene.scale.on("resize", this._handleResize);
@@ -88,7 +88,9 @@ export class DialogueBox {
     this._advanceCallback = callback;
   }
 
-  _handleAdvance() {
+  _handleAdvance(pointer) {
+    if (pointer && pointer.button !== undefined && pointer.button !== 0) return;
+
     if (!this.destroyed) {
       this._advanceCallback?.();
     }
@@ -129,55 +131,45 @@ export class DialogueBox {
       .join("\n");
   }
 
-  /**
-   * 繪製不規則手繪風外框（含填充與手繪感描邊）
-   */
   _drawHandDrawnRect(graphics, x, y, width, height, seed = 0) {
     graphics.clear();
 
-    const roughness = this.options.roughness;
-    const segmentLength = 16; // 邊界分割長度，越小越細緻
+    const roughness = 2.5;
+    const segmentLength = 16;
     const points = [];
 
-    // 計算四條邊的分割數
     const cols = Math.max(2, Math.ceil(width / segmentLength));
     const rows = Math.max(2, Math.ceil(height / segmentLength));
 
-    // 確定性偽隨機函數（避免每幀重繪時閃爍）
     const getJitter = (i, offsetKey) => {
       const val = Math.sin(i * 12.9898 + offsetKey * 78.233 + seed) * 43758.5453;
       return (val - Math.floor(val) - 0.5) * 2 * roughness;
     };
 
-    // 上邊 (左 -> 右)
     for (let i = 0; i <= cols; i++) {
       const px = x + (i / cols) * width;
       const py = y + (i === 0 || i === cols ? 0 : getJitter(i, 1));
       points.push({ x: px, y: py });
     }
 
-    // 右邊 (上 -> 下)
     for (let i = 1; i <= rows; i++) {
       const px = x + width + (i === rows ? 0 : getJitter(i, 2));
       const py = y + (i / rows) * height;
       points.push({ x: px, y: py });
     }
 
-    // 下邊 (右 -> 左)
     for (let i = 1; i <= cols; i++) {
       const px = x + width - (i / cols) * width;
       const py = y + height + (i === cols ? 0 : getJitter(i, 3));
       points.push({ x: px, y: py });
     }
 
-    // 左邊 (下 -> 上)
     for (let i = 1; i < rows; i++) {
       const px = x + getJitter(i, 4);
       const py = y + height - (i / rows) * height;
       points.push({ x: px, y: py });
     }
 
-    // 填充白色背景
     graphics.fillStyle(0xffffff, 1);
     graphics.beginPath();
     graphics.moveTo(points[0].x, points[0].y);
@@ -187,8 +179,7 @@ export class DialogueBox {
     graphics.closePath();
     graphics.fillPath();
 
-    // 繪製手繪筆觸外框
-    graphics.lineStyle(2, 0xffffff, 0.85);
+    graphics.lineStyle(2, 0x5c5a93, 0.85);
     graphics.beginPath();
     graphics.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {
@@ -201,6 +192,9 @@ export class DialogueBox {
   _layout() {
     if (this.destroyed) return;
 
+    const cameraZoom = this.scene.cameras?.main?.zoom || 1;
+    this.container.setScale(1 / cameraZoom);
+
     const viewportWidth = this.scene.scale.width;
     const viewportHeight = this.scene.scale.height;
     const width = Math.min(this.options.maxWidth, viewportWidth - 48);
@@ -212,14 +206,12 @@ export class DialogueBox {
     const bodyHeight = this.bodyText.height;
     const height = this.options.paddingY * 2 + bodyHeight;
 
-    // 繪製主對話框 (以中心原點 (0,0) 為基準計算左上角)
     const mainLeft = -width / 2;
     const mainTop = -height / 2;
     this._drawHandDrawnRect(this.background, mainLeft, mainTop, width, height, 101);
 
     this.bodyText.setPosition(0, 0);
 
-    // 繪製說話者標籤框 (speaker div)
     if (this.speakerText.visible) {
       const spPadX = this.options.speakerPaddingX;
       const spPadY = this.options.speakerPaddingY;
@@ -253,6 +245,16 @@ export class DialogueBox {
     this.scene?.input?.off("pointerdown", this._handleAdvance);
     this.scene?.input?.keyboard?.off("keydown", this._handleKeyDown);
     this.scene?.scale?.off("resize", this._handleResize);
+
+    // 關閉對話框時啟動冷卻時間倒數
+    if (this.scene) {
+      this.scene.isDialogueCooldown = true;
+      this.scene.time?.delayedCall(this.options.cooldownMs, () => {
+        if (this.scene) {
+          this.scene.isDialogueCooldown = false;
+        }
+      });
+    }
 
     this.container.destroy(true);
   }

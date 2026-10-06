@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { DialogueSystem } from '../core/DialogueSystem';
+import { ChoiceSystem } from '../core/ChoiceSystem';
 
 export class WandController {
     constructor(scene, playerController) {

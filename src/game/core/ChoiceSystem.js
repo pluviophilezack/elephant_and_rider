@@ -3,12 +3,17 @@ import * as Phaser from 'phaser';
 import { ChoicePrompt } from '../ui/ChoicePrompt';
 
 export const ChoiceSystem = {
-
+    
+    _active : false,
+    isShowing() {
+        return this._active;
+    },
     // options: [{ key: 'share', label: '分享' }, { key: 'drink_all', label: '獨飲' }]
     // onChoose(optionKey) 於玩家確認選擇後呼叫一次
     prompt(scene, options, onChoose, { inputDelayMs = 0 } = {}) {
 
         const prompt = new ChoicePrompt(scene, options, (chosen) => {
+            this._active = false;
             scene.events.off('update', update);
             if (onChoose) onChoose(chosen.key);
         });
