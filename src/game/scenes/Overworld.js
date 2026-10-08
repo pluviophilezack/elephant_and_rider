@@ -127,6 +127,9 @@ export class Overworld extends Scene
             this.sharedState[eventKey] = true;
         }
         this.hud.addRainStone(1, () => {
+            // With river travel, the sixth stone unlocks the return boat.
+            // Keep the world active so the player can sail back and explore.
+            if (this.boatTravel) return;
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
                 this.isEndingTriggered = true;
                 this.scene.start('Ending');

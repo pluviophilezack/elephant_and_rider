@@ -16,7 +16,7 @@ export function installRiverTravel(scene) {
         originalUpdate = scene.sys.sceneUpdate;
         travelUpdate = function (time, delta) {
             scene.boatTravel.update();
-            if (scene.boatTravel.isTravelling) {
+            if (scene.boatTravel.isTravelling || scene.boatTravel.isReleasing) {
                 scene.hud?.update();
                 return;
             }

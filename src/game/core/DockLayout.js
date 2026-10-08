@@ -16,3 +16,18 @@ export const DOCKS = {
 export function dockWalkway(dock) {
     return { left: dock.x - 165, right: dock.x + 170, top: dock.y - 40, bottom: dock.y + 75 };
 }
+
+export const SHALLOW_BERTH = { x: 3720, y: 2790 };
+export const TUTORIAL_RETURN = {
+    berth: { x: 55, y: 1650 },
+    landing: { x: 350, y: 1650 }
+};
+
+// Only the southeastern basin below the current barrier is walkable.
+export const LOWER_RIVER_AREA = [
+    [SHALLOW_BERTH.x - 100, 2904], [SHALLOW_BERTH.x - 100, 2116],
+    [5161, 2116], [5161, 2904]
+];
+export const CURRENT_WARNINGS = [
+    { x: 5027.5, y: 2146, width: 265, height: 60, signX: 4840, signY: 1940 }
+];
