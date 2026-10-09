@@ -43,8 +43,29 @@ export const GameProgress = {
         getStorage()?.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify([...achievements]));
     },
 
+    removeAchievement(achievementId) {
+        if (!achievementId) return;
+
+        achievementsThisSession.delete(achievementId);
+        const achievements = new Set(getStoredAchievements());
+        achievements.delete(achievementId);
+        getStorage()?.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify([...achievements]));
+    },
+
+    setAchievement(achievementId, isUnlocked) {
+        if (isUnlocked) {
+            this.unlockAchievement(achievementId);
+        } else {
+            this.removeAchievement(achievementId);
+        }
+    },
+
     hasAchievement(achievementId) {
         return achievementsThisSession.has(achievementId)
             || getStoredAchievements().includes(achievementId);
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.GameProgress = GameProgress;
+}

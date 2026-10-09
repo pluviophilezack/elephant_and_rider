@@ -7,10 +7,10 @@ export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
 
 const PROXIMITY_RADIUS = 145;
 const GIRAFFE_PROXIMITY_RADIUS = 120;
-const GIRAFFE_ACHIEVEMENT_ID = 'credits.giraffe_easter_egg';
+const GIRAFFE_ACHIEVEMENT_ID = 'apples_achievement';
 const GIRAFFE_DIALOGUE = {
-    locked: '你居然找到我了，草原上還藏著更多秘密喔。',
-    unlocked: '又見面了，成就獵人。你的秘密可瞞不過我！'
+    locked: '「好餓⋯⋯」 \n【待解成就：餵飽高個兒】\n 再次啟程，拯救飢腸轆轆的長頸鹿',
+    unlocked: '「謝謝你的三顆蘋果！」\n【成就達成：餵飽高個兒】\n 餵給長頸鹿三顆蘋果'
 };
 
 // Credits are kept here so names can be updated without touching scene logic.
@@ -211,14 +211,14 @@ export class EventCredits extends Scene
 
         if (isNearGiraffe) {
             if (!this.wasNearGiraffe) {
-                const hasAchievement = GameProgress.hasAchievement(GIRAFFE_ACHIEVEMENT_ID);
+                const overworldScene = this.scene.get('Overworld');
+                const hasAchievement = (overworldScene?.sharedState && typeof overworldScene.sharedState.apples_achievement === 'boolean')
+                    ? overworldScene.sharedState.apples_achievement
+                    : GameProgress.hasAchievement(GIRAFFE_ACHIEVEMENT_ID);
+
                 this.giraffeMessage = hasAchievement
                     ? GIRAFFE_DIALOGUE.unlocked
                     : GIRAFFE_DIALOGUE.locked;
-
-                if (!hasAchievement) {
-                    GameProgress.unlockAchievement(GIRAFFE_ACHIEVEMENT_ID);
-                }
             }
 
             this.creditsText.setText(this.giraffeMessage);
