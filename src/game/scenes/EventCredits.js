@@ -1,10 +1,17 @@
 import { Scene } from 'phaser';
 import { PlayerController } from '../core/PlayerController';
+import { GameProgress } from '../core/GameProgress';
 import { TextStyles } from '../core/theme';
 
 export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
 
 const PROXIMITY_RADIUS = 145;
+const GIRAFFE_PROXIMITY_RADIUS = 120;
+const GIRAFFE_ACHIEVEMENT_ID = 'apples_achievement';
+const GIRAFFE_DIALOGUE = {
+    locked: '「好餓⋯⋯」 \n【待解成就：餵飽高個兒】\n 再次啟程，拯救飢腸轆轆的長頸鹿',
+    unlocked: '「謝謝你的三顆蘋果！」\n【成就達成：餵飽高個兒】\n 餵給長頸鹿三顆蘋果'
+};
 
 // Credits are kept here so names can be updated without touching scene logic.
 const EVENT_CREDITS = [
@@ -102,8 +109,29 @@ export class EventCredits extends Scene
             return { ...credit, actor };
         });
 
+        this.createAchievementGiraffe();
+
         this.createCreditsPanel();
         this.createBackControl();
+    }
+
+    createAchievementGiraffe ()
+    {
+        this.giraffeActor = this.add.sprite(76, 408, 'giraffe')
+            .setScale(0.42)
+            .setFlipX(true)
+            .setDepth(10);
+        this.wasNearGiraffe = false;
+        this.giraffeMessage = '';
+
+        this.tweens.add({
+            targets: this.giraffeActor,
+            angle: { from: -2, to: 2 },
+            duration: 1200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
     }
 
     createSavannaBackdrop (width, height)
@@ -156,7 +184,12 @@ export class EventCredits extends Scene
             color: '#25292d'
         }).setInteractive({ useHandCursor: true }).setDepth(110);
 
-        const returnToMenu = () => this.scene.start('MainMenu');
+        const returnToMenu = () => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('credits');
+            window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+            this.scene.start('MainMenu', { forceShowMenu: true });
+        };
         backText.on('pointerdown', returnToMenu);
         this.input.keyboard.on('keydown-ESC', returnToMenu);
     }
@@ -167,6 +200,36 @@ export class EventCredits extends Scene
 
         const player = this.playerController?.sprite;
         if (!player) return;
+
+        const giraffeDistance = Phaser.Math.Distance.Between(
+            player.x,
+            player.y,
+            this.giraffeActor.x,
+            this.giraffeActor.y
+        );
+        const isNearGiraffe = giraffeDistance <= GIRAFFE_PROXIMITY_RADIUS;
+
+        if (isNearGiraffe) {
+            if (!this.wasNearGiraffe) {
+                const overworldScene = this.scene.get('Overworld');
+                const hasAchievement = (overworldScene?.sharedState && typeof overworldScene.sharedState.apples_achievement === 'boolean')
+                    ? overworldScene.sharedState.apples_achievement
+                    : GameProgress.hasAchievement(GIRAFFE_ACHIEVEMENT_ID);
+
+                this.giraffeMessage = hasAchievement
+                    ? GIRAFFE_DIALOGUE.unlocked
+                    : GIRAFFE_DIALOGUE.locked;
+            }
+
+            this.creditsText.setText(this.giraffeMessage);
+            this.creditsPanel.setVisible(true);
+            this.wasNearGiraffe = true;
+            return;
+        }
+
+        if (giraffeDistance > GIRAFFE_PROXIMITY_RADIUS + 24) {
+            this.wasNearGiraffe = false;
+        }
 
         let nearestCredit = null;
         let nearestDistance = Number.POSITIVE_INFINITY;

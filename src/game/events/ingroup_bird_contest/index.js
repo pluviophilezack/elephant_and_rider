@@ -23,6 +23,7 @@ const CHASE_FLEE_RADIUS = 500;
 const CHASE_FAST_SPEED = 215;
 const CHASE_TIRED_SPEED = 105;
 const CHASE_SPRINT_MS = 14000;
+const LONE_BIRD_BUSH_DEPTH = 24;
 
 const AREA = {
     flockCenter: { x: 2040, y: 1240 },
@@ -159,7 +160,7 @@ export default {
                 AREA.loneStart.y + offset.y,
                 'bush_02'
             )
-                .setDepth(offset.y > 0 ? 29 : (offset.y < 0 ? 25 : 27));
+                .setDepth(LONE_BIRD_BUSH_DEPTH);
 
             bush.body.setImmovable(true);
             scene.registerAsset(bush, `ingroup_lone_bird_bush_${index + 1}`);

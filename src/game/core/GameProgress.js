@@ -1,12 +1,24 @@
 const COMPLETION_STORAGE_KEY = 'elephant_and_rider.game_completed';
+const ACHIEVEMENTS_STORAGE_KEY = 'elephant_and_rider.achievements';
 
 let completedThisSession = false;
+const achievementsThisSession = new Set();
 
 function getStorage() {
     try {
         return window.localStorage;
     } catch {
         return null;
+    }
+}
+
+function getStoredAchievements() {
+    try {
+        const storedValue = getStorage()?.getItem(ACHIEVEMENTS_STORAGE_KEY);
+        const achievements = storedValue ? JSON.parse(storedValue) : [];
+        return Array.isArray(achievements) ? achievements : [];
+    } catch {
+        return [];
     }
 }
 
@@ -20,5 +32,40 @@ export const GameProgress = {
         return completedThisSession
             || getStorage()?.getItem(COMPLETION_STORAGE_KEY) === 'true'
             || (import.meta.env.DEV && new URLSearchParams(window.location.search).has('credits'));
+    },
+
+    unlockAchievement(achievementId) {
+        if (!achievementId) return;
+
+        achievementsThisSession.add(achievementId);
+        const achievements = new Set(getStoredAchievements());
+        achievements.add(achievementId);
+        getStorage()?.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify([...achievements]));
+    },
+
+    removeAchievement(achievementId) {
+        if (!achievementId) return;
+
+        achievementsThisSession.delete(achievementId);
+        const achievements = new Set(getStoredAchievements());
+        achievements.delete(achievementId);
+        getStorage()?.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify([...achievements]));
+    },
+
+    setAchievement(achievementId, isUnlocked) {
+        if (isUnlocked) {
+            this.unlockAchievement(achievementId);
+        } else {
+            this.removeAchievement(achievementId);
+        }
+    },
+
+    hasAchievement(achievementId) {
+        return achievementsThisSession.has(achievementId)
+            || getStoredAchievements().includes(achievementId);
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.GameProgress = GameProgress;
+}

@@ -4,6 +4,7 @@ import { PlayerController } from '../core/PlayerController';
 import { WandController } from '../core/TrunkController';
 import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
+import { GameProgress } from '../core/GameProgress';
 import { HUD } from '../ui/HUD';
 import { DevToolsManager } from '../core/DevToolsManager';
 import tutorial from '../events/tutorial';
@@ -29,6 +30,7 @@ export class Overworld extends Scene
     {
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
+        GameProgress.setAchievement('apples_achievement', false);
         // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
         // 正式初始位置：(700, 100)
         this.playerController = new PlayerController(this, 700, 100);
@@ -105,6 +107,9 @@ export class Overworld extends Scene
 
                 rawState[prop] = value;
                 this.events.emit(`state:${prop}`, value);
+                if (prop === 'apples_achievement') {
+                    GameProgress.setAchievement('apples_achievement', Boolean(value));
+                }
                 return true;
             }
         })
@@ -127,6 +132,9 @@ export class Overworld extends Scene
             this.sharedState[eventKey] = true;
         }
         this.hud.addRainStone(1, () => {
+            // With river travel, the sixth stone unlocks the return boat.
+            // Keep the world active so the player can sail back and explore.
+            if (this.boatTravel) return;
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
                 this.isEndingTriggered = true;
                 this.scene.start('Ending');

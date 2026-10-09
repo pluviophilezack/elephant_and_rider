@@ -12,10 +12,10 @@ export class MainMenu extends Scene
         super('MainMenu');
     }
 
-    init ()
+    init (data = {})
     {
         // 跳過Menu動畫，方便方便快速開發
-        this.debugSkipMenu = true;
+        this.debugSkipMenu = !data.forceShowMenu;
 
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
@@ -145,6 +145,11 @@ export class MainMenu extends Scene
 
     create ()
     {
+        if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('credits')) {
+            this.scene.start('EventCredits');
+            return;
+        }
+
         // 方便開發快速跳過Menu
         if (this.debugSkipMenu) {
             this.scene.start('Overworld');

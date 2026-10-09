@@ -2,7 +2,7 @@
 // The dry river overlay is an alpha mask, so its shoreline stays aligned with
 // the artwork (including the winding tributary). White roads and the separate
 // fairness_water pond are deliberately absent from this mask.
-import { DOCKS, dockWalkway } from './DockLayout.js';
+import { DOCKS, dockWalkway, LOWER_RIVER_AREA, SHALLOW_BERTH, TUTORIAL_RETURN } from './DockLayout.js';
 
 const CELL_SIZE = 8;
 
@@ -59,6 +59,14 @@ export function createTerrainMask(rgba, columns, rows) {
     }
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < columns; x++) {
+            const worldX = (x + 0.5) * 5161 / columns;
+            const worldY = (y + 0.5) * 2904 / rows;
+            // Keep the southern river beyond the hull's left edge boat-only.
+            // Preserve the river mask so the neighboring land stays walkable.
+            const returnChannel = worldX < SHALLOW_BERTH.x - 100 && worldY >= 2600;
+            if (!returnChannel && insidePolygon(worldX, worldY, LOWER_RIVER_AREA)) {
+                mask[y * columns + x] = 0;
+            }
             if (insidePolygon((x + 0.5) * 1300 / columns, (y + 0.5) * 731 / rows, HILL_OUTLINE)) {
                 mask[y * columns + x] = 1;
             }
@@ -115,6 +123,15 @@ export function createTerrainCollision(scene) {
         const bottom = Math.min(rows, Math.ceil(area.bottom * rows / source.height));
         for (let y = top; y < bottom; y++) {
             mask.fill(0, y * columns + left, y * columns + right);
+        }
+    }
+    // Leave space for disembarking on the tutorial shore.
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < columns; x++) {
+            const wx = (x + 0.5) * source.width / columns;
+            const wy = (y + 0.5) * source.height / rows;
+            if (Math.abs(wx - TUTORIAL_RETURN.landing.x) < 90
+                && Math.abs(wy - TUTORIAL_RETURN.landing.y) < 90) mask[y * columns + x] = 0;
         }
     }
     const walls = scene.physics.add.staticGroup();
