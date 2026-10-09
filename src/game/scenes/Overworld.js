@@ -12,6 +12,7 @@ import fairnessWater from '../events/fairness_water';
 import purityFloodedRuins from '../events/purity_flooded_ruins';
 import authorityHerd from '../events/authority_herd';
 import domainElephants from '../events/domain_elephants';
+import { RainEffect } from '../core/RainEffect';
 
 // 將 Phaser 掛載到全域，修正其他模組中「Phaser is not defined」的錯誤
 window.Phaser = Phaser;
@@ -59,7 +60,6 @@ export class Overworld extends Scene
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
-        this.hud.bindRiverFlow(dry_flow);
 
         // 拼接四張樹木
         // 左上
@@ -71,6 +71,28 @@ export class Overworld extends Scene
         // 右下
         this.add.image(worldWidth, worldHeight, 'trees_04').setOrigin(1, 1)
 
+
+        // 判斷下雨與否，改變場景
+        this.events.once('state:rain', isRain => {
+            if (!isRain) return;
+
+            // 移除乾旱素材
+            dry_flow.destroy();
+
+            // 水流變化
+            const waterSprite = this.add.image(0, 0, 'water_flow_01').setOrigin(0, 0);
+            this.time.addEvent({
+                delay: 750,
+                loop: true,
+                callback: () => {
+                const nextTexture = (waterSprite.texture.key === 'water_flow_01') 
+                    ? 'water_flow_02' 
+                    : 'water_flow_01';
+                waterSprite.setTexture(nextTexture);
+                }
+            });
+        })
+        
         // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
@@ -94,8 +116,7 @@ export class Overworld extends Scene
             ingroup_bird_contest: false,
             fairness_water: false,
             purity_flooded_ruins: false,
-            authority_herd: false,
-            apples_achievement: false
+            authority_herd: false
         }
 
         // sharedState 變更，用proxy攔截state變更
@@ -119,6 +140,7 @@ export class Overworld extends Scene
 
         // 建立開發者工具
         this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
+        this.rainEffect = new RainEffect(this);
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
@@ -128,6 +150,7 @@ export class Overworld extends Scene
         }
         this.hud.addRainStone(1, () => {
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
+                this.sharedState["rain"] = true;
                 this.isEndingTriggered = true;
                 this.scene.start('Ending');
             }
@@ -193,6 +216,12 @@ export class Overworld extends Scene
         }
         if (this.hud) {
             this.hud.update();
+        }
+        const currentStones = this.sharedState?.rainStoneCount || this.hud?.rainStoneCount || 0;
+        
+        if (currentStones >= 4 && !this.rainEffect.isRaining) {
+            // 啟動下雨動畫與灰色遮罩 (2 秒內完成漸變)
+            this.rainEffect.startRain(2000);
         }
     }
 }
