@@ -69,8 +69,17 @@ export class BoatTravel {
             this.driftTween?.stop();
             this.releaseTween?.stop();
             this.restoreReleaseState();
+            this.restoreHeldItemState();
             this.isTravelling = false;
         });
+    }
+
+    restoreHeldItemState() {
+        const heldItem = this.scene.wandController?.heldItem;
+        if (heldItem && this.savedItemDepth != null) {
+            heldItem.setDepth(this.savedItemDepth);
+            this.savedItemDepth = null;
+        }
     }
 
     update() {
@@ -217,7 +226,11 @@ export class BoatTravel {
         const path = new Phaser.Curves.Spline(points.flat());
         const point = new Phaser.Math.Vector2();
         scene.devToolsManager?.stopSprint();
-        if (scene.wandController?.heldItem) scene.wandController.releaseItem();
+        const heldItem = scene.wandController?.heldItem;
+        this.savedItemDepth = heldItem ? heldItem.depth : null;
+        if (heldItem) {
+            heldItem.setDepth(46);
+        }
         this.savedState = {
             enabled: controller.enabled, autoMoving: controller.isAutoMoving,
             bodyEnabled: player.body.enable, visible: player.visible,
@@ -231,7 +244,11 @@ export class BoatTravel {
         player.setVisible(false);
         scene.wandController?.hideFor(BOAT_TRIP_DURATION);
         const start = { x: player.x, y: player.y + player.displayHeight / 2 };
-        this.passenger.setPosition(start.x, start.y).setVisible(true);
+        this.passenger.setPosition(start.x, start.y).setFlipX(player.flipX).setVisible(true);
+        if (heldItem) {
+            const itemOffsetX = this.passenger.flipX ? -8 : 8;
+            heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
+        }
         scene.cameras.main.startFollow(this.passenger, true, 0.12, 0.12);
         this.tween = scene.tweens.addCounter({
             from: 0, to: 1, duration: BOAT_TRIP_DURATION,
@@ -239,9 +256,12 @@ export class BoatTravel {
                 const t = tween.getValue();
                 if (t < 0.1) {
                     const p = Phaser.Math.Easing.Sine.InOut(t / 0.1);
+                    const destX = from.berth.x - 25;
+                    const destY = from.berth.y + 55;
+                    this.passenger.setFlipX(destX < start.x);
                     this.passenger.setPosition(
-                        Phaser.Math.Linear(start.x, from.berth.x - 25, p),
-                        Phaser.Math.Linear(start.y, from.berth.y + 55, p)
+                        Phaser.Math.Linear(start.x, destX, p),
+                        Phaser.Math.Linear(start.y, destY, p)
                     );
                 } else if (t < 0.9) {
                     const p = (t - 0.1) / 0.8;
@@ -254,23 +274,39 @@ export class BoatTravel {
                 } else {
                     this.boat.setPosition(to.berth.x, to.berth.y).setAngle(0);
                     const p = Phaser.Math.Easing.Sine.InOut((t - 0.9) / 0.1);
+                    const startX = to.berth.x - 25;
+                    const startY = to.berth.y + 55;
+                    const destX = to.landing.x;
+                    const destY = to.landing.y + player.displayHeight / 2;
+                    this.passenger.setFlipX(destX < startX);
                     this.passenger.setPosition(
-                        Phaser.Math.Linear(to.berth.x - 25, to.landing.x, p),
-                        Phaser.Math.Linear(to.berth.y + 55, to.landing.y + player.displayHeight / 2, p)
+                        Phaser.Math.Linear(startX, destX, p),
+                        Phaser.Math.Linear(startY, destY, p)
                     );
                 }
                 // Keep the hidden physical player near the passenger for other systems.
                 player.setPosition(this.passenger.x, this.passenger.y - player.displayHeight / 2);
+                if (heldItem) {
+                    const itemOffsetX = this.passenger.flipX ? -8 : 8;
+                    heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
+                }
             },
             onComplete: () => {
                 this.boat.setPosition(to.berth.x, to.berth.y).setAngle(0);
                 player.body.reset(to.landing.x, to.landing.y);
                 player.body.enable = this.savedState.bodyEnabled;
-                player.setVisible(this.savedState.visible).setFlipX(this.savedState.flipX).setVelocity(0, 0);
+                player.setVisible(this.savedState.visible).setFlipX(this.passenger.flipX).setVelocity(0, 0);
                 controller.isAutoMoving = this.savedState.autoMoving;
                 controller.enabled = this.savedState.enabled;
                 controller.speed = this.savedState.speed;
                 this.passenger.setVisible(false);
+                if (heldItem) {
+                    this.restoreHeldItemState();
+                    heldItem.setPosition(player.x, player.y);
+                }
+                if (scene.wandController) {
+                    scene.wandController.forceHiddenUntil = 0;
+                }
                 scene.cameras.main.startFollow(player);
                 this.currentDock = destinationKey;
                 this.isTravelling = false;
