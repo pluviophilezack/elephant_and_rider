@@ -4,15 +4,16 @@ import { PlayerController } from '../core/PlayerController';
 import { WandController } from '../core/TrunkController';
 import { createPickupRegistry } from '../core/PickupRegistry';
 import { MoralState } from '../core/MoralState';
+import { GameProgress } from '../core/GameProgress';
 import { HUD } from '../ui/HUD';
 import { DevToolsManager } from '../core/DevToolsManager';
+import { RainEffect } from '../core/RainEffect';
 import tutorial from '../events/tutorial';
 import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
 import purityFloodedRuins from '../events/purity_flooded_ruins';
 import authorityHerd from '../events/authority_herd';
 import domainElephants from '../events/domain_elephants';
-import { RainEffect } from '../core/RainEffect';
 
 // 將 Phaser 掛載到全域，修正其他模組中「Phaser is not defined」的錯誤
 window.Phaser = Phaser;
@@ -30,6 +31,7 @@ export class Overworld extends Scene
     {
         // 每次重新開始遊戲時，重置本次遊玩的道德數值
         MoralState.reset();
+        GameProgress.setAchievement('apples_achievement', false);
         // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
         // 正式初始位置：(700, 100)
         this.playerController = new PlayerController(this, 700, 100);
@@ -60,6 +62,7 @@ export class Overworld extends Scene
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
         const dry_flow = this.add.image(0, 0, 'water_flow_dry').setOrigin(0,0); // 乾旱素材覆蓋底圖的河流
+        this.hud.bindRiverFlow(dry_flow);
 
         // 拼接四張樹木
         // 左上
@@ -71,28 +74,6 @@ export class Overworld extends Scene
         // 右下
         this.add.image(worldWidth, worldHeight, 'trees_04').setOrigin(1, 1)
 
-
-        // 判斷下雨與否，改變場景
-        this.events.once('state:rain', isRain => {
-            if (!isRain) return;
-
-            // 移除乾旱素材
-            dry_flow.destroy();
-
-            // 水流變化
-            const waterSprite = this.add.image(0, 0, 'water_flow_01').setOrigin(0, 0);
-            this.time.addEvent({
-                delay: 750,
-                loop: true,
-                callback: () => {
-                const nextTexture = (waterSprite.texture.key === 'water_flow_01') 
-                    ? 'water_flow_02' 
-                    : 'water_flow_01';
-                waterSprite.setTexture(nextTexture);
-                }
-            });
-        })
-        
         // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         
@@ -116,7 +97,8 @@ export class Overworld extends Scene
             ingroup_bird_contest: false,
             fairness_water: false,
             purity_flooded_ruins: false,
-            authority_herd: false
+            authority_herd: false,
+            apples_achievement: false
         }
 
         // sharedState 變更，用proxy攔截state變更
@@ -126,6 +108,9 @@ export class Overworld extends Scene
 
                 rawState[prop] = value;
                 this.events.emit(`state:${prop}`, value);
+                if (prop === 'apples_achievement') {
+                    GameProgress.setAchievement('apples_achievement', Boolean(value));
+                }
                 return true;
             }
         })
@@ -149,8 +134,10 @@ export class Overworld extends Scene
             this.sharedState[eventKey] = true;
         }
         this.hud.addRainStone(1, () => {
+            // With river travel, the sixth stone unlocks the return boat.
+            // Keep the world active so the player can sail back and explore.
+            if (this.boatTravel) return;
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
-                this.sharedState["rain"] = true;
                 this.isEndingTriggered = true;
                 this.scene.start('Ending');
             }
@@ -217,11 +204,9 @@ export class Overworld extends Scene
         if (this.hud) {
             this.hud.update();
         }
-        const currentStones = this.sharedState?.rainStoneCount || this.hud?.rainStoneCount || 0;
-        
-        if (currentStones >= 4 && !this.rainEffect.isRaining) {
-            // 啟動下雨動畫與灰色遮罩 (2 秒內完成漸變)
-            this.rainEffect.startRain(2000);
+        const stoneCount = this.sharedState?.rainStoneCount || this.hud?.rainStoneCount || 0;
+        if (this.rainEffect) {
+            this.rainEffect.updateRainByStones(stoneCount);
         }
     }
 }
