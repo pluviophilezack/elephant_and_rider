@@ -3,6 +3,7 @@ import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
 import dialogue from './dialogue.json';
+const THEME_FONT = 'naikaifont, "Microsoft JhengHei", sans-serif';
 
 let state = {
     hasTriggered: false,
@@ -124,6 +125,7 @@ export default {
 
     startFirstDrink(scene) {
         const hintText = scene.add.text(state.pondZone.x, state.pondZone.y - 50, '按下空白鍵喝一口水', {
+            fontFamily: THEME_FONT,
             fontSize: '16px', color: '#ffffff', backgroundColor: '#00000088'
         }).setOrigin(0.5).setDepth(100);
 
@@ -333,28 +335,34 @@ export default {
     spawnChoiceTiles(scene) {
         state.isDeciding = true;
 
+        // 1. 獨佔選項：左側踩點 (使用 standing_point_01)
         const selfishX = 1005;
         const selfishY = 2078;
-        state.tileSelfish = scene.add.rectangle(selfishX, selfishY, 120, 120, 0xff4444, 0.4);
-        state.tileSelfish.setStrokeStyle(4, 0xff0000, 0.8).setDepth(100);
-        scene.physics.add.existing(state.tileSelfish, true);
+        
+        state.tileSelfish = scene.physics.add.sprite(selfishX, selfishY, 'standing_point_01')
+            .setDepth(100)
+            .setScale(1.0);
 
-        state.textSelf = scene.add.text(selfishX, selfishY - 75, '獨佔 (喝光水)', { 
+        state.textSelf = scene.add.text(selfishX, selfishY - 60, '獨佔 (喝光水)', { 
+            fontFamily: THEME_FONT,
             fontSize: '18px', color: '#ffaaaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 } 
         }).setOrigin(0.5).setDepth(101);
 
+        // 2. 分享選項：右側踩點 (使用 standing_point_02)
         const shareX = state.pondZone.x + 100;
         const shareY = state.pondZone.y + 350;
-        state.tileShare = scene.add.rectangle(shareX, shareY, 120, 120, 0x44ff44, 0.4);
-        state.tileShare.setStrokeStyle(4, 0x00ff00, 0.8).setDepth(100);
-        scene.physics.add.existing(state.tileShare, true);
 
-        state.textShare = scene.add.text(shareX, shareY - 75, '分享 (一同飲用)', { 
+        state.tileShare = scene.physics.add.sprite(shareX, shareY, 'standing_point_02')
+            .setDepth(100)
+            .setScale(1.0);
+
+        state.textShare = scene.add.text(shareX, shareY - 60, '分享 (一同飲用)', { 
+            fontFamily: THEME_FONT,
             fontSize: '18px', color: '#aaffaa', backgroundColor: '#000000bb', padding: { x: 8, y: 4 } 
         }).setOrigin(0.5).setDepth(101);
+        const playerTarget = scene.playerController?.sprite || scene.player?.player || scene.player;
 
-        const playerTarget = scene.player.sprite || scene.player.player || scene.player;
-
+        // 3. 綁定大象踏入踩點的重疊檢測
         scene.physics.add.overlap(playerTarget, state.tileSelfish, () => {
             if (state.isDeciding) {
                 state.isDeciding = false;
@@ -432,6 +440,7 @@ export default {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
         const hint = scene.add.text(playerTarget.x, playerTarget.y - 50, '連按 3 次空白鍵喝光水 (0/3)', {
+            fontFamily: THEME_FONT,
             fontSize: '14px', color: '#ffaaaa', backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
         }).setOrigin(0.5).setDepth(102);
 
