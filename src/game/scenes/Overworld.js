@@ -7,6 +7,7 @@ import { MoralState } from '../core/MoralState';
 import { GameProgress } from '../core/GameProgress';
 import { HUD } from '../ui/HUD';
 import { DevToolsManager } from '../core/DevToolsManager';
+import { RainEffect } from '../core/RainEffect';
 import tutorial from '../events/tutorial';
 import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
@@ -124,6 +125,7 @@ export class Overworld extends Scene
 
         // 建立開發者工具
         this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
+        this.rainEffect = new RainEffect(this);
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
@@ -201,6 +203,10 @@ export class Overworld extends Scene
         }
         if (this.hud) {
             this.hud.update();
+        }
+        const stoneCount = this.sharedState?.rainStoneCount || this.hud?.rainStoneCount || 0;
+        if (this.rainEffect) {
+            this.rainEffect.updateRainByStones(stoneCount);
         }
     }
 }
