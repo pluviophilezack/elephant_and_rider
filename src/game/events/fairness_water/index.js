@@ -336,11 +336,11 @@ export default {
         state.isDeciding = true;
 
         // 1. 獨佔選項：左側踩點 (使用 standing_point_01)
-        const selfishX = 1005;
-        const selfishY = 2078;
+        const selfishX = 1157;
+        const selfishY = 2036;
         
         state.tileSelfish = scene.physics.add.sprite(selfishX, selfishY, 'standing_point_01')
-            .setDepth(100)
+            .setDepth(14)
             .setScale(1.0);
 
         state.textSelf = scene.add.text(selfishX, selfishY - 60, '獨佔 (喝光水)', { 
@@ -353,7 +353,7 @@ export default {
         const shareY = state.pondZone.y + 350;
 
         state.tileShare = scene.physics.add.sprite(shareX, shareY, 'standing_point_02')
-            .setDepth(100)
+            .setDepth(14)
             .setScale(1.0);
 
         state.textShare = scene.add.text(shareX, shareY - 60, '分享 (一同飲用)', { 
