@@ -146,13 +146,41 @@ export default {
         this.easter_egg_triggered = false;
         this.turns_monkey = 0;
 
-        if (!scene.sharedState.rain){
-            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_sad').setScale(0.6);
-            scene.registerAsset(this.monkeyElder);
-        } else{
-            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_pleased').setScale(0.6);
-            scene.registerAsset(this.monkeyElder);
+        this.monkeyOriginX = 1110;
+        this.monkeyOriginY = 849;
+        this.monkeyJumpTween = null;
+        this.isRaining = Boolean(scene.sharedState?.rain);
+
+        this.monkeyElder = scene.physics.add.sprite(
+            this.monkeyOriginX,
+            this.monkeyOriginY,
+            this.isRaining ? 'monkey_elder_pleased' : 'monkey_elder_sad'
+        ).setScale(0.6);
+        scene.registerAsset(this.monkeyElder);
+
+        if (this.isRaining) {
+            this.startMonkeyJump(scene);
         }
+
+        // 監聽下雨狀態改變，動態切換紋理與跳躍動畫
+        scene.events.on('state:rain', (isRaining) => {
+            this.isRaining = Boolean(isRaining);
+            if (this.monkeyElder && this.monkeyElder.active) {
+                this.monkeyElder.setTexture(this.isRaining ? 'monkey_elder_pleased' : 'monkey_elder_sad');
+                if (this.isRaining) {
+                    if (!this.isConversing) {
+                        this.startMonkeyJump(scene);
+                    }
+                } else {
+                    this.stopMonkeyJump();
+                }
+            }
+            if (this.glasses && this.glasses.active) {
+                this.glasses.destroy();
+            }
+            this.wear_glasses = false;
+        });
+
         scene.physics.add.collider(this.playerSprite, this.monkeyElder);
         this.monkeyElder.body.setImmovable(true);
 
@@ -436,27 +464,131 @@ export default {
         }
     },
 
+    startMonkeyJump(scene) {
+        if (!this.monkeyElder || !this.monkeyElder.active) return;
+        this.stopMonkeyJump();
+
+        const jumpDistance = 24; // 左右位移幅度
+        const jumpHeight = 30;   // 跳躍高度
+        const stepDuration = 280; // 單趟跳躍時間 (ms)
+
+        // 建立左右反覆跳躍 TweenChain (Phaser 3.60+ / 4.x 使用 scene.tweens.chain)
+        this.monkeyJumpTween = scene.tweens.chain({
+            targets: this.monkeyElder,
+            loop: -1,
+            tweens: [
+                // 1. 向左跳
+                {
+                    x: this.monkeyOriginX - jumpDistance,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(true); // 面向左邊
+                        }
+                    }
+                },
+                // 2. 落下到左側地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 3. 向右跳回中心
+                {
+                    x: this.monkeyOriginX,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(false); // 面向右邊
+                        }
+                    }
+                },
+                // 4. 落下回中心地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 5. 向右跳
+                {
+                    x: this.monkeyOriginX + jumpDistance,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(false); // 面向右邊
+                        }
+                    }
+                },
+                // 6. 落下到右側地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 7. 向左跳回中心
+                {
+                    x: this.monkeyOriginX,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(true); // 面向左邊
+                        }
+                    }
+                },
+                // 8. 落下回中心地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                }
+            ]
+        });
+    },
+
+    stopMonkeyJump() {
+        if (this.monkeyJumpTween) {
+            this.monkeyJumpTween.stop();
+            this.monkeyJumpTween = null;
+        }
+        if (this.monkeyElder && this.monkeyElder.active) {
+            this.monkeyElder.setPosition(this.monkeyOriginX, this.monkeyOriginY);
+            this.monkeyElder.setFlipX(false);
+        }
+    },
+
     startConversationMonkey(scene) {
         if (this.isConversing) return;
         this.isConversing = true;
+        this.stopMonkeyJump();
+
+        const onFinishConversation = () => {
+            this.isConversing = false;
+            if (this.isRaining) {
+                this.startMonkeyJump(scene);
+            }
+        };
 
         if(this.turns_monkey === 0 ){
             DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
                 '快過來',
                 '用空白鍵和我說說話'
-            ], () => {
-                this.isConversing = false;
-            });
+            ], onFinishConversation);
         }else if(!this.wear_glasses){
             DialogueSystem.show(scene, [
                 '我老花，看不到⋯⋯',
                 '⋯⋯',
                 '點擊左鍵，撿起身邊的東西',
                 '幫我找找那個我需要的東西'
-            ], ()=> {
-                this.isConversing = false;
-            });
+            ], onFinishConversation);
         }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
             '謝謝你，我終於看清楚了。',
@@ -475,7 +607,7 @@ export default {
             
         ], ()=> {
             scene.sharedState.wand_unlocked = true;
-            this.isConversing = false;
+            onFinishConversation();
         });
         } else if(this.wear_glasses &&this.isGetRainStone){
             DialogueSystem.show(scene, [
@@ -489,8 +621,8 @@ export default {
             '快去吧！尋找其他失散的5顆祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
-                this.isConversing = false;
                 scene.items.push(this.woodpile01);
+                onFinishConversation();
             }) 
            
         }
@@ -504,11 +636,16 @@ export default {
         }
         this.isConversing = true;
         this.easter_egg_triggered = true;
+        this.stopMonkeyJump();
+
         DialogueSystem.show(scene, [
             '我看不到了⋯⋯',
             '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
         ], () => {
             this.isConversing = false;
+            if (this.isRaining) {
+                this.startMonkeyJump(scene);
+            }
         })
         this.turns_monkey++;
     },
