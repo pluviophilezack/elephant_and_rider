@@ -33,7 +33,7 @@ export class Overworld extends Scene
         GameProgress.setAchievement('apples_achievement', false);
         // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
         // 正式初始位置：(700, 100)
-        this.playerController = new PlayerController(this, 700, 100);
+        this.playerController = new PlayerController(this, 2400, 1000);
         // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
         this.wandController = new WandController(this, this.playerController);
         // 3. 設定攝影機跟隨主角移動

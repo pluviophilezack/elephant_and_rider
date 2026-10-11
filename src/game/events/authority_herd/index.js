@@ -72,7 +72,7 @@ export default {
             .setScale(0.6)
             .setVisible(false)       
             .setImmovable(true);     
-        this._setFootCollision(sprites.king, 0.5, 0.15, 0);
+        this._setFootCollision(sprites.king, 0.5, 0.3, 0);
         scene.registerAsset(sprites.king);
 
         // 中年象 × 3
@@ -82,7 +82,7 @@ export default {
                 .setScale(0.6)
                 .setVisible(false)
                 .setImmovable(true); 
-            this._setFootCollision(s, 0.5, 0.15, 0);
+            this._setFootCollision(s, 0.5, 0.3, 0);
             scene.registerAsset(s);
             sprites.normals.push(s);
         }
@@ -93,7 +93,7 @@ export default {
             .setScale(0.4)
             .setVisible(false)
             .setImmovable(true); 
-        this._setFootCollision(sprites.youngLeader, 0.5, 0.15, 0);
+        this._setFootCollision(sprites.youngLeader, 0.5, 0.3, 0);
         scene.registerAsset(sprites.youngLeader);
 
         // 年輕象 × 3
@@ -104,7 +104,7 @@ export default {
                 .setScale(0.4)
                 .setVisible(false)
                 .setImmovable(true); 
-            this._setFootCollision(s, 0.5, 0.15, 0);
+            this._setFootCollision(s, 0.5, 0.3, 0);
             scene.registerAsset(s);
             sprites.youngs.push(s);
         }
@@ -115,11 +115,11 @@ export default {
             .setScale(0.6)
             .setVisible(false)
             .setImmovable(true); 
-        this._setFootCollision(sprites.little, 0.5, 0.15, 0);
+        this._setFootCollision(sprites.little, 0.5, 0.3, 0);
         scene.registerAsset(sprites.little);
 
         // 祈雨石（可能在事件結尾獲得，先不顯示）
-        sprites.rainStone = scene.add.sprite(3240, 380, 'rain_stone')
+        sprites.rainStone = scene.physics.add.sprite(3240, 380, 'rain_stone')//1011
             .setScale(0.6)
             .setVisible(false);
         scene.registerAsset(sprites.rainStone);
@@ -164,6 +164,10 @@ export default {
 
         this._easterEggTriggered = false; 
         this._easterEgg2Triggered = false;
+        this._AnimeStart = false;
+        this._AnimeEnd = false;
+        this._inAutoMoving = false; //自動動畫邏輯
+        this._rainStoneCollected = false;//祈雨石撿取邏輯
 
         // ---------- 第二階段：偵測玩家碰到象王，觸發對話 ----------
 
@@ -431,7 +435,7 @@ export default {
             // 象王對話結束，不解鎖玩家，而是引導玩家前往岔路口
             console.log('[authority_herd] 象王對話結束，建立道路選擇觸發區');
             this._setupChoiceTrigger(scene);
-            scene.playerController.enable();
+            //scene.playerController.enable();
         });
     },
 
@@ -439,7 +443,7 @@ export default {
 _setupChoiceTrigger(scene) {
     // 在岔路口位置 (4000, 800) 建立一個觸發區域
     // const choiceZone = createTriggerZone(scene, { x: 2950, y: 300, width: 200, height: 200 });
-    const choiceZone = createTriggerZone(scene, { x: 3100, y: 300, width: 200, height: 200 });
+    const choiceZone = createTriggerZone(scene, { x: 3100, y: 300, width: 210, height: 210 });
     let choiceTriggered = false;
 
     // 偵測玩家進入
@@ -448,9 +452,10 @@ _setupChoiceTrigger(scene) {
         if (this._choiceTriggered) return; // 避免重複
         choiceTriggered = true;
         this._choiceTriggered = true;
+        //this._AnimeStart = true;
         console.log('[authority_herd] 玩家到達岔路口，觸發道路選擇');
         //lock player dont move
-        //scene.playerController.disable();
+        scene.playerController.disable();
         // 顯示選擇
         this._showFirstChoice(scene);
         choiceZone.destroy();
@@ -467,7 +472,7 @@ _showFirstChoice(scene) {
 
         ChoiceSystem.prompt(scene, options, (chosenKey) => {
             // 選擇後解鎖玩家（移動動畫會再鎖一次）
-            //scene.playerController.enable();
+            scene.playerController.disable();
 
             scene.sharedState = scene.sharedState || {};
             scene.sharedState.authority_choice = chosenKey;
@@ -511,7 +516,7 @@ _showFirstChoice(scene) {
 
                 DialogueSystem.show(scene, kingwarn, () => {
                     // 對話結束，解鎖玩家
-                    scene.playerController.enable();
+                    //scene.playerController.enable();
                     console.log('into mountain road');
                     this._choice_1_animate_0(scene);
                 });
@@ -573,9 +578,11 @@ _showFirstChoice(scene) {
                             scene.player.y += shakeOffsetY;  
                             scene.player.x += shakeOffsetX;  // 在目標 y 上疊加偏移
                         },
-
+                        onStart:()=>{
+                            this._AnimeStart = true;
+                        },
                         onComplete: () => {
-
+                            this._AnimeStart = false;
                         }
                     })
                 })
@@ -608,6 +615,7 @@ _showFirstChoice(scene) {
                         ease: 'Sine.easeInOut',
                         //0908
                         onStart:() => {
+                            this._AnimeStart = true;
                             scene.time.delayedCall(5000, () => {
                                 this._youngArrive(scene);
                                 if(index==4){
@@ -618,6 +626,7 @@ _showFirstChoice(scene) {
                                     ];
                                     DialogueSystem.show(scene, easterLines, () => {
                                         if(both==true){
+                                            this._AnimeStart = false;
                                             this._choice_0_animate2(scene);
                                         }
                                         else{
@@ -629,6 +638,7 @@ _showFirstChoice(scene) {
                         },
 
                         onUpdate: () => {
+                            this._AnimeStart = true;
                             const elapsed = scene.time.now / 500; // 秒
                             const shakeOffsetY = Math.sin(elapsed * 3) * 5 *(index%2-0.5);                            
                             const shakeOffsetX = Math.cos(elapsed ) * 5 *(index%2-0.5); 
@@ -639,9 +649,11 @@ _showFirstChoice(scene) {
                         onComplete:()=>{
                             if(index==4){
                                 if(both == true){
+                                    this._AnimeStart = false;
                                     this._choice_0_animate2(scene);
                                 }
                                 else{
+                                    this._AnimeStart = false;
                                     both = true;
                                 }
                             }
@@ -664,7 +676,7 @@ _showFirstChoice(scene) {
         this.sprites.king.setFlipX(true);
         scene.player.setFlipX(true);
         const offsetX = -50;   // 向右偏移
-        const offsetY = 700;  // 向下偏移
+        const offsetY = 900;  // 向下偏移
         let both = false;
 
         const targets = moveSprites.map(sprite => ({
@@ -682,6 +694,7 @@ _showFirstChoice(scene) {
                 ease: 'Sine.easeInOut',
                 //0908
                 onStart: () => {
+                    this._AnimeStart = true;
                     scene.time.delayedCall(5000, () => {
                         if(index==4){
                             const easterLines = [
@@ -711,6 +724,7 @@ _showFirstChoice(scene) {
                     moveSprites[index].y += shakeOffsetY;  
                 },
                 onComplete:()=>{
+                    this._AnimeStart = false;
                     if(index==3){
                         if(both==true){
                             this._choice_0_animate3(scene);
@@ -769,6 +783,7 @@ _showFirstChoice(scene) {
             duration: 2000,
             ease: 'Linear',
             onStart: () => {
+                this._AnimeStart = true;
                 scene.time.delayedCall(2000, () => {
                     this._kingmove(scene);
                 })
@@ -781,6 +796,7 @@ _showFirstChoice(scene) {
                 scene.player.x -= shakeOffsetX;  
             },
             onComplete: ()=>{       
+                this._AnimeStart = false;
                 const wanttogethertalk = [
                     {speaker:'年輕象領', text:'等等!'},
                     {speaker:'年輕象領', text:'我們，跟你一起，可以嗎...'},
@@ -885,6 +901,7 @@ _showFirstChoice(scene) {
                     moveSprites[index].y += shakeOffsetY;  
                 },
                 onStart: () => {
+                    this._AnimeStart = true;
                     // this._kingmove(scene);
                     if(index==1){
                         scene.time.delayedCall(2000, () => {
@@ -898,8 +915,10 @@ _showFirstChoice(scene) {
                             DialogueSystem.show(scene, selftalk, () => {
                                 // 對話結束，解鎖玩家
                                 //scene.playerController.enable();
+                                this._AnimeStart = false;
                                 if(index==1){
                                     if(both==true){
+                                        this._AnimeStart = false;
                                         this._rock_animate(scene);
                                     }
                                     else{
@@ -914,6 +933,7 @@ _showFirstChoice(scene) {
                     //scene.playerController.enable();
                     if(index==1){
                         if(both==true){
+                            this._AnimeStart = false;
                             this._rock_animate(scene);
                         }
                         else{
@@ -957,6 +977,7 @@ _showFirstChoice(scene) {
                 scene.player.x -= shakeOffsetX;  
             },
             onStart: () => {
+                this._AnimeStart = true;
                 this._kingmove(scene);
                 scene.time.delayedCall(2000, () => {
                     const selftalk = [
@@ -969,6 +990,7 @@ _showFirstChoice(scene) {
                         // 對話結束，解鎖玩家
                         //scene.playerController.enable();
                         if(both==true){
+                            //this._AnimeStart = false;
                             this._rock_animate(scene);
                         }
                         else{
@@ -979,7 +1001,9 @@ _showFirstChoice(scene) {
             },
             onComplete: ()=>{                    
                 //scene.playerController.enable();
+                this._AnimeStart = false;
                 if(both==true){
+                    //this._AnimeStart = false;
                     this._rock_animate(scene);
                 }
                 else{
@@ -1005,8 +1029,12 @@ _showFirstChoice(scene) {
             duration: 3000,
             ease: 'Linear',
             onStart: ()=>{
+                this._AnimeStart = false;
                 scene.time.delayedCall(1000, () => {
                     scene.player.setTexture('main_character_uncomfortable');
+                    scene.time.delayedCall(2500, () => {
+                        scene.player.setTexture('main_character_moving_01');
+                    })
                 })
             },
             onUpdate: (tween) => {
@@ -1017,9 +1045,7 @@ _showFirstChoice(scene) {
             },
             onComplete: () => {
                 this.sprites.rock.setVisible(false);
-                this._choice_1_animate2(scene);
-                scene.player.setTexture('main_character_moving_01');
-                
+                this._choice_1_animate2(scene);                
             }
         });
     },
@@ -1060,6 +1086,7 @@ _showFirstChoice(scene) {
                     moveSprites[index].y += shakeOffsetY;  
                 },
                 onStart: () => {
+                    this._AnimeStart = true;
                     if(index==1){
                         scene.time.delayedCall(2000, () => {
                             const selftalk = [
@@ -1071,7 +1098,7 @@ _showFirstChoice(scene) {
                             DialogueSystem.show(scene, selftalk, () => {
                                 // 對話結束，解鎖玩家
                                 if(both==true){
-                                    scene.playerController.enable();
+                                    //scene.playerController.enable();
                                     this._choice_0_2_0(scene);
                                 }
                                 else{
@@ -1082,67 +1109,52 @@ _showFirstChoice(scene) {
                     }
                 },
                 onComplete: ()=>{   
-                    if(index==1){
-                        if(both==true){
-                            scene.playerController.enable();
-                            this._choice_0_2_0(scene);
-                        }   
-                        else{
-                            both=true;
-                        }     
-                    }         
+
+                    //1010    
+                    scene.tweens.add({
+                        targets: sprite,
+                        x: sprite.x,
+                        y: sprite.y+200,
+                        duration: 2000,
+                        ease: 'Sine.easeInOut',
+                        //0926
+                        onUpdate: () => {
+                            const elapsed = scene.time.now / 500; // 秒
+                            const shakeOffsetX = Math.sin(elapsed) * 5 *(index%2-0.5); 
+                            const shakeOffsetY = Math.cos(elapsed * 3) * 5 *(index%2-0.5);
+                            moveSprites[index].x += shakeOffsetX;  
+                            moveSprites[index].y += shakeOffsetY;  
+                        },
+                        onStart: () => {
+                            this._AnimeStart = true;
+                        },
+                        onComplete: ()=>{   
+                            this._AnimeStart = false;
+                            if(index==1){
+                                if(both==true){
+                                    scene.playerController.enable();
+                                    this._choice_0_2_0(scene);
+                                }   
+                                else{
+                                    both=true;
+                                }     
+                            }         
+                        }
+                    });
+                    //1010
+
+                    // this._AnimeStart = false;
+                    // if(index==1){
+                    //     if(both==true){
+                    //         scene.playerController.enable();
+                    //         this._choice_0_2_0(scene);
+                    //     }   
+                    //     else{
+                    //         both=true;
+                    //     }     
+                    // }         
                 }
             });
-        // })
-        // 穿山路線：所有象群移動（原設計）
-        // const moveSprites = [
-        //     this.sprites.rock,
-        //     scene.player
-        // ];
-        // let shakeTime1 = 0;
-        // let both = false;
-        // scene.tweens.add({
-        //     targets: moveSprites,
-        //     x: 4500,
-        //     y: 1200,
-        //     duration: 8000,
-        //     ease: 'Linear',
-        //     //0908
-        //     onUpdate: () => {
-        //         shakeTime1 += 0.05;
-        //         const shakeOffset = Math.sin(shakeTime1 * 0.5) * 2.5;
-        //         scene.player.y += shakeOffset;  // 在目標 y 上疊加偏移
-        //         scene.player.x -= shakeOffset;  // 在目標 y 上疊加偏移
-        //     },
-
-        //     onStart: () => {
-        //         scene.time.delayedCall(2000, () => {
-        //             const selftalk = [
-        //                 {speaker:'player', text:'剛剛，好危險...'},
-        //                 {speaker:'player', text:'...'},
-        //             ];
-
-        //             DialogueSystem.show(scene, selftalk, () => {
-        //                 // 對話結束，解鎖玩家
-        //                 if(both==true){
-        //                     scene.playerController.enable();
-        //                     this._choice_0_2_0(scene);
-        //                 }
-        //                 else{
-        //                     both = true;
-        //                 }
-        //             });
-        //         });
-        //     },
-        //     onComplete: ()=>{   
-        //         if(both==true){
-        //             scene.playerController.enable();
-        //             this._choice_0_2_0(scene);
-        //         }   
-        //         else{
-        //             both=true;
-        //         }              
-        //     }
         });
     },
 
@@ -1162,7 +1174,7 @@ _showFirstChoice(scene) {
 
         DialogueSystem.show(scene, easterLines, () => {
             // 對話結束，解鎖玩家
-            //scene.playerController.enable();
+            scene.playerController.enable();
             this._youngarrive2(scene);
         });
     },
@@ -1283,7 +1295,7 @@ _showFirstChoice(scene) {
                 this.sprites.little,
             ];
             const offsetX = 0;   // 向右偏移
-            const offsetY = 550;  // 向下偏移
+            const offsetY = 350;  // 向下偏移
             const targets = moveSprites.map(sprite => ({
                 x: sprite.x + offsetX,
                 y: sprite.y + offsetY
@@ -1581,7 +1593,7 @@ _showFirstChoice(scene) {
                     { key: 'young', label: '年輕象\n有理' }
                 ];
 
-                //scene.playerController.disable();
+                scene.playerController.disable();
 
                 ChoiceSystem.prompt(scene, options, (chosenKey) => {
                     scene.sharedState.argument_choice = chosenKey;
@@ -1592,7 +1604,8 @@ _showFirstChoice(scene) {
                         MoralState.add('fairness', 2);
                         MoralState.add('ingroup', 1);
                     }
-
+                    
+                    scene.playerController.disable();
                     if (chosenKey === 'king') {
                         this._kingEnding(scene);
                     } else {
@@ -1667,6 +1680,7 @@ _showFirstChoice(scene) {
         DialogueSystem.show(scene, thanks, () => {
             //this._giveRainStone(scene, 'king');
             //this.sprites.rainStone.setVisible(false);
+            this._dropRainStone(scene);          // 🆕 把石頭放在地上//1011
             scene.playerController.enable();
         });
     },
@@ -1868,6 +1882,7 @@ _showFirstChoice(scene) {
             //this._giveRainStone(scene, 'young');
             //this.sprites.rainStone.setVisible(false);
             //this._spawnlittleEgg2(scene);
+            this._dropRainStone(scene);          // 🆕 把石頭放在地上//1011
             scene.playerController.enable();
         });
     },
@@ -1883,6 +1898,32 @@ _showFirstChoice(scene) {
             scene.sharedState.rainStone = true;
         }
         console.log('獲得祈雨石');
+    },
+
+    // ---- 把祈雨石放在地上，讓玩家用象鼻撿起 ----//1011
+    _dropRainStone(scene) {
+        const stone = this.sprites.rainStone;
+        if (!stone) return;
+
+        stone.setVisible(true);
+        stone.setDepth(1000);
+
+        // 加入可撿拾清單
+        if (scene.items && !scene.items.includes(stone)) {
+            scene.items.push(stone);
+        }
+
+        // 浮動動畫（讓石頭看起來是「發光寶物」）
+        scene.tweens.add({
+            targets: stone,
+            y: stone.y - 10,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            duration: 1500,
+            repeat: -1
+        });
+
+        console.log('[authority_herd] 祈雨石已放置，可用象鼻撿起');
     },
 
     // ---- 腳下碰撞箱輔助方法 ----
@@ -1918,10 +1959,80 @@ _showFirstChoice(scene) {
             //this.sprites.mountain02_03,
         ].filter(s => s && s.active);
 
-        const depthOffset = 15;
+        const depthOffset = scene.player.depth;
         spritesToSort.forEach(sprite => {
-            sprite.setDepth(depthOffset - (scene.player.y - sprite.y)/50);
-            //console.log(scene.player.y - sprite.y);
+            sprite.setDepth(depthOffset - (scene.player.y + 30 - sprite.y)/50);
+            // console.log(depthOffset - (scene.player.y - sprite.y)/50);
         });
-    }
+
+        // ===== 新增：偵測主角被 Tween 移動時播放走路動畫 ===== //1010
+        this._animatePlayerMovement(scene);
+
+        // ---- 偵測玩家用象鼻撿起祈雨石 ----//1011
+        if (scene.wandController &&
+            scene.wandController.heldItem === this.sprites.rainStone &&
+            !this._rainStoneCollected) {
+
+            this._rainStoneCollected = true;
+
+            // 從象鼻移除
+            scene.wandController.heldItem = null;
+
+            // 停止浮動動畫、隱藏石頭
+            scene.tweens.killTweensOf(this.sprites.rainStone);
+            this.sprites.rainStone.setVisible(false);
+
+            // 給分
+            this._giveRainStone(scene, 'player');
+        }
+    },
+
+    // ---- 主角移動動畫覆蓋 ----
+    _animatePlayerMovement(scene) {
+        const player = scene.player;
+        if (!player || !player.active) return;
+
+        // 只在事件進行中啟用（避免影響其他事件或一般遊玩）
+        const eventActive = (this._AnimeStart);
+        if (!eventActive) {
+            // 事件未啟動，不干預玩家動畫，只記錄位置
+            this._prevPlayerX = player.x;
+            this._prevPlayerY = player.y;
+            return;
+        }
+
+        // 計算這一幀的位移
+        const dx = player.x - (this._prevPlayerX ?? player.x);
+        const dy = player.y - (this._prevPlayerY ?? player.y);
+        const moved = Math.abs(dx) > 0 || Math.abs(dy) > 0;
+
+        if (moved && !(this._inAutoMoving)) {
+            //player.stop();
+            // player.setTexture('main_character_moving_01');
+            this._inAutoMoving = true;
+            player.setTexture('main_character_moving_01');
+            scene.time.delayedCall(500, () => {
+                if(!this._AnimeStart){
+                    this._inAutoMoving = false;
+                    return;
+                }
+                player.setTexture('main_character_stand_still');
+                scene.time.delayedCall(500, () => {
+                    if(!this._AnimeStart){
+                        this._inAutoMoving = false;
+                        return;
+                    }
+                    player.setTexture('main_character_moving_01');
+                    this._inAutoMoving = false;
+                })
+            })
+            
+        } else {
+            // player.setTexture('main_character_stand_still');
+            // player.stop();
+        }
+
+        this._prevX = player.x;
+        this._prevY = player.y;
+    },
 };

@@ -172,7 +172,7 @@ export default {
       } else {
         scene.playerController.speed = scene.playerController.baseSpeed;
 
-        if (scene.player.texture?.key === "main_character_uncomfortable") {
+        if ((scene.player.texture?.key === "main_character_uncomfortable") && (scene.playerController.enabled)) {
           safeSetTexture(scene.player, "main_character_stand_still");
         }
       }
