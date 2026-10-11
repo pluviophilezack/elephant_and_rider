@@ -19,12 +19,15 @@ export default {
         this.roadPolylines = [
             // 第一條折線
             [
-                { x: 252, y: 136 },
-                { x: 782, y: 227 },
-                { x: 1025, y: 318 },
-                { x: 1223, y: 460 }
+                { x: 584, y: 188 }, 
+                { x: 719, y: 218 }
             ],
-            // 第二條獨立折線
+            // 第二條折線
+            [
+                { x: 845, y: 251 },
+                { x: 971, y: 293 }
+            ],
+            // 第三條獨立折線
             [
                 { x: 1949, y: 450 },
                 { x: 1644, y: 713 },
@@ -61,7 +64,7 @@ export default {
 
 
         // Bush compound
-        this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
+        // this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
         this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
 
@@ -277,7 +280,7 @@ export default {
 
         ];  
         this.hardBushes = hardBushPositions.map(({x, y, scale})=> {
-            const bush = scene.physics.add.sprite(x, y, 'bush_02');
+            const bush = scene.physics.add.sprite(x, y, 'bush_02').setDepth(0);
             bush.body.setImmovable(true);
             if(scale){
                 bush.setScale(scale);
