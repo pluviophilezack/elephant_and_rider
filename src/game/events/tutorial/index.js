@@ -53,6 +53,10 @@ export default {
         this.lastSafeX = this.playerSprite.x;
         this.lastSafeY = this.playerSprite.y;
 
+        // 六顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
+        this.rainStoneTriggerLine = new Phaser.Geom.Line(579, 1969, 185, 1979);
+        this.rainStoneLineWarningCooldown = 0;
+
         // [除錯用] 繪製所有獨立折線紅色線條，座標確認無誤後可將 visible 設為 false
         this.roadDebugGraphics = scene.add.graphics().setDepth(999);
         this.roadDebugGraphics.lineStyle(3, 0xff0000, 0.9);
@@ -543,6 +547,7 @@ export default {
                 this.lastSafeX = player.x;
                 this.lastSafeY = player.y;
             } else {
+                let hitRainStoneLine = false;
                 // 輔助函式：判斷主角在 (testPlayerX, testPlayerY) 時其 body 是否與任一邊界折線相交
             const bodyCollidesWithBoundary = (testPlayerX, testPlayerY) => {
                 const bodyOffsetX = body.x - player.x;
@@ -556,6 +561,17 @@ export default {
                     if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        return true;
+                    }
+                }
+
+                const currentStones = scene.hud?.rainStoneCount ?? scene.sharedState?.rainStoneCount ?? 0;
+                if (currentStones >= 6 && this.rainStoneTriggerLine) {
+                    const line = this.rainStoneTriggerLine;
+                    if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        hitRainStoneLine = true;
                         return true;
                     }
                 }
@@ -610,6 +626,20 @@ export default {
             } else {
                 this.lastSafeX = player.x;
                 this.lastSafeY = player.y;
+            }
+
+            // 5. 觸碰祈雨石封鎖線時觸發對話
+            if (hitRainStoneLine && !this.isConversing && !DialogueSystem.isShowing()) {
+                const now = scene.time?.now ?? Date.now();
+                if (now > (this.rainStoneLineWarningCooldown || 0)) {
+                    this.rainStoneLineWarningCooldown = now + 1500;
+                    this.isConversing = true;
+                    DialogueSystem.show(scene, [
+                        '猴長老還在等你，趕快帶著祈雨石去找他吧！'
+                    ], () => {
+                        this.isConversing = false;
+                    });
+                }
             }
             }
         }
