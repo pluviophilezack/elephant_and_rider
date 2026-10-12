@@ -4,7 +4,7 @@ import { DialogueSystem } from "./DialogueSystem";
 export class PlayerController {
 
     constructor(scene, x, y) {
-        this.baseSpeed = 160; 
+        this.baseSpeed = 160*5; 
         this.scene = scene;
         //建立主角(預設靜止圖樣)
         this.sprite = scene.physics.add.sprite(x, y, 'main_character_stand_still');
@@ -75,7 +75,7 @@ export class PlayerController {
         if(DialogueSystem.isShowing()){
             this.sprite.setVelocity(0, 0);
             this.sprite.stop();
-            //this.sprite.setTexture('main_character_stand_still');
+            //this.sprite.setTexture('main_character_stand_still');//1010
             return;
         }
 

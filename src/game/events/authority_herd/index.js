@@ -198,7 +198,7 @@ export default {
 
         // ---- 建立「碰到象王觸發動畫與對話」的碰撞偵測 ----
         // const triggerZone = createTriggerZone(scene, { x: 2800, y: 350, width: 200, height: 200 }); //2950,300
-        const triggerZone = createTriggerZone(scene, { x: 3100, y: 300, width: 200, height: 200 }); //2950,300
+        const triggerZone = createTriggerZone(scene, { x: 3100, y: 300, width: 200, height: 220 }); //2950,300
         let triggered = false;
 
         scene.physics.add.overlap(scene.player, triggerZone, () => {
@@ -214,7 +214,7 @@ export default {
 
         //年輕象對話彩蛋
         // const youngLeaderTrigger = createTriggerZone(scene, { x: 2900, y: 120, width: 100, height: 100 });
-        const youngLeaderTrigger = createTriggerZone(scene, { x: 2750, y: 500, width: 200, height: 200 });
+        const youngLeaderTrigger = createTriggerZone(scene, { x: 2700, y: 400, width: 300, height: 150 });
         let eggTriggered = false;
 
         scene.physics.add.overlap(scene.player, youngLeaderTrigger, () => {
@@ -443,7 +443,7 @@ export default {
 _setupChoiceTrigger(scene) {
     // 在岔路口位置 (4000, 800) 建立一個觸發區域
     // const choiceZone = createTriggerZone(scene, { x: 2950, y: 300, width: 200, height: 200 });
-    const choiceZone = createTriggerZone(scene, { x: 3100, y: 300, width: 210, height: 210 });
+    const choiceZone = createTriggerZone(scene, { x: 3100, y: 300, width: 210, height: 230 });
     let choiceTriggered = false;
 
     // 偵測玩家進入
@@ -479,9 +479,11 @@ _showFirstChoice(scene) {
 
             if (chosenKey === 'follow') {
                 MoralState.add('authority', 1);
+                MoralState.getAll();
                 this.choose_Far_Way = true;
             } else {
-                MoralState.add('fairness', 1);
+                //MoralState.add('fairness', 1);
+                MoralState.getAll();
                 this.choose_Far_Way = false;
             }
 
@@ -1030,10 +1032,16 @@ _showFirstChoice(scene) {
             ease: 'Linear',
             onStart: ()=>{
                 this._AnimeStart = false;
-                scene.time.delayedCall(1000, () => {
+                scene.time.delayedCall(500, () => {
                     scene.player.setTexture('main_character_uncomfortable');
-                    scene.time.delayedCall(2500, () => {
-                        scene.player.setTexture('main_character_moving_01');
+                    scene.time.delayedCall(1000, () => {
+                        scene.player.setTexture('main_character_stand_still');
+                        scene.time.delayedCall(500, () => {
+                            scene.player.setTexture('main_character_uncomfortable');
+                            scene.time.delayedCall(1000, () => {
+                                scene.player.setTexture('main_character_stand_still');
+                            })
+                        })
                     })
                 })
             },
@@ -1169,7 +1177,8 @@ _showFirstChoice(scene) {
             {speaker:'player', text:'但是，好像有比較快'},
             {speaker:'player', text:'......'},
             {speaker:'player', text:'這裡就是河谷了...要快點才行...'},
-            {speaker:'player', text:'趕快找到...下個寶石...水域廢墟...'},
+            {speaker:'player', text:'趕快找到..下個寶石..水域廢墟..'},
+            {speaker:'player', text:'疑，那邊有船...'},
         ];
 
         DialogueSystem.show(scene, easterLines, () => {
@@ -1599,10 +1608,11 @@ _showFirstChoice(scene) {
                     scene.sharedState.argument_choice = chosenKey;
 
                     if (chosenKey === 'king') {
-                        MoralState.add('authority', 2);
+                        MoralState.add('authority', 1);
+                        MoralState.getAll();
                     } else {
-                        MoralState.add('fairness', 2);
-                        MoralState.add('ingroup', 1);
+                        MoralState.add('harm', 1);
+                        MoralState.getAll();
                     }
                     
                     scene.playerController.disable();
