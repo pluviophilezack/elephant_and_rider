@@ -11,6 +11,7 @@ export const ChoiceSystem = {
     // options: [{ key: 'share', label: '分享' }, { key: 'drink_all', label: '獨飲' }]
     // onChoose(optionKey) 於玩家確認選擇後呼叫一次
     prompt(scene, options, onChoose, { inputDelayMs = 0 } = {}) {
+        this._active = true;
 
         const prompt = new ChoicePrompt(scene, options, (chosen) => {
             this._active = false;
