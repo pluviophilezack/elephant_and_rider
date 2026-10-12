@@ -26,7 +26,7 @@ const CHASE_SPRINT_MS = 14000;
 const LONE_BIRD_BUSH_DEPTH = 24;
 
 const AREA = {
-    flockCenter: { x: 2040, y: 1240 },
+    flockCenter: { x: 2400, y: 1280 },
     loneStart: { x: 690, y: 850 },
     firstEscapeLeftSpot: { x: 525, y: 900 },
     firstEscapeRightSpot: { x: 855, y: 900 },
