@@ -50,14 +50,9 @@ export class Overworld extends Scene
         // ==========================================
         
         // 步驟 1: 動態讀取底圖尺寸
-        const img = this.textures.get('background_01_plain').getSourceImage();
-        const w = img.width;
-        const h = img.height;
-        
-        // 計算物理世界總尺寸
-        const worldWidth = w * 2;
-        const worldHeight = h * 2;
-    
+        const img = this.textures.get('background_whole').getSourceImage();
+        const worldWidth = img.width;
+        const worldHeight = img.height;
 
         // 底圖
         this.add.image(0, 0, 'background_whole').setOrigin(0, 0);
