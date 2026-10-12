@@ -66,13 +66,16 @@ export class Overworld extends Scene
 
         // 拼接四張樹木
         // 左上
-        this.add.image(0, 0, 'trees_01').setOrigin(0,0).setDepth(2);
+        this.add.image(0, 0, 'trees_01').setOrigin(0,0).setDepth(110).setScale(0.9);
         // 左下
-        this.add.image(0, worldHeight - 50, 'trees_02').setOrigin(0, 1).setDepth(2);
+        this.add.image(0, worldHeight - 50, 'trees_02').setOrigin(0, 1).setDepth(2).setScale(0.9);
         // 右上
-        this.add.image(worldWidth, -50, 'trees_03').setOrigin(1, 0).setDepth(2);
+        this.add.image(worldWidth, - 50, 'trees_03').setOrigin(1, 0).setDepth(2).setScale(0.9);
         // 右下
-        this.add.image(worldWidth, worldHeight-50, 'trees_04').setOrigin(1, 1).setDepth(2);
+        this.add.image(worldWidth, worldHeight- 50, 'trees_04').setOrigin(1, 1).setDepth(2).setScale(0.9);
+
+        // 獨立的樹
+        this.add.image(3810, 1350, 'tree').setDepth(20);
 
         // 動態設定物理世界邊界 (Physics Bounds) 
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);

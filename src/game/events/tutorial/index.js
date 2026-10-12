@@ -70,7 +70,7 @@ export default {
         // Bush compound
         // this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
-        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04')
 
         // 根據主角在線段的左側或右側，設定與bush compound圖層
 
@@ -255,6 +255,9 @@ export default {
             repeat: -1
         })
 
+        // 第一條折線、第二條折線：yellow bushes at initial point
+        this.yellowBushes = scene.add.sprite(770, 214, 'yellow_bushes').setDepth(20);
+
         // Bushes
         const hardBushPositions = [    
         // one side of footpath
@@ -307,7 +310,7 @@ export default {
         {x: 2500, y: 160, scale: 0.8},
         {x: 2510, y: 250, scale: 0.8},
         // 右側道路的間隔bush
-        {x: 1466, y: 1034, scale: 0.8}
+        {x: 1466, y: 1034, scale: 0.8},
 
 
         ];  
@@ -322,17 +325,14 @@ export default {
         });
         scene.physics.add.collider(this.playerSprite, this.hardBushes);
 
-        
+
 
         // Soft bush
         const softBushPositions = [
             {x:1849, y: 334},
             { x: 1786, y: 270 },
             { x: 2327, y: 525 },
-            { x: 2241, y: 521 },
-            { x: 2160, y: 325 },
             { x: 2248, y: 327 },
-            { x: 2161, y: 244 },
             { x: 2061, y: 271 },
             { x: 1892, y: 400 }
         ];
