@@ -200,7 +200,7 @@ export default {
         // 離開區域恢復基準速度
         scene.playerController.speed = baseSpeed;
 
-        if (scene.player.texture?.key === "main_character_uncomfortable") {
+        if ((scene.player.texture?.key === "main_character_uncomfortable") && (scene.playerController.enabled)) {//1010
           safeSetTexture(scene.player, "main_character_stand_still");
         }
       }

@@ -75,7 +75,7 @@ export class PlayerController {
         if(DialogueSystem.isShowing()){
             this.sprite.setVelocity(0, 0);
             this.sprite.stop();
-            this.sprite.setTexture('main_character_stand_still');
+            //this.sprite.setTexture('main_character_stand_still');//1010
             return;
         }
 
