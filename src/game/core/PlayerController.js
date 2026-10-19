@@ -1,5 +1,6 @@
 // 核心系統：主角（大象＋騎象人）在大地圖上的移動控制，使用 WASD／方向鍵
 import { DialogueSystem } from "./DialogueSystem";
+import { MoralState } from "./MoralState";
 
 export class PlayerController {
 
@@ -14,7 +15,16 @@ export class PlayerController {
         // 加入sprite
         scene.player = this.sprite.setScale(0.4); 
         // 設定圖層順序，避免被底圖覆蓋
-        this.sprite.setDepth(15);//0921
+        this.sprite.setDepth(15);
+
+        // 預先加入顏色並隱藏
+        const MARKING_COLORS = ['blue', 'green', 'purple', 'pink', 'yellow'];
+
+        this.marking_sprite = {};
+
+        MARKING_COLORS.forEach(color => {
+            this.marking_sprite[color] = scene.add.image(x, y, color).setScale(0.45).setVisible(true).setDepth(20);
+        })
 
         //碰撞範圍
         const rawWidth = this.sprite.body.width;
@@ -37,6 +47,8 @@ export class PlayerController {
         });
 
         this.initAnimations();
+
+        this.wasPainted = false;
     }
 
     initAnimations(){
@@ -68,6 +80,30 @@ export class PlayerController {
     // 🆕 新增：啟用玩家控制
     enable() {
         this.enabled = true;
+    }
+
+    // 加入斑紋
+    paint(domain){
+        let color = null;
+        switch (domain){
+            case authority:
+                color = pink;
+                break;
+            case fairness:
+                color = green;
+                break;
+            case ingroup:
+                color = yellow;
+                break;
+            case purity:
+                color = blue;
+                break;
+            case harm:
+                color = purple;
+                break;
+        }
+
+
     }
 
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
@@ -111,6 +147,37 @@ export class PlayerController {
           this.sprite.stop();
           this.sprite.setTexture('main_character_stand_still');
         }
+
+        // 斑紋跟隨主角
+        
+        Object.values(this.marking_sprite).forEach(sprite => {
+            sprite.setDepth(this.sprite.depth + 1);
+            let refined_x_offset = 0;
+            if (this.sprite.flipX){
+                sprite.setFlipX(true);
+                refined_x_offset = 2;
+            } else {
+                sprite.setFlipX(false);
+                refined_x_offset = 0;
+            }
+            sprite.setPosition(
+            this.sprite.x + refined_x_offset,
+            this.sprite.y + 32
+            )
+        });
+
+        // 偵測下雨天顯示斑紋
+        if (this.scene.hud.hasEnoughRainStones() && !this.wasPainted) {
+            const moral_state = MoralState.getAll();
+            console.log(moral_state);
+            for (const [domain, score] of Object.entries(moral_state)){
+                if (score > 0){
+                    this.paint(domain);
+                }
+            }
+            this.wasPainted = true;
+        }
+        
   }
 }
 
