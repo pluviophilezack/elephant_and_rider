@@ -1,6 +1,7 @@
 // 遊戲核心進入點：定義 Phaser GameConfig，並依序註冊所有場景（Scene）
 import { Boot } from './scenes/Boot';
 import { MainMenu } from './scenes/MainMenu';
+import { IntroCutscene } from './scenes/IntroCutscene';
 import { Overworld } from './scenes/Overworld';
 import { Ending } from './scenes/Ending';
 import { EventCredits } from './scenes/EventCredits';
@@ -28,6 +29,7 @@ const config = {
     scene: [
         Boot,
         MainMenu,
+        IntroCutscene,
         Overworld,
         Ending,
         EventCredits

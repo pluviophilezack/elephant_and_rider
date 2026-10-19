@@ -2,6 +2,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { TextStyles, THEME_FONT } from '../../core/theme';
 import dialogue from './dialogue.json';
 
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
@@ -14,6 +15,9 @@ export default {
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
+
+        // 初始化主角上下左右的 WASD 移動引導
+        this.setupMovementGuide(scene);
 
         // ====== 折線邊界群組（可包含多條獨立分開的折線） ======
         this.roadPolylines = [
@@ -702,8 +706,87 @@ export default {
             });
         }
     },
+
+    setupMovementGuide(scene) {
+        if (!this.playerSprite) return;
+
+        // 遵循 theme.js 的文字風格（純文字）
+        const guideStyle = {
+            ...TextStyles.fontSetting,
+            fontFamily: THEME_FONT,
+            fontSize: '28px',
+            color: '#2c2a29',
+            stroke: '#ffffff',
+            strokeThickness: 5,
+            align: 'center'
+        };
+
+        const originX = this.playerSprite.x;
+        const originY = this.playerSprite.y;
+        const offset = 85;
+
+        // 在主角的上下左右放置 W S A D（高於主角圖層）
+        this.movementGuideTexts = [
+            scene.add.text(originX, originY - offset, 'W', guideStyle).setOrigin(0.5).setDepth(25),
+            scene.add.text(originX, originY + offset, 'S', guideStyle).setOrigin(0.5).setDepth(25),
+            scene.add.text(originX - offset, originY, 'A', guideStyle).setOrigin(0.5).setDepth(25),
+            scene.add.text(originX + offset, originY, 'D', guideStyle).setOrigin(0.5).setDepth(25)
+        ];
+
+        this.hasMovementGuideFaded = false;
+
+        this.dismissMovementGuide = () => {
+            if (this.hasMovementGuideFaded) return;
+            this.hasMovementGuideFaded = true;
+
+            // 移除鍵盤監聽
+            if (this.onMovementKeyDown) {
+                scene.input.keyboard.off('keydown', this.onMovementKeyDown);
+                this.onMovementKeyDown = null;
+            }
+
+            // 原地淡出並銷毀
+            if (this.movementGuideTexts && this.movementGuideTexts.length > 0) {
+                scene.tweens.add({
+                    targets: this.movementGuideTexts,
+                    alpha: 0,
+                    duration: 600,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.movementGuideTexts.forEach(txt => {
+                            if (txt && txt.destroy) txt.destroy();
+                        });
+                        this.movementGuideTexts = [];
+                    }
+                });
+            }
+        };
+
+        this.onMovementKeyDown = (event) => {
+            const code = event.code;
+            const key = event.key ? event.key.toLowerCase() : '';
+            if (
+                ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code) ||
+                ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)
+            ) {
+                this.dismissMovementGuide();
+            }
+        };
+
+        scene.input.keyboard.on('keydown', this.onMovementKeyDown);
+    },
     
     update(scene) {
+        // 檢查玩家若已按下移動鍵，觸發 WASD 原地淡出
+        if (!this.hasMovementGuideFaded && scene.playerController && this.dismissMovementGuide) {
+            const { cursors, wasd } = scene.playerController;
+            if (
+                cursors?.left?.isDown || cursors?.right?.isDown || cursors?.up?.isDown || cursors?.down?.isDown ||
+                wasd?.left?.isDown || wasd?.right?.isDown || wasd?.up?.isDown || wasd?.down?.isDown
+            ) {
+                this.dismissMovementGuide();
+            }
+        }
 
         // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
         // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
