@@ -576,6 +576,40 @@ export default {
             }
         };
 
+        if(scene.hud.hasEnoughRainStones){
+            const VIRTUE_LABELS = {
+                ingroup: '團隊忠誠',
+                fairness: '公平',
+                authority: '權威',
+                purity: '聖潔',
+                harm: '關懷'
+            };
+            const moralState = MoralState.getAll();
+            const activeVirtues = Object.entries(VIRTUE_LABELS)
+                .filter(([dimension]) => (moralState[dimension] ?? 0) >= 1)
+                .map(([_, label]) => label);
+
+            DialogueSystem.show(scene, [
+                '哈哈！看這雨下得多大呀！',
+                '大雨治好我的老花，從此不再需要眼鏡！',
+                '⋯⋯',
+                '其實，在我有限的歲月中，經歷過數百次的乾旱和大雨的循環',
+                '待你離開，沒過多久，雨將停歇，河水猛然消失，沙塵暴揚起，祈雨石再度四散各方',
+                '然後又會出現新的勇者，前來拯救我們，如此迴環往復',
+                '看看你身上獨有的斑紋吧。那是這趟冒險旅途中，道德判斷的印記',
+                '我見過數百位像你這樣的心智化身，印記各有不同',
+                '黃色代表「團隊忠誠」、綠色代表「公平」、粉色代表「權威」、藍色代表「聖潔」、紫色代表「關懷」',
+                '沒有任何一種美德普世皆然。道德並非源於理性的本質，無法推理演繹',
+                '正義之心更像味覺受體，有人崇尚公平，謂之正義；有人推崇權威，亦謂之正義',
+                `就像你身上有著${activeVirtues.join('、')}的印記，想必你也同樣在乎這些美德`,
+                '時間差不多了，我這裡有個寶盒，快把你蒐集的祈雨石放進來吧',
+                '再會了，勇者。'
+            ], ()=>{
+                onFinishConversation;
+                // TODO: 直接接續動畫
+            })
+        }
+
         if(this.turns_monkey === 0 ){
             DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
