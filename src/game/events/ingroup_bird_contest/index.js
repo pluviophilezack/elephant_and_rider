@@ -329,7 +329,6 @@ export default {
 
     _releaseLoneBird(scene) {
         this.state = 'released';
-        MoralState.add('ingroup', -1);
         scene.tweens.killTweensOf(this.loneBird);
         this._awardRainStone(scene);
 

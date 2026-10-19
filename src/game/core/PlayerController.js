@@ -23,7 +23,7 @@ export class PlayerController {
         this.marking_sprite = {};
 
         MARKING_COLORS.forEach(color => {
-            this.marking_sprite[color] = scene.add.image(x, y, color).setScale(0.45).setVisible(true).setDepth(20);
+            this.marking_sprite[color] = scene.add.image(x, y, color).setScale(0.45).setVisible(false).setDepth(20);
         })
 
         //碰撞範圍
@@ -47,6 +47,14 @@ export class PlayerController {
         });
 
         this.initAnimations();
+
+        // 當物理引擎把主角的最新 x, y 計算完畢後，立即同步斑紋位置，避免 1 幀延遲                                                 
+        this.scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.syncMarkingPositions, this);                                   
+                                                                                                                                    
+        // （良好習慣）當場景被銷毀或重啟時，自動移除監聽器，避免記憶體洩漏                                                        
+        this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {                                                              
+            this.scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.syncMarkingPositions, this);                              
+        });  
 
         this.wasPainted = false;
     }
@@ -86,24 +94,62 @@ export class PlayerController {
     paint(domain){
         let color = null;
         switch (domain){
-            case authority:
-                color = pink;
+            case 'authority':
+                color = 'pink';
                 break;
-            case fairness:
-                color = green;
+            case 'fairness':
+                color = 'green';
                 break;
-            case ingroup:
-                color = yellow;
+            case 'ingroup':
+                color = 'yellow';
                 break;
-            case purity:
-                color = blue;
+            case 'purity':
+                color = 'blue';
                 break;
-            case harm:
-                color = purple;
+            case 'harm':
+                color = 'purple';
                 break;
         }
 
+        // 1. 如果已經完全顯示了就不用重複播淡入動畫                                                                           
+        if (this.marking_sprite[color].visible && this.marking_sprite[color].alpha === 1) return;
 
+        // 2. 初始將透明度設為 0，並開啟可見性                                                                                 
+        this.marking_sprite[color].setAlpha(0);
+        this.marking_sprite[color].setVisible(true);
+
+        // 3. 透過場景的 Tweens 系統進行漸變                                                                                   
+        this.scene.tweens.add({
+            targets: this.marking_sprite[color],
+            alpha: 1,                // 目標透明度（1 = 完全不透明）                                                           
+            duration: 5000,          // 漸變耗時（毫秒，1500ms = 1.5 秒）                                                      
+            ease: 'Sine.easeInOut'   // 平滑緩和曲線（讓漸變更自然）                                                           
+        });
+    }
+
+            // 斑紋跟隨主角
+    syncMarkingPositions() {
+        if (!this.sprite || !this.marking_sprite) return;                                                                          
+
+        Object.values(this.marking_sprite).forEach(sprite => {
+            // 只有顯示中的斑紋才需要更新，節省效能                                                                                
+            if (!sprite.visible) return;
+
+            // 1. 同步深度：永遠比主角高一層                                                                                       
+            sprite.setDepth(this.sprite.depth + 1);
+
+            // 2. 同步左右翻轉                                                                                                     
+            sprite.setFlipX(this.sprite.flipX);
+
+            // 3. 依翻轉方向動態計算 X 軸偏移量                                                                                    
+            const offsetX = this.sprite.flipX ? 2 : 0;
+
+            // 4. 對齊主角最新座標                                                                                                 
+            sprite.setPosition(
+                this.sprite.x + offsetX,
+                this.sprite.y + 32
+            );
+        });
     }
 
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
@@ -147,24 +193,6 @@ export class PlayerController {
           this.sprite.stop();
           this.sprite.setTexture('main_character_stand_still');
         }
-
-        // 斑紋跟隨主角
-        
-        Object.values(this.marking_sprite).forEach(sprite => {
-            sprite.setDepth(this.sprite.depth + 1);
-            let refined_x_offset = 0;
-            if (this.sprite.flipX){
-                sprite.setFlipX(true);
-                refined_x_offset = 2;
-            } else {
-                sprite.setFlipX(false);
-                refined_x_offset = 0;
-            }
-            sprite.setPosition(
-            this.sprite.x + refined_x_offset,
-            this.sprite.y + 32
-            )
-        });
 
         // 偵測下雨天顯示斑紋
         if (this.scene.hud.hasEnoughRainStones() && !this.wasPainted) {
