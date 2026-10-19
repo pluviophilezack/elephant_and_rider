@@ -580,7 +580,7 @@ export default {
             }
         };
 
-        if(scene.hud.hasEnoughRainStones){
+        if(scene.hud.hasEnoughRainStones()){
             const VIRTUE_LABELS = {
                 ingroup: '團隊忠誠',
                 fairness: '公平',
@@ -653,10 +653,10 @@ export default {
             '「祈天降雨之石」',
             '我想起來了！傳說中集齊6顆，天降甘霖',
             '試圖適應冒險中遇到的難題，',
-            '那些難題將觸動直覺的大象，而作為騎象人，你就是牠的夥伴',
-            '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '那些難題將觸動直覺的大象，而作為騎象人，你們將合作前行',
+            '我有種預感，聖潔、權威、忠誠、公平、關懷的道德抉擇將在眼前',
             '小心點，這片大地上的動物有著與你截然不同的價值觀',
-            '快去吧！尋找其他失散的5顆祈雨石。'
+            '快去吧！尋找其他失散的祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 scene.items.push(this.woodpile01);
@@ -721,23 +721,37 @@ export default {
             align: 'center'
         };
 
-        const originX = this.playerSprite.x;
-        const originY = this.playerSprite.y;
+        const originX = 750;
+        const originY = 100;
         const offset = 85;
 
-        // 在主角的上下左右放置 W S A D（高於主角圖層）
+        // 在主角的上下左右放置 W S A D（高於主角圖層），初始完全透明並在 3 秒後平滑淡入
         this.movementGuideTexts = [
-            scene.add.text(originX, originY - offset, 'W', guideStyle).setOrigin(0.5).setDepth(25),
-            scene.add.text(originX, originY + offset, 'S', guideStyle).setOrigin(0.5).setDepth(25),
-            scene.add.text(originX - offset, originY, 'A', guideStyle).setOrigin(0.5).setDepth(25),
-            scene.add.text(originX + offset, originY, 'D', guideStyle).setOrigin(0.5).setDepth(25)
+            scene.add.text(originX, originY - offset, 'W', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX, originY + offset, 'S', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX - offset, originY, 'A', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX + offset, originY, 'D', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0)
         ];
 
         this.hasMovementGuideFaded = false;
 
+        this.guideFadeInTween = scene.tweens.add({
+            targets: this.movementGuideTexts,
+            alpha: 1,
+            delay: 3000,
+            duration: 600,
+            ease: 'Power2'
+        });
+
         this.dismissMovementGuide = () => {
             if (this.hasMovementGuideFaded) return;
             this.hasMovementGuideFaded = true;
+
+            // 若淡入 tween 仍在等待或執行中，停止它
+            if (this.guideFadeInTween) {
+                this.guideFadeInTween.stop();
+                this.guideFadeInTween = null;
+            }
 
             // 移除鍵盤監聽
             if (this.onMovementKeyDown) {

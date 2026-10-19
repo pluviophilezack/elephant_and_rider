@@ -3,6 +3,7 @@
 import { Scene } from 'phaser';
 import { TextStyles } from '../core/theme';
 import { GameProgress } from '../core/GameProgress';
+import { MoralState } from '../core/MoralState';
 import { EVENT_CREDITS_MENU_LABEL } from './EventCredits';
 
 export class MainMenu extends Scene
@@ -15,7 +16,7 @@ export class MainMenu extends Scene
     init (data = {})
     {
         // 跳過Menu動畫，方便方便快速開發（設為 false 可正常進入主選單並點擊 Start）
-        this.debugSkipMenu = false;
+        this.debugSkipMenu = true;
 
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
@@ -198,6 +199,7 @@ export class MainMenu extends Scene
 
         // 點擊後進入開頭動畫過場
         this.startText.once('pointerdown', () => {
+            MoralState.reset();
             this.scene.start('IntroCutscene');
         });
 

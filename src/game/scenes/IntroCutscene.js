@@ -19,10 +19,10 @@ export const INTRO_CONFIG = {
     textFadeDuration: 800,         // 文字淡入／淡出動畫時長
     pauseBetweenTexts: 400,        // 每段文字淡出後，下一段出現前的停頓空白時間
     characterFadeDuration: 1200,   // 主角（大象與騎象人）淡入動畫時長
-    sceneTransitionFadeDuration: 800, // 結束轉場至 Overworld 的淡出時長
+    sceneTransitionFadeDuration: 1600, // 結束轉場至 Overworld 的淡出時長
 
     // 4. 座標與版面佈局（遊戲畫布預設為 1024 x 768）
-    earlyTextY: 384,               // 前三句文字的 Y 軸位置（畫面正中央）
+    earlyTextY: 360,               // 前三句文字的 Y 軸位置（畫面正中央）
     characterX: 512,               // 主角 X 軸置中
     characterY: 310,               // 主角 Y 軸位置（偏中央上方）
     characterScale: 0.5,           // 主角縮放比例
@@ -32,12 +32,14 @@ export const INTRO_CONFIG = {
 // 開頭對白腳本內容
 const INTRO_SCRIPTS = [
     // 前三句（主角尚未出現）
-    { text: '提到「道德」，你會想到什麼呢？', hasCharacter: false },
+    { text: '說起「道德」，你會想到什麼呢？', hasCharacter: false },
     { text: '你覺得道德可用推理演繹得出嗎？', hasCharacter: false },
-    { text: '還是推理其實有極限，道德本屬於人性呢？', hasCharacter: false },
+    { text: '或者，道德本屬於人性，唯有觀察才能理解？', hasCharacter: false },
+    { text: '你將在接下來的故事找到答案', hasCharacter: false },
     // 後兩句（主角登場並同時顯示）
-    { text: '這是你的心智，象與騎象人。', hasCharacter: true },
-    { text: '你的冒險即將開始', hasCharacter: true }
+    { text: '這是你的心智，象與騎象人', hasCharacter: true },
+    { text: '步行十餘里，你們來到這片充滿各種動物的莽原', hasCharacter: true },
+    { text: '邁開步伐，探索多樣道德觀的世界吧', hasCharacter: true }
 ];
 
 export class IntroCutscene extends Scene {
@@ -95,69 +97,53 @@ export class IntroCutscene extends Scene {
      * 播放整段開頭動畫過場
      */
     async playCutscene() {
-        // 第一階段：播放前三句問題
-        for (let i = 0; i < 3; i++) {
+        let isCharacterVisible = false;
+
+        for (let i = 0; i < INTRO_SCRIPTS.length; i++) {
             if (!this.isSceneActive) return;
 
             const item = INTRO_SCRIPTS[i];
-            this.captionText.setPosition(512, INTRO_CONFIG.earlyTextY);
-            this.captionText.setText(item.text);
 
-            // 淡入
-            await this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration);
+            if (item.hasCharacter) {
+                this.captionText.setPosition(512, INTRO_CONFIG.lateTextY);
+                this.captionText.setText(item.text);
+
+                if (!isCharacterVisible) {
+                    // 主角首次登場：主角與文字同時淡入
+                    isCharacterVisible = true;
+                    await Promise.all([
+                        this.fadeObject(this.mainCharacter, 1, INTRO_CONFIG.characterFadeDuration),
+                        this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration)
+                    ]);
+                } else {
+                    // 主角已在場，僅文字淡入
+                    await this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration);
+                }
+            } else {
+                // 主角尚未登場階段
+                this.captionText.setPosition(512, INTRO_CONFIG.earlyTextY);
+                this.captionText.setText(item.text);
+                await this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration);
+            }
+
             if (!this.isSceneActive) return;
 
-            // 停留 5 秒（供玩家閱讀）
+            // 文字停留閱讀時間
             await this.waitDuration(INTRO_CONFIG.textDuration);
             if (!this.isSceneActive) return;
 
-            // 淡出
+            // 文字淡出
             await this.fadeObject(this.captionText, 0, INTRO_CONFIG.textFadeDuration);
             if (!this.isSceneActive) return;
 
-            // 間隔停頓
+            // 句與句之間的間隔停頓
             await this.waitDuration(INTRO_CONFIG.pauseBetweenTexts);
             if (!this.isSceneActive) return;
         }
 
-        // 第二階段：淡入主角，並同時顯示第四句
-        if (!this.isSceneActive) return;
-
-        this.captionText.setPosition(512, INTRO_CONFIG.lateTextY);
-        this.captionText.setText(INTRO_SCRIPTS[3].text);
-
-        // 主角與第四句文字同時淡入
+        // 播放完畢：主角淡出與攝影機轉場進入 Overworld 大地圖
         await Promise.all([
-            this.fadeObject(this.mainCharacter, 1, INTRO_CONFIG.characterFadeDuration),
-            this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration)
-        ]);
-        if (!this.isSceneActive) return;
-
-        // 停留 5 秒
-        await this.waitDuration(INTRO_CONFIG.textDuration);
-        if (!this.isSceneActive) return;
-
-        // 第四句文字淡出（主角保持留在畫面上）
-        await this.fadeObject(this.captionText, 0, INTRO_CONFIG.textFadeDuration);
-        if (!this.isSceneActive) return;
-
-        await this.waitDuration(INTRO_CONFIG.pauseBetweenTexts);
-        if (!this.isSceneActive) return;
-
-        // 第三階段：第五句「你將開始你的冒險。」
-        this.captionText.setText(INTRO_SCRIPTS[4].text);
-        await this.fadeObject(this.captionText, 1, INTRO_CONFIG.textFadeDuration);
-        if (!this.isSceneActive) return;
-
-        await this.waitDuration(INTRO_CONFIG.textDuration);
-        if (!this.isSceneActive) return;
-
-        await this.fadeObject(this.captionText, 0, INTRO_CONFIG.textFadeDuration);
-        if (!this.isSceneActive) return;
-
-        // 第四階段：整場淡出並轉場進入 Overworld 大地圖
-        await Promise.all([
-            this.fadeObject(this.mainCharacter, 0, INTRO_CONFIG.sceneTransitionFadeDuration),
+            ...(isCharacterVisible ? [this.fadeObject(this.mainCharacter, 0, INTRO_CONFIG.sceneTransitionFadeDuration)] : []),
             this.fadeCamera(INTRO_CONFIG.sceneTransitionFadeDuration)
         ]);
         if (!this.isSceneActive) return;
