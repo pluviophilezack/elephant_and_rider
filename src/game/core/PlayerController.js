@@ -91,7 +91,7 @@ export class PlayerController {
     }
 
     // 加入斑紋
-    paint(domain){
+    paint(domain, animated = true){
         let color = null;
         switch (domain){
             case 'authority':
@@ -111,20 +111,25 @@ export class PlayerController {
                 break;
         }
 
-        // 1. 如果已經完全顯示了就不用重複播淡入動畫                                                                           
-        if (this.marking_sprite[color].visible && this.marking_sprite[color].alpha === 1) return;
+        const sprite = this.marking_sprite?.[color];
+        if (!sprite) return;
 
-        // 2. 初始將透明度設為 0，並開啟可見性                                                                                 
-        this.marking_sprite[color].setAlpha(0);
-        this.marking_sprite[color].setVisible(true);
+        // 如果已經完全顯示了就不用重複處理
+        if (sprite.visible && sprite.alpha === 1) return;
 
-        // 3. 透過場景的 Tweens 系統進行漸變                                                                                   
-        this.scene.tweens.add({
-            targets: this.marking_sprite[color],
-            alpha: 1,                // 目標透明度（1 = 完全不透明）                                                           
-            duration: 5000,          // 漸變耗時（毫秒，1500ms = 1.5 秒）                                                      
-            ease: 'Sine.easeInOut'   // 平滑緩和曲線（讓漸變更自然）                                                           
-        });
+        if (animated) {
+            sprite.setAlpha(0);
+            sprite.setVisible(true);
+            this.scene.tweens.add({
+                targets: sprite,
+                alpha: 1,
+                duration: 2000,
+                ease: 'Sine.easeInOut'
+            });
+        } else {
+            sprite.setAlpha(1);
+            sprite.setVisible(true);
+        }
     }
 
             // 斑紋跟隨主角
@@ -150,6 +155,31 @@ export class PlayerController {
                 this.sprite.y + 32
             );
         });
+    }
+
+    // 根據當前 MoralState 套用斑紋（適用於集滿祈雨石或切換場景時延續）
+    applyCurrentMoralMarks(animated = true) {
+        // 先取當前記憶體數值；若皆為 0（例如通關重啟或直入足跡場景），嘗試讀取先前結尾儲存的數值
+        let moral_state = MoralState.getAll();
+        const hasActiveScore = Object.values(moral_state).some(score => score > 0);
+        if (!hasActiveScore) {
+            const saved = MoralState.getSavedFromStorage();
+            if (saved) {
+                moral_state = saved;
+            }
+        }
+
+        console.log('[PlayerController] 套用斑紋數值：', moral_state);
+
+        for (const [domain, score] of Object.entries(moral_state)) {
+            if (score > 0) {
+                this.paint(domain, animated);
+            }
+        }
+        this.wasPainted = true;
+
+        // 立即校正一次斑紋座標與深度，確保剛進入場景靜止時位置正確
+        this.syncMarkingPositions();
     }
 
     // 每個 frame 呼叫一次，依按鍵狀態更新主角速度與朝向
@@ -194,18 +224,10 @@ export class PlayerController {
           this.sprite.setTexture('main_character_stand_still');
         }
 
-        // 偵測下雨天顯示斑紋
-        if (this.scene.hud.hasEnoughRainStones() && !this.wasPainted) {
-            const moral_state = MoralState.getAll();
-            console.log(moral_state);
-            for (const [domain, score] of Object.entries(moral_state)){
-                if (score > 0){
-                    this.paint(domain);
-                }
-            }
-            this.wasPainted = true;
+        // 偵測下雨天/集滿祈雨石顯示斑紋
+        if (this.scene.hud?.hasEnoughRainStones() && !this.wasPainted) {
+            this.applyCurrentMoralMarks(true);
         }
-        
   }
 }
 

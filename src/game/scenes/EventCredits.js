@@ -91,6 +91,7 @@ export class EventCredits extends Scene
 
         this.playerController = new PlayerController(this, width / 2, height / 2);
         this.playerController.speed = 220;
+        this.playerController.applyCurrentMoralMarks(true);
 
         this.creditActors = CREDITS.map((credit, index) => {
             const actor = this.add.sprite(credit.x, credit.y, credit.texture)
