@@ -2,6 +2,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { TextStyles, THEME_FONT } from '../../core/theme';
 import dialogue from './dialogue.json';
 
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
@@ -14,6 +15,9 @@ export default {
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
+
+        // 初始化主角上下左右的 WASD 移動引導
+        this.setupMovementGuide(scene);
 
         // ====== 折線邊界群組（可包含多條獨立分開的折線） ======
         this.roadPolylines = [
@@ -576,6 +580,40 @@ export default {
             }
         };
 
+        if(scene.hud.hasEnoughRainStones()){
+            const VIRTUE_LABELS = {
+                ingroup: '團隊忠誠',
+                fairness: '公平',
+                authority: '權威',
+                purity: '聖潔',
+                harm: '關懷'
+            };
+            const moralState = MoralState.getAll();
+            const activeVirtues = Object.entries(VIRTUE_LABELS)
+                .filter(([dimension]) => (moralState[dimension] ?? 0) >= 1)
+                .map(([_, label]) => label);
+
+            DialogueSystem.show(scene, [
+                '哈哈！看這雨下得多大呀！',
+                '大雨治好我的老花，從此不再需要眼鏡！',
+                '⋯⋯',
+                '其實，在我有限的歲月中，經歷過數百次的乾旱和大雨的循環',
+                '待你離開，沒過多久，雨將停歇，河水猛然消失，沙塵暴揚起，祈雨石再度四散各方',
+                '然後又會出現新的勇者，前來拯救我們，如此迴環往復',
+                '看看你身上獨有的斑紋吧。那是這趟冒險旅途中，道德判斷的印記',
+                '我見過數百位像你這樣的心智化身，印記各有不同',
+                '黃色代表「團隊忠誠」、綠色代表「公平」、粉色代表「權威」、藍色代表「聖潔」、紫色代表「關懷」',
+                '沒有任何一種美德普世皆然。道德並非源於理性的本質，無法推理演繹',
+                '正義之心更像味覺受體，有人崇尚公平，謂之正義；有人推崇權威，亦謂之正義',
+                `就像你身上有著${activeVirtues.join('、')}的印記，想必你也同樣在乎這些美德`,
+                '時間差不多了，我這裡有個寶盒，快把你蒐集的祈雨石放進來吧',
+                '再會了，勇者。'
+            ], ()=>{
+                onFinishConversation;
+                // TODO: 直接接續動畫
+            })
+        }
+
         if(this.turns_monkey === 0 ){
             DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
@@ -615,10 +653,10 @@ export default {
             '「祈天降雨之石」',
             '我想起來了！傳說中集齊6顆，天降甘霖',
             '試圖適應冒險中遇到的難題，',
-            '那些難題將觸動直覺的大象，而作為騎象人，你就是牠的夥伴',
-            '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '那些難題將觸動直覺的大象，而作為騎象人，你們將合作前行',
+            '我有種預感，聖潔、權威、忠誠、公平、關懷的道德抉擇將在眼前',
             '小心點，這片大地上的動物有著與你截然不同的價值觀',
-            '快去吧！尋找其他失散的5顆祈雨石。'
+            '快去吧！尋找其他失散的祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
                 scene.items.push(this.woodpile01);
@@ -668,8 +706,101 @@ export default {
             });
         }
     },
+
+    setupMovementGuide(scene) {
+        if (!this.playerSprite) return;
+
+        // 遵循 theme.js 的文字風格（純文字）
+        const guideStyle = {
+            ...TextStyles.fontSetting,
+            fontFamily: THEME_FONT,
+            fontSize: '28px',
+            color: '#2c2a29',
+            stroke: '#ffffff',
+            strokeThickness: 5,
+            align: 'center'
+        };
+
+        const originX = 750;
+        const originY = 100;
+        const offset = 85;
+
+        // 在主角的上下左右放置 W S A D（高於主角圖層），初始完全透明並在 3 秒後平滑淡入
+        this.movementGuideTexts = [
+            scene.add.text(originX, originY - offset, 'W', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX, originY + offset, 'S', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX - offset, originY, 'A', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX + offset, originY, 'D', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0)
+        ];
+
+        this.hasMovementGuideFaded = false;
+
+        this.guideFadeInTween = scene.tweens.add({
+            targets: this.movementGuideTexts,
+            alpha: 1,
+            delay: 3000,
+            duration: 600,
+            ease: 'Power2'
+        });
+
+        this.dismissMovementGuide = () => {
+            if (this.hasMovementGuideFaded) return;
+            this.hasMovementGuideFaded = true;
+
+            // 若淡入 tween 仍在等待或執行中，停止它
+            if (this.guideFadeInTween) {
+                this.guideFadeInTween.stop();
+                this.guideFadeInTween = null;
+            }
+
+            // 移除鍵盤監聽
+            if (this.onMovementKeyDown) {
+                scene.input.keyboard.off('keydown', this.onMovementKeyDown);
+                this.onMovementKeyDown = null;
+            }
+
+            // 原地淡出並銷毀
+            if (this.movementGuideTexts && this.movementGuideTexts.length > 0) {
+                scene.tweens.add({
+                    targets: this.movementGuideTexts,
+                    alpha: 0,
+                    duration: 600,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.movementGuideTexts.forEach(txt => {
+                            if (txt && txt.destroy) txt.destroy();
+                        });
+                        this.movementGuideTexts = [];
+                    }
+                });
+            }
+        };
+
+        this.onMovementKeyDown = (event) => {
+            const code = event.code;
+            const key = event.key ? event.key.toLowerCase() : '';
+            if (
+                ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code) ||
+                ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)
+            ) {
+                this.dismissMovementGuide();
+            }
+        };
+
+        scene.input.keyboard.on('keydown', this.onMovementKeyDown);
+    },
     
     update(scene) {
+        // 檢查玩家若已按下移動鍵，觸發 WASD 原地淡出
+        if (!this.hasMovementGuideFaded && scene.playerController && this.dismissMovementGuide) {
+            const { cursors, wasd } = scene.playerController;
+            if (
+                cursors?.left?.isDown || cursors?.right?.isDown || cursors?.up?.isDown || cursors?.down?.isDown ||
+                wasd?.left?.isDown || wasd?.right?.isDown || wasd?.up?.isDown || wasd?.down?.isDown
+            ) {
+                this.dismissMovementGuide();
+            }
+        }
 
         // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
         // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔

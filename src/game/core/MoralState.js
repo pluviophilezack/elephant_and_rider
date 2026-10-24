@@ -20,6 +20,7 @@ export const MoralState = {
             return;
         }
         counts[dimension] += amount;
+        this.saveToStorage();
     },
 
     // 取得指定道德向度目前的分數
@@ -30,6 +31,25 @@ export const MoralState = {
     // 取得所有道德向度分數的複本，供 Ending 場景判斷結局用
     getAll() {
         return { ...counts };
+    },
+
+    // 儲存目前數值到 localStorage（於通關/結局時呼叫）
+    saveToStorage() {
+        try {
+            window.localStorage?.setItem('elephant_and_rider.moral_state', JSON.stringify(counts));
+        } catch (e) {
+            console.warn('[MoralState] 無法儲存道德數值至 localStorage:', e);
+        }
+    },
+
+    // 從 localStorage 讀取先前結尾儲存的道德數值（供創作者足跡等場景使用）
+    getSavedFromStorage() {
+        try {
+            const raw = window.localStorage?.getItem('elephant_and_rider.moral_state');
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
     },
 
     // 重置所有道德數值，於重新開始遊戲時呼叫

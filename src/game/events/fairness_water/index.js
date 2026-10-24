@@ -388,6 +388,7 @@ export default {
     },
 
     handleShareChoice(scene) {
+        MoralState.add('fairness', 1);
         scene.isDialogueActive = true;
 
         scene.time.delayedCall(100, () => {

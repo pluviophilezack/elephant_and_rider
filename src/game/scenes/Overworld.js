@@ -33,8 +33,9 @@ export class Overworld extends Scene
         MoralState.reset();
         GameProgress.setAchievement('apples_achievement', false);
         // 1. 初始化主角控制器 (開發者可自訂座標，以便初始載入就能快速定位，但記得不要git add)
-        // 正式初始位置：(700, 100)
-        this.playerController = new PlayerController(this, 700, 100);//1010
+        // 初始位置：(692, 23)，開場自動走向 (750, 100)
+        this.playerController = new PlayerController(this, 650, 0);
+        this.startIntroWalk(650, 0, 750, 100, 3000);
         // 2. 初始化魔杖/象鼻控制器 (傳入主角控制器)
         this.wandController = new WandController(this, this.playerController);
         // 3. 設定攝影機跟隨主角移動
@@ -42,6 +43,9 @@ export class Overworld extends Scene
 
         // 建立祈雨石計分面板
         this.hud = new HUD(this);
+
+        // 進入場景時由黑轉亮淡入（800 毫秒）
+        this.cameras.main.fadeIn(3000, 0, 0, 0);
 
 
 
@@ -124,6 +128,36 @@ export class Overworld extends Scene
         // 建立開發者工具
         this.devToolsManager = new DevToolsManager(this, worldWidth, worldHeight);
         this.rainEffect = new RainEffect(this);
+    }
+
+    // 開場自動行走：鎖定控制並以 walk 動畫平順移至指定目標，到達後恢復控制
+    startIntroWalk(startX, startY, targetX, targetY, duration = 3500) {
+        if (!this.playerController) return;
+
+        this.playerController.disable();
+        const playerSprite = this.playerController.sprite;
+        if (!playerSprite) return;
+
+        playerSprite.setPosition(startX, startY);
+        if (targetX < startX) {
+            playerSprite.setFlipX(true);
+        } else if (targetX > startX) {
+            playerSprite.setFlipX(false);
+        }
+        playerSprite.play('walk', true);
+
+        this.tweens.add({
+            targets: playerSprite,
+            x: targetX,
+            y: targetY,
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => {
+                playerSprite.stop();
+                playerSprite.setTexture('main_character_stand_still');
+                this.playerController.enable();
+            }
+        });
     }
 
     // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段

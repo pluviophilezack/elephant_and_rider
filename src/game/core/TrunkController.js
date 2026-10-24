@@ -99,7 +99,9 @@ export class WandController {
 
     update() {
         const playerPos = this.player.getPosition();
-        const pointerPos = { x: this.pointer.worldX, y: this.pointer.worldY };
+        const pointerPos = this.scene.cameras.main
+            ? this.pointer.positionToCamera(this.scene.cameras.main)
+            : { x: this.pointer.worldX, y: this.pointer.worldY };
 
         const angle = Phaser.Math.Angle.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
         const distance = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
