@@ -448,6 +448,7 @@ export default {
         scene.tweens.killTweensOf(this.loneBird);
         this._removeFromItems(scene, this.loneBird);
         this.loneBird.setPosition(AREA.flockCenter.x, AREA.flockCenter.y + 58);
+        this.loneBird.setTexture('bird_member_crying_01');
         this.loneBird.setAlpha(1);
         this.loneBird.setDepth(20);
         this.flockBirds.push(this.loneBird);
