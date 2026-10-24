@@ -364,6 +364,7 @@ export class EventCredits extends Scene
             button.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:16px';
             button.onclick = action;
             controls.append(button);
+            return button;
         };
         addButton('下載 PNG', () => {
             const link = document.createElement('a');
@@ -371,36 +372,25 @@ export class EventCredits extends Scene
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
-        const url = new URL(window.location.href);
-        url.search = '';
-        url.hash = '';
-        const shareUrl = ['localhost', '127.0.0.1'].includes(url.hostname)
-            ? 'https://github.com/pluviophilezack/elephant_and_rider' : url.href;
-        addButton('分享棋盤', async () => {
+        let imageFile = null;
+        const shareButton = addButton('分享圖片', async () => {
+            status.textContent = '';
             try {
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                const file = new File([blob], 'my-rain-stone-board.png', { type: 'image/png' });
-                if (navigator.canShare?.({ files: [file] })) {
-                    await navigator.share({ title: '我的祈雨石棋盤', files: [file] });
+                if (imageFile && navigator.share && navigator.canShare?.({ files: [imageFile] })) {
+                    await navigator.share({ title: '我的祈雨石棋盤', files: [imageFile] });
                 } else {
-                    await navigator.clipboard.writeText(shareUrl);
-                    status.textContent = '已複製遊戲連結；可下載棋盤圖片後附在貼文中。';
+                    status.textContent = '此瀏覽器不支援直接分享圖片，請下載 PNG 後傳送到 LINE 或上傳至 Facebook。';
                 }
             } catch (error) {
-                if (error.name !== 'AbortError') status.textContent = '目前無法分享，請下載圖片或使用社群連結。';
+                if (error.name !== 'AbortError') status.textContent = '目前無法分享圖片，請下載 PNG 後自行上傳。';
             }
         });
-        for (const [label, href] of [
-            ['Facebook ↗', `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`],
-            ['LINE ↗', `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`]
-        ]) {
-            const link = document.createElement('a');
-            link.textContent = label;
-            link.href = href;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            controls.append(link);
-        }
+        // Prepare the file before the click so native sharing retains user activation.
+        shareButton.disabled = true;
+        canvas.toBlob(blob => {
+            if (blob) imageFile = new File([blob], 'my-rain-stone-board.png', { type: 'image/png' });
+            shareButton.disabled = false;
+        }, 'image/png');
         addButton('關閉', () => dialog.close());
         dialog.addEventListener('close', () => {
             if (keyboard) {
