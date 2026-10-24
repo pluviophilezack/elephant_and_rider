@@ -179,9 +179,8 @@ export class MainMenu extends Scene
 
         // 顯示 Start 按鈕文字
         const hasCreditsUnlocked = GameProgress.hasCompletedGame();
-        const startY = hasCreditsUnlocked ? 600 : 640;
 
-        this.startText = this.add.text(512, startY, 'Start', {
+        this.startText = this.add.text(512, 640, hasCreditsUnlocked?'Restart':'Start', {
             ...TextStyles.fontSetting,
             fontSize: '52px',
             align: 'center'
@@ -200,11 +199,12 @@ export class MainMenu extends Scene
         // 點擊後進入開頭動畫過場
         this.startText.once('pointerdown', () => {
             MoralState.reset();
+            GameProgress.resetCompleted();
             this.scene.start('IntroCutscene');
         });
 
         if (hasCreditsUnlocked) {
-            this.creditsText = this.add.text(512, 682, EVENT_CREDITS_MENU_LABEL, {
+            this.creditsText = this.add.text(512, 720, EVENT_CREDITS_MENU_LABEL, {
                 ...TextStyles.fontSetting,
                 fontSize: '30px',
                 align: 'center'
@@ -214,6 +214,7 @@ export class MainMenu extends Scene
                 this.scene.start('EventCredits');
             });
         }
+
     }
 
     showTitleText ()                                                                                                                                                                 
