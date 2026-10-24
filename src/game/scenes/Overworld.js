@@ -160,13 +160,13 @@ export class Overworld extends Scene
         });
     }
 
-    // 供事件模組呼叫：玩家取得一顆祈雨石，集滿六顆後可觸發下一階段
+    // 供事件模組呼叫：玩家取得一顆祈雨石，集滿五顆後可觸發下一階段
     giveRainStone(eventKey) {
         if (eventKey && this.sharedState.hasOwnProperty(eventKey)) {
             this.sharedState[eventKey] = true;
         }
         this.hud.addRainStone(1, () => {
-            // With river travel, the sixth stone unlocks the return boat.
+            // With river travel, the fifth stone unlocks the return boat.
             // Keep the world active so the player can sail back and explore.
             if (this.boatTravel) return;
             if (this.hud.hasEnoughRainStones() && !this.isEndingTriggered) {
@@ -236,7 +236,7 @@ export class Overworld extends Scene
         if (this.hud) {
             this.hud.update();
         }
-        const stoneCount = this.sharedState?.rainStoneCount || this.hud?.rainStoneCount || 0;
+        const stoneCount = this.hud?.rainStoneCount ?? this.sharedState?.rainStoneCount ?? 0;
         if (this.rainEffect) {
             this.rainEffect.updateRainByStones(stoneCount);
         }

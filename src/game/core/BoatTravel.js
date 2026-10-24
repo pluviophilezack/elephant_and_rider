@@ -4,8 +4,8 @@ import { DOCKS, SHALLOW_BERTH, TUTORIAL_RETURN, CURRENT_WARNINGS } from './DockL
 export { DOCKS } from './DockLayout';
 
 export const BOAT_TRIP_DURATION = 10000;
-export const BOAT_REQUIRED_STONES = 5;
-export const BOAT_RETURN_STONES = 6;
+export const BOAT_REQUIRED_STONES = 4;
+export const BOAT_RETURN_STONES = 5;
 export const BOAT_DRIFT_ROUTE = [
     [4190, 2530], [4200, 2660], [4010, 2760], [SHALLOW_BERTH.x, SHALLOW_BERTH.y]
 ];
