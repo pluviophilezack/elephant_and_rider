@@ -2,6 +2,9 @@
 import StartGame from './game/main';
 import { THEME_FONT } from './game/core/theme';
 import { isMobileOrTablet } from './utils/device';
+import { inject } from '@vercel/analytics';
+
+inject();
 
 const GAME_URL_PLACEHOLDER = 'https://google.com';
 
