@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { AudioManager } from '../core/AudioManager';
 
 export class RainEffect {
     constructor(scene) {
@@ -106,6 +107,12 @@ export class RainEffect {
             });
             this.rainParticles.setScrollFactor(0);
             this.rainParticles.setDepth(901);
+        }
+
+        const audio = AudioManager.getInstance(this.scene);
+        if (audio) {
+            // 使用 loop: true 確保雨聲不限時、持續播放下去
+            audio.playBGM('bgm_rain', { loop: true, volume: 5.0 }, 8000);
         }
     }
 
