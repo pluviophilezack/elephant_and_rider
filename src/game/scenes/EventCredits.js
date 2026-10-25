@@ -2,10 +2,12 @@ import { Scene } from 'phaser';
 import { PlayerController } from '../core/PlayerController';
 import { GameProgress } from '../core/GameProgress';
 import { TextStyles } from '../core/theme';
+import { MoralState } from '../core/MoralState';
 
 export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
 
 const PROXIMITY_RADIUS = 145;
+const INSPIRATION_URL = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3116962/';
 const GIRAFFE_PROXIMITY_RADIUS = 120;
 const GIRAFFE_ACHIEVEMENT_ID = 'apples_achievement';
 const GIRAFFE_DIALOGUE = {
@@ -114,6 +116,7 @@ export class EventCredits extends Scene
 
         this.createCreditsPanel();
         this.createBackControl();
+        this.createBoardControl();
     }
 
     createAchievementGiraffe ()
@@ -163,16 +166,22 @@ export class EventCredits extends Scene
     {
         const panelBackground = this.add.rectangle(512, 88, 590, 112, 0x20262b, 0.92)
             .setStrokeStyle(2, 0xffffff, 0.35);
+        this.panelBackground = panelBackground;
 
         this.creditsText = this.add.text(512, 88, '', {
             ...TextStyles.fontSetting,
             fontSize: '24px',
             color: '#ffffff',
             align: 'center',
-            lineSpacing: 6
+            lineSpacing: 6,
+            wordWrap: { width: 550, useAdvancedWrap: true }
         }).setOrigin(0.5);
+        this.researchLink = this.add.text(512, 0, '閱讀研究 ↗', {
+            ...TextStyles.fontSetting, fontSize: '20px', color: '#b8e6ff'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.researchLink.on('pointerdown', () => window.open(INSPIRATION_URL, '_blank', 'noopener,noreferrer'));
 
-        this.creditsPanel = this.add.container(0, 0, [panelBackground, this.creditsText])
+        this.creditsPanel = this.add.container(0, 0, [panelBackground, this.creditsText, this.researchLink])
             .setDepth(100)
             .setVisible(false);
     }
@@ -186,6 +195,7 @@ export class EventCredits extends Scene
         }).setInteractive({ useHandCursor: true }).setDepth(110);
 
         const returnToMenu = () => {
+            if (this.boardDialog?.open) return;
             const url = new URL(window.location.href);
             url.searchParams.delete('credits');
             window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
@@ -197,7 +207,9 @@ export class EventCredits extends Scene
 
     update ()
     {
+        if (this.boardDialog?.open) return;
         this.playerController?.update();
+        this.researchLink.setVisible(false);
 
         const player = this.playerController?.sprite;
         if (!player) return;
@@ -223,6 +235,7 @@ export class EventCredits extends Scene
             }
 
             this.creditsText.setText(this.giraffeMessage);
+            this.fitCreditsPanel();
             this.creditsPanel.setVisible(true);
             this.wasNearGiraffe = true;
             return;
@@ -255,13 +268,138 @@ export class EventCredits extends Scene
         }
 
         if (nearestCredit.role === 'art') {
-            this.creditsText.setText(`美術設計：${nearestCredit.artist}`);
+            this.creditsText.setText([
+                `美術設計：${nearestCredit.artist}`,
+                '遊戲設計靈感來自 Jonathan Haidt 道德心理學的研究'
+            ]);
+            this.researchLink.setVisible(true);
         } else {
             this.creditsText.setText([
                 nearestCredit.title,
                 `關卡設計：${nearestCredit.designer}　程式實作：${nearestCredit.developer}`
             ]);
         }
+        this.fitCreditsPanel();
         this.creditsPanel.setVisible(true);
+    }
+
+    fitCreditsPanel ()
+    {
+        const height = Math.max(112, this.creditsText.height + 32 + (this.researchLink.visible ? 32 : 0));
+        this.panelBackground.setPosition(512, 32 + height / 2).setSize(590, height);
+        this.creditsText.setPosition(512, 48 + this.creditsText.height / 2);
+        this.researchLink.setY(48 + this.creditsText.height + 18);
+    }
+
+    createBoardControl ()
+    {
+        this.add.text(996, 26, '我的祈雨石棋盤', {
+            ...TextStyles.fontSetting, fontSize: '24px', color: '#25292d'
+        }).setOrigin(1, 0).setDepth(110).setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => this.showStoneBoard());
+        this.events.once('shutdown', () => this.boardDialog?.remove());
+    }
+
+    showStoneBoard ()
+    {
+        if (this.boardDialog?.open) return;
+        this.playerController.sprite.setVelocity(0, 0);
+        const keyboard = this.input.keyboard;
+        const keyboardWasEnabled = keyboard?.enabled;
+        if (keyboard) {
+            keyboard.resetKeys();
+            keyboard.enabled = false;
+        }
+        const currentScores = MoralState.getAll();
+        const scores = Object.values(currentScores).some(score => score !== 0)
+            ? currentScores : (MoralState.getSavedFromStorage() ?? currentScores);
+        const canvas = document.createElement('canvas');
+        canvas.width = 900;
+        canvas.height = 900;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#eef4ed';
+        ctx.fillRect(0, 0, 900, 900);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#25292d';
+        ctx.font = '32px naikaifont, sans-serif';
+        ctx.fillText('我的祈雨石棋盤', 450, 52);
+        ctx.drawImage(this.textures.get('stone_system').getSourceImage(), 100, 85, 700, 640);
+        const slots = [
+            ['ingroup', 'yellow', 247, 325], ['fairness', 'green', 451, 325],
+            ['authority', 'pink', 651, 325], ['purity', 'blue', 339, 554],
+            ['harm', 'purple', 560, 554]
+        ];
+        slots.forEach(([domain, color, x, y]) => {
+            const score = Number.isFinite(scores[domain]) ? scores[domain] : 0;
+            if (score > 0) {
+                const stone = this.textures.get(`${color}_stone`).getSourceImage();
+                const scale = Math.min(90 / stone.width, 110 / stone.height);
+                ctx.drawImage(stone, x - stone.width * scale / 2, y - stone.height * scale / 2,
+                    stone.width * scale, stone.height * scale);
+            }
+            ctx.fillStyle = '#25292d';
+            ctx.font = '22px sans-serif';
+            ctx.fillText(String(score), x, y + 70);
+        });
+        ctx.font = '24px naikaifont, sans-serif';
+        ctx.fillText('大象與騎象人', 450, 798);
+        ctx.font = '18px naikaifont, sans-serif';
+        ctx.fillText('每一次選擇，留下屬於你的足跡。', 450, 839);
+
+        const dialog = document.createElement('dialog');
+        this.boardDialog = dialog;
+        dialog.setAttribute('aria-label', '我的祈雨石棋盤');
+        dialog.style.cssText = 'width:min(600px,90vw);max-height:90vh;border:0;border-radius:8px;padding:16px;background:#eef4ed;color:#25292d;overflow:auto';
+        canvas.style.cssText = 'display:block;width:100%;height:auto;max-height:68vh;object-fit:contain';
+        dialog.append(canvas);
+        const controls = document.createElement('div');
+        controls.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:12px';
+        dialog.append(controls);
+        const status = document.createElement('p');
+        status.setAttribute('role', 'status');
+        dialog.append(status);
+        const addButton = (label, action) => {
+            const button = document.createElement('button');
+            button.textContent = label;
+            button.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:16px';
+            button.onclick = action;
+            controls.append(button);
+            return button;
+        };
+        addButton('下載 PNG', () => {
+            const link = document.createElement('a');
+            link.download = 'my-rain-stone-board.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+        let imageFile = null;
+        const shareButton = addButton('分享圖片', async () => {
+            status.textContent = '';
+            try {
+                if (imageFile && navigator.share && navigator.canShare?.({ files: [imageFile] })) {
+                    await navigator.share({ title: '我的祈雨石棋盤', files: [imageFile] });
+                } else {
+                    status.textContent = '此瀏覽器不支援直接分享圖片，請下載 PNG 後傳送到 LINE 或上傳至 Facebook。';
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') status.textContent = '目前無法分享圖片，請下載 PNG 後自行上傳。';
+            }
+        });
+        // Prepare the file before the click so native sharing retains user activation.
+        shareButton.disabled = true;
+        canvas.toBlob(blob => {
+            if (blob) imageFile = new File([blob], 'my-rain-stone-board.png', { type: 'image/png' });
+            shareButton.disabled = false;
+        }, 'image/png');
+        addButton('關閉', () => dialog.close());
+        dialog.addEventListener('close', () => {
+            if (keyboard) {
+                keyboard.resetKeys();
+                keyboard.enabled = keyboardWasEnabled;
+            }
+            dialog.remove();
+        }, { once: true });
+        document.body.append(dialog);
+        dialog.showModal();
     }
 }
