@@ -57,7 +57,7 @@ export default {
         this.lastSafeX = this.playerSprite.x;
         this.lastSafeY = this.playerSprite.y;
 
-        // 六顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
+        // 五顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
         this.rainStoneTriggerLine = new Phaser.Geom.Line(579, 1969, 185, 1979);
         this.rainStoneLineWarningCooldown = 0;
 
@@ -833,8 +833,7 @@ export default {
                     }
                 }
 
-                const currentStones = scene.hud?.rainStoneCount ?? scene.sharedState?.rainStoneCount ?? 0;
-                if (currentStones >= 6 && this.rainStoneTriggerLine) {
+                if (scene.hud?.hasEnoughRainStones() && this.rainStoneTriggerLine) {
                     const line = this.rainStoneTriggerLine;
                     if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||

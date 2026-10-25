@@ -5,7 +5,7 @@ export class RainEffect {
         this.scene = scene;
         this.rainOverlay = null;
         this.rainParticles = null;
-        this.rainStage = 0; // 0: 無雨, 1: 小雨 (5顆), 2: 大雨+遮罩 (6顆)
+        this.rainStage = 0; // 0: 無雨, 1: 小雨 (4顆), 2: 大雨+遮罩 (5顆)
     }
 
     /**
@@ -13,15 +13,24 @@ export class RainEffect {
      * @param {number} stoneCount 祈雨石數量
      */
     updateRainByStones(stoneCount) {
-        if (stoneCount >= 6 && this.rainStage < 2) {
+        const stage = stoneCount >= 5 ? 2 : stoneCount >= 4 ? 1 : 0;
+        if (stage < this.rainStage) {
+            if (this.rainOverlay) this.scene.tweens.killTweensOf(this.rainOverlay);
+            this.rainOverlay?.destroy();
+            this.rainParticles?.destroy();
+            this.rainOverlay = null;
+            this.rainParticles = null;
+            this.rainStage = 0;
+        }
+        if (stoneCount >= 5 && this.rainStage < 2) {
             this.startHeavyRain();
-        } else if (stoneCount >= 5 && this.rainStage < 1) {
+        } else if (stoneCount >= 4 && this.rainStage < 1) {
             this.startLightRain();
         }
     }
 
     // -------------------------------------------------------------
-    // 階段一：5 顆祈雨石 -> 下小雨 (無灰色遮罩)
+    // 階段一：4 顆祈雨石 -> 下小雨 (無灰色遮罩)
     // -------------------------------------------------------------
     startLightRain() {
         this.rainStage = 1;
@@ -50,7 +59,7 @@ export class RainEffect {
     }
 
     // -------------------------------------------------------------
-    // 階段二：6 顆祈雨石 -> 升級為大雨 + 灰色遮罩
+    // 階段二：5 顆祈雨石 -> 升級為大雨 + 灰色遮罩
     // -------------------------------------------------------------
     startHeavyRain(durationMs = 2000) {
         this.rainStage = 2;
@@ -90,7 +99,7 @@ export class RainEffect {
                 blendMode: 'ADD'
             });
         } else {
-            // 若直接跳至 6 顆則新建大雨粒子
+            // 若直接跳至 5 顆則新建大雨粒子
             this.rainParticles = this.scene.add.particles(0, 0, 'rain_drop', {
                 x: { min: -200, max: width + 200 },
                 y: -20,
