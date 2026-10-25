@@ -212,7 +212,7 @@ export class BoatTravel {
         this.armed = false;
         if ((scene.hud?.rainStoneCount ?? 0) < (returning ? BOAT_RETURN_STONES : BOAT_REQUIRED_STONES)) {
             this.boardingDialogue = DialogueSystem.show(scene, [
-                { speaker: 'player', text: '祈雨石還沒收集到五顆，現在還不能搭船。' },
+                { speaker: 'player', text: '祈雨石還沒收集到四顆，河道乾涸，船無法航行。' },
                 { speaker: 'player', text: '回去看看吧，或許還有需要幫忙的夥伴。' }
             ]);
             return;
