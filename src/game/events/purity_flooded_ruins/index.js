@@ -2,6 +2,7 @@ import { DialogueSystem } from "../../core/DialogueSystem";
 import { ChoiceSystem } from "../../core/ChoiceSystem";
 import { MoralState } from "../../core/MoralState";
 import { createTriggerZone } from "../../core/TriggerZone";
+import { AudioManager } from "../../core/AudioManager";
 import dialogueData from "./dialogue.json";
 
 function safeAddImage(scene, x, y, key, depth = 0) {
@@ -32,10 +33,12 @@ export default {
     this.isGuardRescued = false;
     this.hasTakenRelic = false;
     this.isTalked = false;
+    this.hasPlayedGuardWeakSFX = false; // 紀錄守衛哀號音效是否已觸發過
 
     this.currentForceX = -20;
     this.currentForceY = -10;
     this.conversationDistance = 125;
+    this.guardWeakAudioDistance = 300; // 💡 觸發守衛衰弱哀號音效的距離閾值
 
     // 1. 背景裝飾與黑油水流區域
     this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
@@ -67,6 +70,8 @@ export default {
     scene.events.once("shutdown", () => {
       scene.input.keyboard.off("keydown-SPACE", this._handleSpaceKey);
     });
+
+    this.guardWeakSound = null;
   },
 
   handleSpaceInteraction(scene) {
@@ -115,16 +120,25 @@ export default {
 
     const dialogs = dialogueData || [];
 
+    const onCompleteGainStone = () => {
+      // 💡 獲得祈雨石邏輯與音樂淡出處理
+      if (typeof scene.giveRainStone === "function") {
+        scene.giveRainStone(this.key);
+      }
+
+      // 💡 規格指定：獲得該關卡祈雨石的時候，迅速淡出 bgm_energizing_loop（2秒）
+      const audio = AudioManager.getInstance(scene);
+      if (audio && typeof audio.fadeOutBGM === "function") {
+        audio.fadeOutBGM(2000);
+      }
+    };
+
     if (this.isTrunkPolluted) {
       safeSetTexture(this.lotusRelic, "lotus_relic_polluted");
-      DialogueSystem.show(scene, dialogs[3] || [], () => {
-        scene.giveRainStone?.();
-      });
+      DialogueSystem.show(scene, dialogs[3] || [], onCompleteGainStone);
     } else {
       safeSetTexture(this.lotusRelic, "lotus_relic_clean");
-      DialogueSystem.show(scene, dialogs[1] || [], () => {
-        scene.giveRainStone?.();
-      });
+      DialogueSystem.show(scene, dialogs[1] || [], onCompleteGainStone);
     }
   },
 
@@ -165,6 +179,38 @@ export default {
   update(scene) {
     if (!scene.player || !scene.playerController) return;
 
+    // 玩家距離犀牛一定距離時播放 sfx_purity_guard_weak
+    if (this.guard?.active && !this.isGuardRescued) {
+    const distanceToGuard = Phaser.Math.Distance.Between(
+      scene.player.x,
+      scene.player.y,
+      this.guard.x,
+      this.guard.y
+    );
+
+    // 進入範圍（300px 內）且音效尚未播放
+    if (distanceToGuard <= this.guardWeakAudioDistance) {
+      if (!this.guardWeakSound || !this.guardWeakSound.isPlaying) {
+        if (scene.cache?.audio?.exists("sfx_purity_guard_weak")) {
+          this.guardWeakSound = scene.sound.add("sfx_purity_guard_weak", { loop: true, volume: 1.0 });
+          this.guardWeakSound.play();
+        }
+      }
+    } else {
+      // 💡 離開範圍（>300px）：如果正在叫，立刻停止
+      if (this.guardWeakSound && this.guardWeakSound.isPlaying) {
+        this.guardWeakSound.stop();
+        this.guardWeakSound = null;
+      }
+    }
+  } else {
+    // 守衛已被救出，確保音效停止
+    if (this.guardWeakSound && this.guardWeakSound.isPlaying) {
+      this.guardWeakSound.stop();
+      this.guardWeakSound = null;
+    }
+  }
+
     const isUIBusy =
       DialogueSystem.isShowing() ||
       ChoiceSystem.isShowing() ||
@@ -200,7 +246,7 @@ export default {
         // 離開區域恢復基準速度
         scene.playerController.speed = baseSpeed;
 
-        if ((scene.player.texture?.key === "main_character_uncomfortable") && (scene.playerController.enabled)) {//1010
+        if ((scene.player.texture?.key === "main_character_uncomfortable") && (scene.playerController.enabled)) {
           safeSetTexture(scene.player, "main_character_stand_still");
         }
       }
