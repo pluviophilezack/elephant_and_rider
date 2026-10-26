@@ -2,6 +2,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { AudioManager } from '../../core/AudioManager';
 
 export default {
     key: 'authority_herd',
@@ -158,6 +159,13 @@ export default {
         scene.physics.add.overlap(scene.player, spawnZone, () => {
             if (spawned) return;
             spawned = true;
+
+            // 正式進入王權事件時，淡出前一曲音樂（5秒），並接續播放 bgm_energizing_loop
+            const audio = AudioManager.getInstance(scene);
+            if (audio) {
+                audio.playBGM('bgm_energizing_loop', { loop: true, volume: 2.0 }, 5000);
+            }
+
             this._spawnHerd(scene);
             spawnZone.destroy(); //0921
         });
@@ -1025,6 +1033,12 @@ _showFirstChoice(scene) {
 
         const point = new Phaser.Math.Vector2();
         this.sprites.rock.setVisible(true);
+
+        // 石頭滾落時播放 sfx_authority_rock_drop
+        const audio = AudioManager.getInstance(scene);
+        if (audio) {
+            audio.playSFX('sfx_authority_rock_drop');
+        }
         scene.tweens.addCounter({
             from: 0,
             to: 1,
@@ -1901,6 +1915,14 @@ _showFirstChoice(scene) {
     _giveRainStone(scene, from) {
         scene.events.emit('authority_herd:get_rain_stone', from);
         scene.playerController.enable();
+
+        // 獲得關卡祈雨石時，將事件背景音樂迅速淡出（2秒）
+        const audio = AudioManager.getInstance(scene);
+        if (audio) {
+            audio.fadeOutBGM(2000);
+        }
+
+
         if (typeof scene.giveRainStone === 'function') {
             scene.giveRainStone(this.key);
         } else {
@@ -1908,6 +1930,9 @@ _showFirstChoice(scene) {
             scene.sharedState.rainStone = true;
         }
         console.log('獲得祈雨石');
+        if (audio) {
+            audio.playBGM('bgm_energizing_loop', { loop: true, volume: 0.6 }, 5000);
+        }
     },
 
     // ---- 把祈雨石放在地上，讓玩家用象鼻撿起 ----//1011
@@ -1994,6 +2019,18 @@ _showFirstChoice(scene) {
 
             // 給分
             this._giveRainStone(scene, 'player');
+
+            // 觸發 HUD 慶祝動畫完畢後，才將 bgm_energizing_loop 淡出並接續下一個音樂
+            const targetHud = scene.hud || (scene.scene && scene.scene.get('Overworld') && scene.scene.get('Overworld').hud);
+            if (targetHud && typeof targetHud.addRainStone === 'function') {
+                targetHud.addRainStone(1, (isSuccess) => {
+                    const audio = AudioManager.getInstance(scene);
+                    if (audio) {
+                        // 祈雨石動畫結束，切換為下一個場景的背景音樂
+                        audio.playBGM('bgm_energizing_loop', { loop: true, volume: 2.0 }, 1000);
+                    }
+                });
+            }
         }
     },
 
