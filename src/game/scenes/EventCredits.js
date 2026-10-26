@@ -70,7 +70,9 @@ const ART_CREDIT = {
     scale: 0.4,
     x: 854,
     y: 580,
-    artist: 'ingrid'
+    artist: 'ingrid',
+    audioDesigner: 'Andy、Zack Yu',
+    audioDeveloper: 'yujueq'
 };
 
 const INSPIRATION_CREDIT = {
@@ -278,7 +280,14 @@ export class EventCredits extends Scene
         }
 
         if (nearestCredit.role === 'art') {
-            this.creditsText.setText(`美術設計：${nearestCredit.artist}`);
+            const lines = [`美術設計：${nearestCredit.artist}`];
+            if (nearestCredit.audioDesigner) {
+                lines.push(`音訊設計：${nearestCredit.audioDesigner}`);
+            }
+            if (nearestCredit.audioDeveloper) {
+                lines.push(`音訊程式：${nearestCredit.audioDeveloper}`);
+            }
+            this.creditsText.setText(lines);
         } else if (nearestCredit.role === 'inspiration') {
             this.creditsText.setText('遊戲設計靈感來自 Jonathan Haidt 道德心理學的研究');
             this.researchLink.setVisible(true);
