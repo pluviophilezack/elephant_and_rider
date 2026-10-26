@@ -1,7 +1,7 @@
 import { Scene } from 'phaser';
 import { PlayerController } from '../core/PlayerController';
 import { GameProgress } from '../core/GameProgress';
-import { TextStyles } from '../core/theme';
+import { TextStyles, THEME_FONT } from '../core/theme';
 import { MoralState } from '../core/MoralState';
 
 export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
@@ -73,7 +73,16 @@ const ART_CREDIT = {
     artist: 'ingrid'
 };
 
-const CREDITS = [...EVENT_CREDITS, ART_CREDIT];
+const INSPIRATION_CREDIT = {
+    role: 'inspiration',
+    texture: 'sheep',
+    scale: 0.5,
+    flipX: true,
+    x: 948,
+    y: 408
+};
+
+const CREDITS = [...EVENT_CREDITS, ART_CREDIT, INSPIRATION_CREDIT];
 
 export class EventCredits extends Scene
 {
@@ -98,6 +107,7 @@ export class EventCredits extends Scene
         this.creditActors = CREDITS.map((credit, index) => {
             const actor = this.add.sprite(credit.x, credit.y, credit.texture)
                 .setScale(credit.scale)
+                .setFlipX(Boolean(credit.flipX))
                 .setDepth(10);
 
             this.tweens.add({
@@ -268,10 +278,9 @@ export class EventCredits extends Scene
         }
 
         if (nearestCredit.role === 'art') {
-            this.creditsText.setText([
-                `美術設計：${nearestCredit.artist}`,
-                '遊戲設計靈感來自 Jonathan Haidt 道德心理學的研究'
-            ]);
+            this.creditsText.setText(`美術設計：${nearestCredit.artist}`);
+        } else if (nearestCredit.role === 'inspiration') {
+            this.creditsText.setText('遊戲設計靈感來自 Jonathan Haidt 道德心理學的研究');
             this.researchLink.setVisible(true);
         } else {
             this.creditsText.setText([
@@ -321,15 +330,15 @@ export class EventCredits extends Scene
         ctx.fillRect(0, 0, 900, 900);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#25292d';
-        ctx.font = '32px naikaifont, sans-serif';
+        ctx.font = `32px ${THEME_FONT}`;
         ctx.fillText('我的祈雨石棋盤', 450, 52);
-        ctx.drawImage(this.textures.get('stone_system').getSourceImage(), 100, 85, 700, 640);
+        ctx.drawImage(this.textures.get('stone_system_without_text').getSourceImage(), 100, 85, 700, 640);
         const slots = [
-            ['ingroup', 'yellow', 247, 325], ['fairness', 'green', 451, 325],
-            ['authority', 'pink', 651, 325], ['purity', 'blue', 339, 554],
-            ['harm', 'purple', 560, 554]
+            ['ingroup', 'yellow', 247, 325, 'INGROUP'], ['fairness', 'green', 451, 325, 'FAIRNESS'],
+            ['authority', 'pink', 651, 325, 'AUTHORITY'], ['purity', 'blue', 339, 554, 'PURITY'],
+            ['harm', 'purple', 560, 554, 'CARE']
         ];
-        slots.forEach(([domain, color, x, y]) => {
+        slots.forEach(([domain, color, x, y, label]) => {
             const score = Number.isFinite(scores[domain]) ? scores[domain] : 0;
             if (score > 0) {
                 const stone = this.textures.get(`${color}_stone`).getSourceImage();
@@ -338,18 +347,21 @@ export class EventCredits extends Scene
                     stone.width * scale, stone.height * scale);
             }
             ctx.fillStyle = '#25292d';
-            ctx.font = '22px sans-serif';
+            ctx.font = `22px ${THEME_FONT}`;
             ctx.fillText(String(score), x, y + 70);
+            ctx.font = `24px ${THEME_FONT}`;
+            ctx.fillText(label, x, y + 115);
         });
-        ctx.font = '24px naikaifont, sans-serif';
+        ctx.font = `24px ${THEME_FONT}`;
         ctx.fillText('大象與騎象人', 450, 798);
-        ctx.font = '18px naikaifont, sans-serif';
+        ctx.font = `18px ${THEME_FONT}`;
         ctx.fillText('每一次選擇，留下屬於你的足跡。', 450, 839);
 
         const dialog = document.createElement('dialog');
         this.boardDialog = dialog;
         dialog.setAttribute('aria-label', '我的祈雨石棋盤');
         dialog.style.cssText = 'width:min(600px,90vw);max-height:90vh;border:0;border-radius:8px;padding:16px;background:#eef4ed;color:#25292d;overflow:auto';
+        dialog.style.fontFamily = THEME_FONT;
         canvas.style.cssText = 'display:block;width:100%;height:auto;max-height:68vh;object-fit:contain';
         dialog.append(canvas);
         const controls = document.createElement('div');
@@ -362,6 +374,7 @@ export class EventCredits extends Scene
             const button = document.createElement('button');
             button.textContent = label;
             button.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:16px';
+            button.style.fontFamily = THEME_FONT;
             button.onclick = action;
             controls.append(button);
             return button;
