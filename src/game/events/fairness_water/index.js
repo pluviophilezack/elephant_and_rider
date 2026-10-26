@@ -1,6 +1,7 @@
 import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
+import { AudioManager } from '../../core/AudioManager';
 import { createTriggerZone } from '../../core/TriggerZone';
 import dialogue from './dialogue.json';
 const THEME_FONT = 'naikaifont, "Microsoft JhengHei", sans-serif';
@@ -175,9 +176,28 @@ export default {
                 if (playerController) playerController.isAutoMoving = false;
                 if (playerSprite.body) playerSprite.body.enable = true;
 
+                const audio = AudioManager.getInstance(scene);
+                if (audio && typeof audio.playSFX === 'function') {
+                    audio.playSFX('sfx_water_drink_1', {volume: 4.0});
+                }
                 if (state.pondSprite && scene.textures.exists('pond_02')) {
                     state.pondSprite.setTexture('pond_02');
                 }
+
+                if (audio && typeof audio.playSFX === 'function') {
+                const antelopeSound = scene.sound.add('sfx_water_antelope_run', { loop: true, volume: 2.0 });
+                antelopeSound.play();
+
+                // 1.5 秒後淡出或停止
+                scene.time.delayedCall(2000, () => {
+                    scene.tweens.add({
+                        targets: antelopeSound,
+                        volume: 0,
+                        duration: 300,
+                        onComplete: () => antelopeSound.stop()
+                    });
+                });
+            }
 
                 //  羚羊漫步過來 (聚集於缺口右側)
                 state.antelopes.forEach((ant, idx) => {
@@ -440,6 +460,8 @@ export default {
     handleSelfishChoice(scene) {
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
 
+        state.spaceDrinkCount = 0; // 重置喝水計數器
+
         const hint = scene.add.text(playerTarget.x, playerTarget.y - 50, '連按 3 次空白鍵喝光水 (0/3)', {
             fontFamily: THEME_FONT,
             fontSize: '14px', color: '#ffaaaa', backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
@@ -447,10 +469,24 @@ export default {
 
         const spaceKey = scene.input.keyboard.addKey('SPACE');
         const pressHandler = () => {
+            const audio = AudioManager.getInstance(scene);
             state.spaceDrinkCount++;
             hint.setText(`連按 3 次空白鍵喝光水 (${state.spaceDrinkCount}/3)`);
 
-            if (state.spaceDrinkCount >= 3) {
+            // 💡 規格指定：精準依據連按次數播放對應音效
+            if (state.spaceDrinkCount === 1) {
+                if (audio && typeof audio.playSFX === 'function') {
+                    audio.playSFX('sfx_water_drink_1', {volume: 3.0});
+                }
+            } else if (state.spaceDrinkCount === 2) {
+                if (audio && typeof audio.playSFX === 'function') {
+                    audio.playSFX('sfx_water_drink_2', {volume: 3.0});
+                }
+            } else if (state.spaceDrinkCount >= 3) {
+                if (audio && typeof audio.playSFX === 'function') {
+                    audio.playSFX('sfx_water_drink_3', {volume: 3.0});
+                }
+
                 spaceKey.off('down', pressHandler);
                 hint.destroy();
 
@@ -470,7 +506,6 @@ export default {
                     });
                 });
 
-                // 💡 祈雨石生成於 pond_stone 的位置上方
                 const stoneX = state.pondStoneSprite ? state.pondStoneSprite.x : state.pondZone.x;
                 const stoneY = state.pondStoneSprite ? state.pondStoneSprite.y - 10 : state.pondZone.y;
 
