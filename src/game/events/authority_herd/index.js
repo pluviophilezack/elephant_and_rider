@@ -2,6 +2,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { AudioManager } from '../../core/AudioManager';
 
 export default {
     key: 'authority_herd',
@@ -158,6 +159,13 @@ export default {
         scene.physics.add.overlap(scene.player, spawnZone, () => {
             if (spawned) return;
             spawned = true;
+
+            // 正式進入王權事件時，淡出前一曲音樂（5秒），並接續播放 bgm_energizing_loop
+            const audio = AudioManager.getInstance(scene);
+            if (audio) {
+                audio.playBGM('bgm_energizing_loop', { loop: true, volume: 2.0 }, 5000);
+            }
+
             this._spawnHerd(scene);
             spawnZone.destroy(); //0921
         });
@@ -1901,6 +1909,13 @@ _showFirstChoice(scene) {
     _giveRainStone(scene, from) {
         scene.events.emit('authority_herd:get_rain_stone', from);
         scene.playerController.enable();
+
+        // 獲得關卡祈雨石時，將事件背景音樂迅速淡出（2秒）
+        const audio = AudioManager.getInstance(scene);
+        if (audio) {
+            audio.fadeOutBGM(2000);
+        }
+
         if (typeof scene.giveRainStone === 'function') {
             scene.giveRainStone(this.key);
         } else {
