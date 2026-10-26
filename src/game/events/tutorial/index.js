@@ -3,6 +3,7 @@ import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
 import { TextStyles, THEME_FONT } from '../../core/theme';
+import { AudioManager } from '../../core/AudioManager';
 import dialogue from './dialogue.json';
 
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
@@ -15,6 +16,12 @@ export default {
         this.playerSprite = scene.playerController.sprite;
         this.isConversing = false;
         this.isGetRainStone = false;
+
+        // 遊戲開始即播放 bgm_wisdom_in_the_sun_loop (循環播放)
+        const audio = AudioManager.getInstance(scene);
+        if (audio) {
+            audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 0.6 }, 1000);
+        }
 
         // 初始化主角上下左右的 WASD 移動引導
         this.setupMovementGuide(scene);
@@ -57,7 +64,7 @@ export default {
         this.lastSafeX = this.playerSprite.x;
         this.lastSafeY = this.playerSprite.y;
 
-        // 五顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
+        // 六顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
         this.rainStoneTriggerLine = new Phaser.Geom.Line(579, 1969, 185, 1979);
         this.rainStoneLineWarningCooldown = 0;
 
@@ -239,6 +246,11 @@ export default {
 
         // Woodpile list
         this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
+
+        //不知道為甚麼要加這一行才有辦法搬木頭
+        if (!scene.items.includes(this.woodpile01)){
+            scene.items.push(this.woodpile01);
+        }
     
         // RainStone
 
@@ -375,8 +387,27 @@ export default {
 
         // 監聽撿起的物品 (恢復原本亮度，且拿起木堆時取消觸發區)
         scene.events.on('pick_item', (item) => {
-            if (this.woodpiles.includes(item)){
+            if (item && typeof item.clearTint === 'function') {
                 item.clearTint();
+            }
+
+            // 只有撿起木頭 (woodpile) 時才播放拆木頭音效 sfx_tutorial_wood_break
+            if (this.woodpiles && this.woodpiles.includes(item)) {
+                const audio = AudioManager.getInstance(scene);
+                if (audio) {
+                    audio.playSFX('sfx_tutorial_wood_break');
+                }
+
+                // 撿起最後一支木堆 (woodpile04) 時，淡出音樂 10 秒，接續 bgm_magic_in_the_garden_loop
+                if (item === this.woodpile04 && !this.hasWoodpileMusicFaded) {
+                    this.hasWoodpileMusicFaded = true;
+                    if (audio) {
+                        audio.fadeOutBGM(10000, () => {
+                            audio.playBGM('bgm_magic_in_the_garden_loop', { loop: true, volume: 0.6 }, 1000);
+                        });
+                    }
+                }
+
                 if (this.woodpileTriggerZone) {
                     this.woodpileTriggerZone.destroy();
                     this.woodpileTriggerZone = null;
@@ -410,6 +441,20 @@ export default {
     startConversationGiraffe(scene) {
         if(this.isConversing) return;
         this.isConversing = true;
+
+        const isAppleHeld = (
+            scene.wandController.heldItem === this.apple_on_tree_1 ||
+            scene.wandController.heldItem === this.apple_on_puddle ||
+            scene.wandController.heldItem === this.apple_on_tree_2
+        );
+
+        //給長頸鹿蘋果時播放 sfx_tutorial_eat_apple
+        if (isAppleHeld) {
+            const audio = AudioManager.getInstance(scene);
+            if (audio) {
+                audio.playSFX('sfx_tutorial_eat_apple');
+            }
+        }
 
         if(scene.wandController.heldItem === this.apple_on_tree_1){
             scene.wandController.heldItem = null;
@@ -833,7 +878,8 @@ export default {
                     }
                 }
 
-                if (scene.hud?.hasEnoughRainStones() && this.rainStoneTriggerLine) {
+                const currentStones = scene.hud?.rainStoneCount ?? scene.sharedState?.rainStoneCount ?? 0;
+                if (currentStones >= 6 && this.rainStoneTriggerLine) {
                     const line = this.rainStoneTriggerLine;
                     if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
