@@ -39,7 +39,6 @@ export default {
 
     // 1. 背景裝飾與黑油水流區域
     this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
-    this.pollutionOil.setScale(3)
     this.slowZone = createTriggerZone(scene, {
       x: 4730,
       y: 2650,
@@ -136,7 +135,7 @@ export default {
       this.isTalked = true;
       const options = [
         { key: "leave", label: "不救並離開" },
-        { key: "save", label: "用魔杖移開石塊救牠" },
+        { key: "save", label: "用象鼻移開石塊救牠" },
       ];
 
       if (ChoiceSystem?.prompt) {
@@ -156,6 +155,7 @@ export default {
             } else if (choice === "leave") {
               this.isTrunkPolluted = false;
               MoralState?.add?.("purity", 1);
+              DialogueSystem.show(scene, dialogs[1] || [], () => {});
             }
           });
       }
