@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { DialogueSystem } from './DialogueSystem';
 
 export class WandController {
     constructor(scene, playerController) {
@@ -141,7 +142,7 @@ export class WandController {
         const isSpaceDown = this.cursors.space && this.cursors.space.isDown;
         const isMouseDown = this.pointer.isDown;
 
-        if (!isLocked && (isSpaceDown || isMouseDown)) {
+        if (!isLocked && (isSpaceDown || isMouseDown) && !DialogueSystem.isShowing()) {
             this.currentBodyLength = Math.min(distance, this.maxReachDistance);
         } else {
             this.currentBodyLength = 0;
