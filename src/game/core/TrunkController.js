@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { DialogueSystem } from './DialogueSystem';
 import { AudioManager } from '../core/AudioManager';
 
 export class WandController {
@@ -149,7 +148,6 @@ export class WandController {
         const isMouseDown = this.pointer.isDown;
         const isExtending = !isLocked && (isSpaceDown || isMouseDown);
 
-        if (!isLocked && (isSpaceDown || isMouseDown) && !DialogueSystem.isShowing()) {
         // 💡 關鍵修復：偵測「剛按下伸出」與「剛放開收回」的瞬間並播放風切聲
         if (isExtending !== this.wasExtended) {
             this.onWandExtendOrRetract();
@@ -202,7 +200,6 @@ export class WandController {
             this.heldItem.y = this.tipY;
         }
     }
-}
 
     // 未解鎖前近距離拾取
     checkBodyPickup(playerPos) {

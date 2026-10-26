@@ -4,7 +4,6 @@ import { MainMenu } from './scenes/MainMenu';
 import { IntroCutscene } from './scenes/IntroCutscene';
 import { Overworld } from './scenes/Overworld';
 import { Ending } from './scenes/Ending';
-import { RainStoneCutsceneScene } from './scenes/RainStoneCutsceneScene'
 import { EventCredits } from './scenes/EventCredits';
 import { AUTO, Game, Scale } from 'phaser';
 
@@ -33,7 +32,6 @@ const config = {
         IntroCutscene,
         Overworld,
         Ending,
-        RainStoneCutsceneScene, 
         EventCredits
     ]
 };
