@@ -8,6 +8,7 @@ export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
 
 const PROXIMITY_RADIUS = 145;
 const INSPIRATION_URL = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3116962/';
+const MORAL_ASSESSMENT_URL = 'https://www.yourmorals.org/';
 const GIRAFFE_PROXIMITY_RADIUS = 120;
 const GIRAFFE_ACHIEVEMENT_ID = 'apples_achievement';
 const GIRAFFE_DIALOGUE = {
@@ -188,12 +189,17 @@ export class EventCredits extends Scene
             lineSpacing: 6,
             wordWrap: { width: 550, useAdvancedWrap: true }
         }).setOrigin(0.5);
+        this.moralAssessmentLink = this.add.text(512, 0, '測量道德價值觀 ↗', {
+            ...TextStyles.fontSetting, fontSize: '20px', color: '#b8e6ff'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.moralAssessmentLink.on('pointerdown', () => window.open(MORAL_ASSESSMENT_URL, '_blank', 'noopener,noreferrer'));
+
         this.researchLink = this.add.text(512, 0, '閱讀研究 ↗', {
             ...TextStyles.fontSetting, fontSize: '20px', color: '#b8e6ff'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.researchLink.on('pointerdown', () => window.open(INSPIRATION_URL, '_blank', 'noopener,noreferrer'));
-
-        this.creditsPanel = this.add.container(0, 0, [panelBackground, this.creditsText, this.researchLink])
+        
+        this.creditsPanel = this.add.container(0, 0, [panelBackground, this.creditsText, this.moralAssessmentLink, this.researchLink])
             .setDepth(100)
             .setVisible(false);
     }
@@ -221,6 +227,7 @@ export class EventCredits extends Scene
     {
         if (this.boardDialog?.open) return;
         this.playerController?.update();
+        this.moralAssessmentLink.setVisible(false);
         this.researchLink.setVisible(false);
 
         const player = this.playerController?.sprite;
@@ -290,6 +297,7 @@ export class EventCredits extends Scene
             this.creditsText.setText(lines);
         } else if (nearestCredit.role === 'inspiration') {
             this.creditsText.setText('遊戲設計靈感來自 Jonathan Haidt 道德心理學的研究');
+            this.moralAssessmentLink.setVisible(true);
             this.researchLink.setVisible(true);
         } else {
             this.creditsText.setText([
@@ -303,15 +311,28 @@ export class EventCredits extends Scene
 
     fitCreditsPanel ()
     {
-        const height = Math.max(112, this.creditsText.height + 32 + (this.researchLink.visible ? 32 : 0));
+        const hasLinks = this.researchLink.visible || this.moralAssessmentLink.visible;
+        const height = Math.max(112, this.creditsText.height + 32 + (hasLinks ? 32 : 0));
         this.panelBackground.setPosition(512, 32 + height / 2).setSize(590, height);
         this.creditsText.setPosition(512, 48 + this.creditsText.height / 2);
-        this.researchLink.setY(48 + this.creditsText.height + 18);
+
+        if (this.moralAssessmentLink.visible && this.researchLink.visible) {
+            const gap = 32;
+            const linkY = 48 + this.creditsText.height + 18;
+            const totalWidth = this.moralAssessmentLink.width + gap + this.researchLink.width;
+            const startX = 512 - totalWidth / 2;
+
+            this.moralAssessmentLink.setPosition(startX + this.moralAssessmentLink.width / 2, linkY);
+            this.researchLink.setPosition(startX + this.moralAssessmentLink.width + gap + this.researchLink.width / 2, linkY);
+        } else {
+            this.researchLink.setPosition(512, 48 + this.creditsText.height + 18);
+            this.moralAssessmentLink.setPosition(512, 48 + this.creditsText.height + 18);
+        }
     }
 
     createBoardControl ()
     {
-        this.add.text(996, 26, '我的祈雨石棋盤', {
+        this.add.text(996, 26, '我的祈雨石寶盒', {
             ...TextStyles.fontSetting, fontSize: '24px', color: '#25292d'
         }).setOrigin(1, 0).setDepth(110).setInteractive({ useHandCursor: true })
             .on('pointerdown', () => this.showStoneBoard());
@@ -340,7 +361,7 @@ export class EventCredits extends Scene
         ctx.textAlign = 'center';
         ctx.fillStyle = '#25292d';
         ctx.font = `32px ${THEME_FONT}`;
-        ctx.fillText('我的祈雨石棋盤', 450, 52);
+        ctx.fillText('我的祈雨石寶盒', 450, 52);
         ctx.drawImage(this.textures.get('stone_system_without_text').getSourceImage(), 100, 85, 700, 640);
         const slots = [
             ['ingroup', 'yellow', 247, 325, 'INGROUP'], ['fairness', 'green', 451, 325, 'FAIRNESS'],
@@ -361,14 +382,14 @@ export class EventCredits extends Scene
             ctx.font = `24px ${THEME_FONT}`;
             ctx.fillText(label, x, y + 115);
         });
-        ctx.font = `24px ${THEME_FONT}`;
+        ctx.font = `32px ${THEME_FONT}`;
         ctx.fillText('大象與騎象人', 450, 798);
-        ctx.font = `18px ${THEME_FONT}`;
-        ctx.fillText('每一次選擇，留下屬於你的足跡。', 450, 839);
+        ctx.font = `24px ${THEME_FONT}`;
+        ctx.fillText('發光的祈雨石象徵我重視的美德', 450, 839);
 
         const dialog = document.createElement('dialog');
         this.boardDialog = dialog;
-        dialog.setAttribute('aria-label', '我的祈雨石棋盤');
+        dialog.setAttribute('aria-label', '我的祈雨石寶盒');
         dialog.style.cssText = 'width:min(600px,90vw);max-height:90vh;border:0;border-radius:8px;padding:16px;background:#eef4ed;color:#25292d;overflow:auto';
         dialog.style.fontFamily = THEME_FONT;
         canvas.style.cssText = 'display:block;width:100%;height:auto;max-height:68vh;object-fit:contain';
@@ -399,7 +420,7 @@ export class EventCredits extends Scene
             status.textContent = '';
             try {
                 if (imageFile && navigator.share && navigator.canShare?.({ files: [imageFile] })) {
-                    await navigator.share({ title: '我的祈雨石棋盤', files: [imageFile] });
+                    await navigator.share({ title: '我的祈雨石寶盒', files: [imageFile] });
                 } else {
                     status.textContent = '此瀏覽器不支援直接分享圖片，請下載 PNG 後傳送到 LINE 或上傳至 Facebook。';
                 }
