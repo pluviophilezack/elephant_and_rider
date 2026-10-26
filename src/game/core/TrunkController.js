@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { DialogueSystem } from './DialogueSystem';
+import { AudioManager } from '../core/AudioManager';
 
 export class WandController {
     constructor(scene, playerController) {
@@ -10,6 +11,9 @@ export class WandController {
         this.maxReachDistance = 150;
         this.currentBodyLength = 0;
         this.forceHiddenUntil = 0;
+
+        // 💡 追蹤上一影格是否正在伸長魔杖，用於觸發風切聲
+        this.wasExtended = false;
 
         this.pointer = scene.input.activePointer;
         this.cursors = scene.input.keyboard.createCursorKeys();
@@ -60,7 +64,7 @@ export class WandController {
             this.cursors.space.on('down', handleInteractionPress);
         }
 
-        // 💡 綁定 2：滑鼠左鍵按下事件
+        // 綁定 2：滑鼠左鍵按下事件
         scene.input.on('pointerdown', (pointer) => {
             // 只響應左鍵 (button === 0)
             if (pointer.button === 0) {
@@ -100,7 +104,9 @@ export class WandController {
 
     update() {
         const playerPos = this.player.getPosition();
-        const pointerPos = { x: this.pointer.worldX, y: this.pointer.worldY };
+        const pointerPos = this.scene.cameras.main
+            ? this.pointer.positionToCamera(this.scene.cameras.main)
+            : { x: this.pointer.worldX, y: this.pointer.worldY };
 
         const angle = Phaser.Math.Angle.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
         const distance = Phaser.Math.Distance.Between(playerPos.x, playerPos.y, pointerPos.x, pointerPos.y);
@@ -138,11 +144,19 @@ export class WandController {
         // -------------------------------------------------------------
         this.wandTip.setVisible(!isForceHidden);
 
-        // 💡 關鍵：按住【空白鍵】或【滑鼠左鍵】均可伸長魔杖
+        // 按住【空白鍵】或【滑鼠左鍵】均可伸長魔杖
         const isSpaceDown = this.cursors.space && this.cursors.space.isDown;
         const isMouseDown = this.pointer.isDown;
+        const isExtending = !isLocked && (isSpaceDown || isMouseDown);
 
         if (!isLocked && (isSpaceDown || isMouseDown) && !DialogueSystem.isShowing()) {
+        // 💡 關鍵修復：偵測「剛按下伸出」與「剛放開收回」的瞬間並播放風切聲
+        if (isExtending !== this.wasExtended) {
+            this.onWandExtendOrRetract();
+            this.wasExtended = isExtending;
+        }
+
+        if (isExtending) {
             this.currentBodyLength = Math.min(distance, this.maxReachDistance);
         } else {
             this.currentBodyLength = 0;
@@ -188,6 +202,7 @@ export class WandController {
             this.heldItem.y = this.tipY;
         }
     }
+}
 
     // 未解鎖前近距離拾取
     checkBodyPickup(playerPos) {
@@ -342,5 +357,13 @@ export class WandController {
         if (Array.isArray(this.scene.items)) return this.scene.items;
         if (typeof this.scene.items.getChildren === 'function') return this.scene.items.getChildren();
         return [];
+    }
+    
+    onWandExtendOrRetract() {
+        const audio = AudioManager.getInstance(this.scene);
+        if (audio) {
+            // 💡 播放風切聲 (音量設為 1.0，加上 interrupt = true 可斷音重播)
+            audio.playSFX('sfx_common_wind_cut', { volume: 1.0 }, true);
+        }
     }
 }

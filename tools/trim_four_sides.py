@@ -63,7 +63,7 @@ def main():
 	base_dir = os.path.join(os.path.dirname(script_dir), 'public', 'assets')
 
 	# Default subdirectories to process when no arguments are provided
-	default_dirs = ['items', 'main_characters', 'npc', 'background_decorations']
+	default_dirs = ['items', 'main_characters', 'npc', 'background_decorations', 'stone_system', 'marking_system']
 
 	if len(sys.argv) > 1:
 		# Process specific files or folders provided as arguments

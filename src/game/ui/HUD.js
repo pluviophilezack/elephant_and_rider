@@ -1,4 +1,4 @@
-// UI元件：畫面上方的抬頭顯示，目前顯示玩家已蒐集的祈雨石數量（目標六顆）
+// UI元件：畫面上方的抬頭顯示，目前顯示玩家已蒐集的祈雨石數量（目標五顆）
 const CAMERA_ZOOM_IN_MS = 1200;
 const DANCE_END_AT_MS = 4200;
 const CAMERA_ZOOM_OUT_MS = 800;
@@ -9,12 +9,12 @@ const RAIN_STONE_SEQUENCE_MS = CAMERA_RESTORED_AT_MS + STONE_FLIGHT_MS + HUD_FLA
 const CELEBRATION_ZOOM = 1.55;
 const FLYING_STONE_START_SCALE = 1.0;
 const FLYING_STONE_END_SCALE = 0.3;
-const RAIN_START_STONES = 5;
+const RAIN_START_STONES = 4;
 const WATER_FRAME_MS = 750;
 
 export class HUD {
 
-    constructor(scene, { maxRainStones = 6 } = {}) {
+    constructor(scene, { maxRainStones = 5 } = {}) {
         this.scene = scene;
         this.maxRainStones = maxRainStones;
         this.rainStoneCount = 0;
@@ -61,6 +61,7 @@ export class HUD {
         });
 
         this.container.add([this.background, this.glowBorder, this.icon, this.text]);
+        this.container.setVisible(false);
     }
 
     addRainStone(amount = 1, onComplete = null) {
@@ -113,6 +114,7 @@ export class HUD {
     setRainStoneCount(count) {
         this.rainStoneCount = Math.max(0, Math.min(count, this.maxRainStones));
         this.text.setText(this._formatText());
+        this.container.setVisible(this.rainStoneCount > 0);
 
         if (this.rainStoneCount >= RAIN_START_STONES) {
             this._startRain();

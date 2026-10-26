@@ -2,6 +2,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { TextStyles, THEME_FONT } from '../../core/theme';
 import dialogue from './dialogue.json';
 
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
@@ -15,16 +16,22 @@ export default {
         this.isConversing = false;
         this.isGetRainStone = false;
 
+        // 初始化主角上下左右的 WASD 移動引導
+        this.setupMovementGuide(scene);
+
         // ====== 折線邊界群組（可包含多條獨立分開的折線） ======
         this.roadPolylines = [
             // 第一條折線
             [
-                { x: 252, y: 136 },
-                { x: 782, y: 227 },
-                { x: 1025, y: 318 },
-                { x: 1223, y: 460 }
+                { x: 584, y: 188 }, 
+                { x: 719, y: 218 }
             ],
-            // 第二條獨立折線
+            // 第二條折線
+            [
+                { x: 845, y: 251 },
+                { x: 971, y: 293 }
+            ],
+            // 第三條獨立折線
             [
                 { x: 1949, y: 450 },
                 { x: 1644, y: 713 },
@@ -50,6 +57,10 @@ export default {
         this.lastSafeX = this.playerSprite.x;
         this.lastSafeY = this.playerSprite.y;
 
+        // 五顆祈雨石封鎖線：(579, 1969) 到 (185, 1979)
+        this.rainStoneTriggerLine = new Phaser.Geom.Line(579, 1969, 185, 1979);
+        this.rainStoneLineWarningCooldown = 0;
+
         // [除錯用] 繪製所有獨立折線紅色線條，座標確認無誤後可將 visible 設為 false
         this.roadDebugGraphics = scene.add.graphics().setDepth(999);
         this.roadDebugGraphics.lineStyle(3, 0xff0000, 0.9);
@@ -61,9 +72,9 @@ export default {
 
 
         // Bush compound
-        this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
+        // this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
-        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04').setDepth(105);
+        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04')
 
         // 根據主角在線段的左側或右側，設定與bush compound圖層
 
@@ -139,13 +150,41 @@ export default {
         this.easter_egg_triggered = false;
         this.turns_monkey = 0;
 
-        if (!scene.sharedState.rain){
-            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_sad').setScale(0.6);
-            scene.registerAsset(this.monkeyElder);
-        } else{
-            this.monkeyElder = scene.physics.add.sprite(1110, 849, 'monkey_elder_pleased').setScale(0.6);
-            scene.registerAsset(this.monkeyElder);
+        this.monkeyOriginX = 1110;
+        this.monkeyOriginY = 849;
+        this.monkeyJumpTween = null;
+        this.isRaining = Boolean(scene.sharedState?.rain);
+
+        this.monkeyElder = scene.physics.add.sprite(
+            this.monkeyOriginX,
+            this.monkeyOriginY,
+            this.isRaining ? 'monkey_elder_pleased' : 'monkey_elder_sad'
+        ).setScale(0.6);
+        scene.registerAsset(this.monkeyElder);
+
+        if (this.isRaining) {
+            this.startMonkeyJump(scene);
         }
+
+        // 監聽下雨狀態改變，動態切換紋理與跳躍動畫
+        scene.events.on('state:rain', (isRaining) => {
+            this.isRaining = Boolean(isRaining);
+            if (this.monkeyElder && this.monkeyElder.active) {
+                this.monkeyElder.setTexture(this.isRaining ? 'monkey_elder_pleased' : 'monkey_elder_sad');
+                if (this.isRaining) {
+                    if (!this.isConversing) {
+                        this.startMonkeyJump(scene);
+                    }
+                } else {
+                    this.stopMonkeyJump();
+                }
+            }
+            if (this.glasses && this.glasses.active) {
+                this.glasses.destroy();
+            }
+            this.wear_glasses = false;
+        });
+
         scene.physics.add.collider(this.playerSprite, this.monkeyElder);
         this.monkeyElder.body.setImmovable(true);
 
@@ -220,6 +259,9 @@ export default {
             repeat: -1
         })
 
+        // 第一條折線、第二條折線：yellow bushes at initial point
+        this.yellowBushes = scene.add.sprite(770, 214, 'yellow_bushes').setDepth(20);
+
         // Bushes
         const hardBushPositions = [    
         // one side of footpath
@@ -272,12 +314,12 @@ export default {
         {x: 2500, y: 160, scale: 0.8},
         {x: 2510, y: 250, scale: 0.8},
         // 右側道路的間隔bush
-        {x: 1466, y: 1034, scale: 0.8}
+        {x: 1466, y: 1034, scale: 0.8},
 
 
         ];  
         this.hardBushes = hardBushPositions.map(({x, y, scale})=> {
-            const bush = scene.physics.add.sprite(x, y, 'bush_02');
+            const bush = scene.physics.add.sprite(x, y, 'bush_02').setDepth(0);
             bush.body.setImmovable(true);
             if(scale){
                 bush.setScale(scale);
@@ -287,17 +329,14 @@ export default {
         });
         scene.physics.add.collider(this.playerSprite, this.hardBushes);
 
-        
+
 
         // Soft bush
         const softBushPositions = [
             {x:1849, y: 334},
             { x: 1786, y: 270 },
             { x: 2327, y: 525 },
-            { x: 2241, y: 521 },
-            { x: 2160, y: 325 },
             { x: 2248, y: 327 },
-            { x: 2161, y: 244 },
             { x: 2061, y: 271 },
             { x: 1892, y: 400 }
         ];
@@ -429,27 +468,165 @@ export default {
         }
     },
 
+    startMonkeyJump(scene) {
+        if (!this.monkeyElder || !this.monkeyElder.active) return;
+        this.stopMonkeyJump();
+
+        const jumpDistance = 24; // 左右位移幅度
+        const jumpHeight = 30;   // 跳躍高度
+        const stepDuration = 280; // 單趟跳躍時間 (ms)
+
+        // 建立左右反覆跳躍 TweenChain (Phaser 3.60+ / 4.x 使用 scene.tweens.chain)
+        this.monkeyJumpTween = scene.tweens.chain({
+            targets: this.monkeyElder,
+            loop: -1,
+            tweens: [
+                // 1. 向左跳
+                {
+                    x: this.monkeyOriginX - jumpDistance,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(true); // 面向左邊
+                        }
+                    }
+                },
+                // 2. 落下到左側地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 3. 向右跳回中心
+                {
+                    x: this.monkeyOriginX,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(false); // 面向右邊
+                        }
+                    }
+                },
+                // 4. 落下回中心地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 5. 向右跳
+                {
+                    x: this.monkeyOriginX + jumpDistance,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(false); // 面向右邊
+                        }
+                    }
+                },
+                // 6. 落下到右側地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                },
+                // 7. 向左跳回中心
+                {
+                    x: this.monkeyOriginX,
+                    y: this.monkeyOriginY - jumpHeight,
+                    duration: stepDuration,
+                    ease: 'Quad.easeOut',
+                    onStart: () => {
+                        if (this.monkeyElder && this.monkeyElder.active) {
+                            this.monkeyElder.setFlipX(true); // 面向左邊
+                        }
+                    }
+                },
+                // 8. 落下回中心地面
+                {
+                    y: this.monkeyOriginY,
+                    duration: stepDuration,
+                    ease: 'Quad.easeIn'
+                }
+            ]
+        });
+    },
+
+    stopMonkeyJump() {
+        if (this.monkeyJumpTween) {
+            this.monkeyJumpTween.stop();
+            this.monkeyJumpTween = null;
+        }
+        if (this.monkeyElder && this.monkeyElder.active) {
+            this.monkeyElder.setPosition(this.monkeyOriginX, this.monkeyOriginY);
+            this.monkeyElder.setFlipX(false);
+        }
+    },
+
     startConversationMonkey(scene) {
         if (this.isConversing) return;
         this.isConversing = true;
+        this.stopMonkeyJump();
+
+        const onFinishConversation = () => {
+            this.isConversing = false;
+            if (this.isRaining) {
+                this.startMonkeyJump(scene);
+            }
+        };
+
+        if(scene.hud.hasEnoughRainStones()){
+            const VIRTUE_LABELS = {
+                ingroup: '團隊忠誠',
+                fairness: '公平',
+                authority: '權威',
+                purity: '聖潔',
+                harm: '關懷'
+            };
+            const moralState = MoralState.getAll();
+            const activeVirtues = Object.entries(VIRTUE_LABELS)
+                .filter(([dimension]) => (moralState[dimension] ?? 0) >= 1)
+                .map(([_, label]) => label);
+
+            DialogueSystem.show(scene, [
+                '哈哈！看這雨下得多大呀！',
+                '大雨治好我的老花，從此不再需要眼鏡！',
+                '⋯⋯',
+                '其實，在我有限的歲月中，經歷過數百次的乾旱和大雨的循環',
+                '待你離開，沒過多久，雨將停歇，河水猛然消失，沙塵暴揚起，祈雨石再度四散各方',
+                '然後又會出現新的勇者，前來拯救我們，如此迴環往復',
+                '看看你身上獨有的斑紋吧。那是這趟冒險旅途中，道德判斷的印記',
+                '我見過數百位像你這樣的心智化身，印記各有不同',
+                '黃色代表「團隊忠誠」、綠色代表「公平」、粉色代表「權威」、藍色代表「聖潔」、紫色代表「關懷」',
+                '沒有任何一種美德普世皆然。道德並非源於理性的本質，無法推理演繹',
+                '正義之心更像味覺受體，有人崇尚公平，謂之正義；有人推崇權威，亦謂之正義',
+                `就像你身上有著${activeVirtues.join('、')}的印記，想必你也同樣在乎這些美德`,
+                '時間差不多了，我這裡有個寶盒，快把你蒐集的祈雨石放進來吧',
+                '再會了，勇者。'
+            ], ()=>{
+                onFinishConversation;
+                // TODO: 直接接續動畫
+            })
+        }
 
         if(this.turns_monkey === 0 ){
             DialogueSystem.show(scene, [ // TODO: 改成自動推進對話
                 '是你嗎？',
                 '快過來',
                 '用空白鍵和我說說話'
-            ], () => {
-                this.isConversing = false;
-            });
+            ], onFinishConversation);
         }else if(!this.wear_glasses){
             DialogueSystem.show(scene, [
                 '我老花，看不到⋯⋯',
                 '⋯⋯',
                 '點擊左鍵，撿起身邊的東西',
                 '幫我找找那個我需要的東西'
-            ], ()=> {
-                this.isConversing = false;
-            });
+            ], onFinishConversation);
         }else if(this.wear_glasses &&!this.isGetRainStone){
             DialogueSystem.show(scene, [
             '謝謝你，我終於看清楚了。',
@@ -468,7 +645,7 @@ export default {
             
         ], ()=> {
             scene.sharedState.wand_unlocked = true;
-            this.isConversing = false;
+            onFinishConversation();
         });
         } else if(this.wear_glasses &&this.isGetRainStone){
             DialogueSystem.show(scene, [
@@ -476,14 +653,14 @@ export default {
             '「祈天降雨之石」',
             '我想起來了！傳說中集齊6顆，天降甘霖',
             '試圖適應冒險中遇到的難題，',
-            '那些難題將觸動直覺的大象，而作為騎象人，你就是牠的夥伴',
-            '我有種預感，聖潔、權威、忠誠、公平、關懷的價值抉擇將在眼前',
+            '那些難題將觸動直覺的大象，而作為騎象人，你們將合作前行',
+            '我有種預感，聖潔、權威、忠誠、公平、關懷的道德抉擇將在眼前',
             '小心點，這片大地上的動物有著與你截然不同的價值觀',
-            '快去吧！尋找其他失散的5顆祈雨石。'
+            '快去吧！尋找其他失散的祈雨石。'
             ], ()=> {
                 this.shouldTriggerPartingDialogue = true;
-                this.isConversing = false;
                 scene.items.push(this.woodpile01);
+                onFinishConversation();
             }) 
            
         }
@@ -497,11 +674,16 @@ export default {
         }
         this.isConversing = true;
         this.easter_egg_triggered = true;
+        this.stopMonkeyJump();
+
         DialogueSystem.show(scene, [
             '我看不到了⋯⋯',
             '魔法樹枝不是讓你這樣用的\n快把眼鏡還來⋯⋯'
         ], () => {
             this.isConversing = false;
+            if (this.isRaining) {
+                this.startMonkeyJump(scene);
+            }
         })
         this.turns_monkey++;
     },
@@ -524,8 +706,101 @@ export default {
             });
         }
     },
+
+    setupMovementGuide(scene) {
+        if (!this.playerSprite) return;
+
+        // 遵循 theme.js 的文字風格（純文字）
+        const guideStyle = {
+            ...TextStyles.fontSetting,
+            fontFamily: THEME_FONT,
+            fontSize: '28px',
+            color: '#2c2a29',
+            stroke: '#ffffff',
+            strokeThickness: 5,
+            align: 'center'
+        };
+
+        const originX = 750;
+        const originY = 100;
+        const offset = 85;
+
+        // 在主角的上下左右放置 W S A D（高於主角圖層），初始完全透明並在 3 秒後平滑淡入
+        this.movementGuideTexts = [
+            scene.add.text(originX, originY - offset, 'W', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX, originY + offset, 'S', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX - offset, originY, 'A', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0),
+            scene.add.text(originX + offset, originY, 'D', guideStyle).setOrigin(0.5).setDepth(25).setAlpha(0)
+        ];
+
+        this.hasMovementGuideFaded = false;
+
+        this.guideFadeInTween = scene.tweens.add({
+            targets: this.movementGuideTexts,
+            alpha: 1,
+            delay: 3000,
+            duration: 600,
+            ease: 'Power2'
+        });
+
+        this.dismissMovementGuide = () => {
+            if (this.hasMovementGuideFaded) return;
+            this.hasMovementGuideFaded = true;
+
+            // 若淡入 tween 仍在等待或執行中，停止它
+            if (this.guideFadeInTween) {
+                this.guideFadeInTween.stop();
+                this.guideFadeInTween = null;
+            }
+
+            // 移除鍵盤監聽
+            if (this.onMovementKeyDown) {
+                scene.input.keyboard.off('keydown', this.onMovementKeyDown);
+                this.onMovementKeyDown = null;
+            }
+
+            // 原地淡出並銷毀
+            if (this.movementGuideTexts && this.movementGuideTexts.length > 0) {
+                scene.tweens.add({
+                    targets: this.movementGuideTexts,
+                    alpha: 0,
+                    duration: 600,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        this.movementGuideTexts.forEach(txt => {
+                            if (txt && txt.destroy) txt.destroy();
+                        });
+                        this.movementGuideTexts = [];
+                    }
+                });
+            }
+        };
+
+        this.onMovementKeyDown = (event) => {
+            const code = event.code;
+            const key = event.key ? event.key.toLowerCase() : '';
+            if (
+                ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code) ||
+                ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)
+            ) {
+                this.dismissMovementGuide();
+            }
+        };
+
+        scene.input.keyboard.on('keydown', this.onMovementKeyDown);
+    },
     
     update(scene) {
+        // 檢查玩家若已按下移動鍵，觸發 WASD 原地淡出
+        if (!this.hasMovementGuideFaded && scene.playerController && this.dismissMovementGuide) {
+            const { cursors, wasd } = scene.playerController;
+            if (
+                cursors?.left?.isDown || cursors?.right?.isDown || cursors?.up?.isDown || cursors?.down?.isDown ||
+                wasd?.left?.isDown || wasd?.right?.isDown || wasd?.up?.isDown || wasd?.down?.isDown
+            ) {
+                this.dismissMovementGuide();
+            }
+        }
 
         // ====== 折線邊界限制（預測性攔截，消除拉扯抖動） ======
         // 若處於開發者衝刺模式 (Shift 開發者模式)，無視邊界阻隔
@@ -540,6 +815,7 @@ export default {
                 this.lastSafeX = player.x;
                 this.lastSafeY = player.y;
             } else {
+                let hitRainStoneLine = false;
                 // 輔助函式：判斷主角在 (testPlayerX, testPlayerY) 時其 body 是否與任一邊界折線相交
             const bodyCollidesWithBoundary = (testPlayerX, testPlayerY) => {
                 const bodyOffsetX = body.x - player.x;
@@ -553,6 +829,16 @@ export default {
                     if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        return true;
+                    }
+                }
+
+                if (scene.hud?.hasEnoughRainStones() && this.rainStoneTriggerLine) {
+                    const line = this.rainStoneTriggerLine;
+                    if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
+                        Phaser.Geom.Rectangle.Contains(bodyRect, line.x2, line.y2)) {
+                        hitRainStoneLine = true;
                         return true;
                     }
                 }
@@ -607,6 +893,20 @@ export default {
             } else {
                 this.lastSafeX = player.x;
                 this.lastSafeY = player.y;
+            }
+
+            // 5. 觸碰祈雨石封鎖線時觸發對話
+            if (hitRainStoneLine && !this.isConversing && !DialogueSystem.isShowing()) {
+                const now = scene.time?.now ?? Date.now();
+                if (now > (this.rainStoneLineWarningCooldown || 0)) {
+                    this.rainStoneLineWarningCooldown = now + 1500;
+                    this.isConversing = true;
+                    DialogueSystem.show(scene, [
+                        '猴長老還在等你，趕快帶著祈雨石去找他吧！'
+                    ], () => {
+                        this.isConversing = false;
+                    });
+                }
             }
             }
         }

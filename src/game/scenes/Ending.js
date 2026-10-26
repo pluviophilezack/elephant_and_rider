@@ -15,6 +15,7 @@ export class Ending extends Scene
     {
         this.cameras.main.setBackgroundColor(0x20262b);
         GameProgress.markCompleted();
+        MoralState.saveToStorage();
 
         // TODO(核心負責人)：依 MoralState.getAll() 判斷玩家的道德傾向，顯示對應的猴長老結局對話
         const scores = MoralState.getAll();
