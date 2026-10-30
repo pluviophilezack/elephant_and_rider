@@ -3,6 +3,7 @@ import { DialogueSystem } from '../../core/DialogueSystem';
 import { ChoiceSystem } from '../../core/ChoiceSystem';
 import { MoralState } from '../../core/MoralState';
 import { createTriggerZone } from '../../core/TriggerZone';
+import { AudioManager } from '../../core/AudioManager';
 import dialogue from './dialogue.json';
 
 // 每個事件模組要呼叫一次giveRainStone() ，以便在該事件獲得祈雨石。
@@ -94,6 +95,7 @@ export default {
         this._updateLoneBirdGrabState(scene);
         this._updateCapture(scene);
         this._updateDepths(scene);
+        this._updateBirdsAmbientVolume(scene);
     },
 
     _createFlock(scene) {
@@ -352,9 +354,46 @@ export default {
         scene.tweens.killTweensOf(this.loneBird);
         this.loneBird.setTexture('bird_member_05').setAlpha(1);
 
+        this._playRushBGM(scene);
+
         this._showDialogue(scene, dialogue.capture_start_lines, () => {
             this._startEscapeDash(scene);
         });
+    },
+
+    _playRushBGM(scene) {
+        const audio = AudioManager.getInstance(scene);
+        if (!audio) return;
+
+        if (typeof audio.fadeOutBGM === 'function') {
+            audio.fadeOutBGM(300);
+        }
+        
+        if (scene.sound) {
+            this.rushIntroSound = scene.sound.add('bgm_rush_intro', { loop: false, volume: 2.0 });
+            this.rushLoopSound = scene.sound.add('bgm_rush_loop', { loop: true, volume: 2.0 });
+
+            this.rushIntroSound.once('complete', () => {
+                if (this.rushLoopSound) {
+                    this.rushLoopSound.play();
+                }
+            });
+
+            this.rushIntroSound.play();
+        }
+    },
+
+    _stopRushBGM() {
+        if (this.rushIntroSound) {
+            this.rushIntroSound.stop();
+            this.rushIntroSound.destroy();
+            this.rushIntroSound = null;
+        }
+        if (this.rushLoopSound) {
+            this.rushLoopSound.stop();
+            this.rushLoopSound.destroy();
+            this.rushLoopSound = null;
+        }
     },
 
     _startEscapeDash(scene) {
@@ -445,13 +484,14 @@ export default {
 
     _completeCapture(scene) {
         this.state = 'completed';
+        this._stopRushBGM();
         scene.tweens.killTweensOf(this.loneBird);
         this._removeFromItems(scene, this.loneBird);
         this.loneBird.setPosition(AREA.flockCenter.x, AREA.flockCenter.y + 58);
-        this.loneBird.setTexture('bird_member_crying_01');
         this.loneBird.setAlpha(1);
         this.loneBird.setDepth(20);
         this.flockBirds.push(this.loneBird);
+        this.loneBird.setTexture('bird_member_crying_01');
 
         scene.tweens.add({
             targets: this.flockBirds,
@@ -461,8 +501,46 @@ export default {
             repeat: 5
         });
 
+        //接續播放 bgm_magic_in_the_garden_loop 並計算鳥群音量
+        const audio = AudioManager.getInstance(scene);
+        if (audio) {
+            audio.playBGM('bgm_magic_in_the_garden_loop', { loop: true, volume: 2.0 }, 1000);
+        }
+
+        if (scene.sound && !this.birdsAmbientSound) {
+            this.birdsAmbientSound = scene.sound.add('bgm_bird_sound_loop', { loop: true, volume: 0 });
+            this.birdsAmbientSound.play();
+        }
+
         this._awardRainStone(scene);
         this._showDialogue(scene, dialogue.capture_success_lines);
+    },
+
+    _updateBirdsAmbientVolume(scene) {
+        if (!this.birdsAmbientSound || !this.birdsAmbientSound.isPlaying) return;
+
+        const player = scene.playerController?.getPosition() ?? scene.player;
+        if (!player) return;
+
+        const distance = Phaser.Math.Distance.Between(
+            player.x,
+            player.y,
+            AREA.flockCenter.x,
+            AREA.flockCenter.y
+        );
+
+        const maxDistance = 800; // 超過此距離音量為 0
+        const minDistance = 150; // 近於此距離音量為最大值 (2.0)
+
+        if (distance >= maxDistance) {
+            this.birdsAmbientSound.setVolume(0);
+        } else if (distance <= minDistance) {
+            this.birdsAmbientSound.setVolume(0.8);
+        } else {
+            // 線性插值計算動態音量
+            const targetVol = (1 - (distance - minDistance) / (maxDistance - minDistance)) * 2.0;
+            this.birdsAmbientSound.setVolume(targetVol);
+        }
     },
 
     _awardRainStone(scene) {
