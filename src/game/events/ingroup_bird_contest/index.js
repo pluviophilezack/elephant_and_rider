@@ -491,6 +491,7 @@ export default {
         this.loneBird.setAlpha(1);
         this.loneBird.setDepth(20);
         this.flockBirds.push(this.loneBird);
+        this.loneBird.setTexture('bird_member_crying_01');
 
         scene.tweens.add({
             targets: this.flockBirds,
