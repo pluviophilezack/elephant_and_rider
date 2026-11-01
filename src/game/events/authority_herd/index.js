@@ -151,16 +151,16 @@ export default {
             scene.physics.add.collider(player, npc);
         });
 
-        // ---------- 第一階段：偵測玩家走到 (2500, 400)，生成象群 ----------
-        const spawnZone = createTriggerZone(scene, { x: 2500, y: 650, width: 400, height: 400 });
-        let spawned = false;
+        // // ---------- 第一階段：偵測玩家走到 (2500, 400)，生成象群 ----------
+        // const spawnZone = createTriggerZone(scene, { x: 2500, y: 650, width: 400, height: 400 });
+        // let spawned = false;
 
-        scene.physics.add.overlap(scene.player, spawnZone, () => {
-            if (spawned) return;
-            spawned = true;
-            this._spawnHerd(scene);
-            spawnZone.destroy(); //0921
-        });
+        // scene.physics.add.overlap(scene.player, spawnZone, () => {
+        //     if (spawned) return;
+        //     spawned = true;
+        //     this._spawnHerd(scene);
+        //     spawnZone.destroy(); //0921
+        // });
 
         this._easterEggTriggered = false; 
         this._easterEgg2Triggered = false;
@@ -168,6 +168,8 @@ export default {
         this._AnimeEnd = false;
         this._inAutoMoving = false; //自動動畫邏輯
         this._rainStoneCollected = false;//祈雨石撿取邏輯
+
+        this._spawnHerd(scene);
 
         // ---------- 第二階段：偵測玩家碰到象王，觸發對話 ----------
 
@@ -215,18 +217,21 @@ export default {
         //年輕象對話彩蛋
         // const youngLeaderTrigger = createTriggerZone(scene, { x: 2900, y: 120, width: 100, height: 100 });
         const youngLeaderTrigger = createTriggerZone(scene, { x: 2700, y: 400, width: 300, height: 150 });
-        let eggTriggered = false;
+        this.eggTriggered = false;
 
         scene.physics.add.overlap(scene.player, youngLeaderTrigger, () => {
             //if (this._conversationTriggered) return; // 如果已經觸發主線，彩蛋不再觸發
             if (this._choiceTriggered) return; // 如果已經觸發主線，彩蛋不再觸發 
             if (this._easterEggTriggered) return;
-            if (eggTriggered) return;
-            eggTriggered = true;
+            if (this.eggTriggered) return;
+            this.eggTriggered = true;
             this._easterEggTriggered = true;
             console.log('[authority_herd] 觸發年輕象彩蛋對話');
             this._youngEasterEgg(scene);
-            youngLeaderTrigger.destroy();
+
+            if(scene.hud.rainStoneCount >= 3){
+                youngLeaderTrigger.destroy();
+            }
         });
     },
 
@@ -374,20 +379,63 @@ export default {
                                     duration: 150,
                                     ease: 'Sine.easeInOut',
                                     onComplete: () => {
-                                        const easterLines = [
-                                            {speaker:  '小象', text:  '呼...呼...'},
-                                            { speaker: '年輕象A', text: '小象好久沒喝水了...再繞路會不會花費太久?' },
-                                            { speaker: '年輕象B', text: '那條山路我們還沒有走過，看起來還算安全，要走走看嗎...' },
-                                            { speaker: '年輕象領', text: '可能得試試看...了嗎...' },
-                                            { speaker: '年輕象ABC', text: '......' },
-                                            {speaker:  '小象', text:  '呼...(不安)'},
-                                        ];
 
-                                        DialogueSystem.show(scene, easterLines, () => {
-                                            // 彩蛋對話結束，解鎖玩家
-                                            scene.playerController.enable();
-                                            console.log('[authority_herd] 彩蛋對話結束，玩家可以繼續探索');
-                                        });
+                                        let rc = scene.hud.rainStoneCount
+                                        console.log(rc);
+                                        if(rc < 3){
+                                            const easterLines = [
+                                                {speaker:  '小象', text:  '呼...呼...'},
+                                                { speaker: '年輕象A', text: '小象好久沒喝水了...再......' },
+                                                { speaker: '???', text: '你 是否遺漏了什麼 ?' },
+                                                {speaker:  'player', text: '???'},
+                                                { speaker: '???', text: '前方的山，只有集齊三顆祈雨石，方能進入' },
+                                                { speaker: '???', text: '你 還不夠資格' },
+                                                { speaker: '???', text: '繼續完成 你的使命' },
+                                                { speaker: '???', text: '前面的區域 稍後再來探索吧' },
+                                                { speaker: '???', text: '。。。' },
+                                                {speaker:  'player', text: '。。。'},
+                                            ];
+                                            DialogueSystem.show(scene, easterLines, () => {
+
+                                                scene.tweens.add({
+                                                    targets:scene.player,
+                                                    x: 2450,
+                                                    y: 1000,
+                                                    duration: 1500,
+                                                    ease: 'Sine.easeInOut',
+                                                    //0908
+                                                    onUpdate: () => {
+
+                                                    },
+                                                    onStart:()=>{
+
+                                                    },
+                                                    onComplete: () => {
+                                                        scene.playerController.enable();
+                                                        this._easterEggTriggered = false;      
+                                                        this.eggTriggered = false;    
+                                                    }
+                                                })
+                                            });                   
+                                        }
+
+                                        else{
+                                            const easterLines = [
+                                                {speaker:  '小象', text:  '呼...呼...'},
+                                                { speaker: '年輕象A', text: '小象好久沒喝水了...再繞路會不會花費太久?' },
+                                                { speaker: '年輕象B', text: '那條山路我們還沒有走過，看起來還算安全，要走走看嗎...' },
+                                                { speaker: '年輕象領', text: '可能得試試看...了嗎...' },
+                                                { speaker: '年輕象ABC', text: '......' },
+                                                {speaker:  '小象', text:  '呼...(不安)'},
+                                            ];
+
+                                            DialogueSystem.show(scene, easterLines, () => {
+                                                // 彩蛋對話結束，解鎖玩家
+                                                scene.playerController.enable();
+                                                console.log('[authority_herd] 彩蛋對話結束，玩家可以繼續探索');
+                                            });
+                                        }
+                                        
                                     }
                                 });
                             }
