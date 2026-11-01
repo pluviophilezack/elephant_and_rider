@@ -443,6 +443,8 @@ export default {
             scene.wandController.enabled = false;
         }
 
+        
+
         const hint = scene.add.text(playerTarget.x, playerTarget.y - 50, '連按 3 次空白鍵喝光水 (0/3)', {
             fontFamily: THEME_FONT,
             fontSize: '14px', color: '#ffaaaa', backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
@@ -466,7 +468,6 @@ export default {
                 spaceKey.off('down', pressHandler);
                 hint.destroy();
 
-                scene.isDialogueActive = false;
                 if (scene.wandController) {
                     scene.wandController.enabled = true;
                 }
@@ -483,7 +484,10 @@ export default {
                         x: ant.x + 400,
                         alpha: 0,
                         duration: 1500,
-                        onComplete: () => ant.destroy()
+                        onComplete: () => {
+                            ant.destroy()
+                            scene.isDialogueActive = false;
+                        }
                     });
                 });
 
@@ -516,6 +520,7 @@ export default {
     },
 
     update(scene) {
+        console.log(scene.wandController.enabled);
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
         if (state.pondZone && playerTarget && playerTarget.body) {
             state.isPlayerInPondZone = scene.physics.overlap(playerTarget, state.pondZone);
