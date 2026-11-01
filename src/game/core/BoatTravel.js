@@ -69,6 +69,7 @@ export class BoatTravel {
             this.stopShippingSound();
             this.restoreReleaseState();
             this.restoreHeldItemState();
+            this.restoreMarkingState();
             this.isTravelling = false;
         });
     }
@@ -87,6 +88,24 @@ export class BoatTravel {
         if (heldItem && this.savedItemDepth != null) {
             heldItem.setDepth(this.savedItemDepth);
             this.savedItemDepth = null;
+        }
+    }
+
+    restoreMarkingState() {
+        const controller = this.scene.playerController;
+        if (!controller) return;
+        const player = controller.sprite;
+        if (this.savedState?.depth != null && player) {
+            player.setDepth(this.savedState.depth);
+        }
+        if (controller.marking_sprite) {
+            Object.values(controller.marking_sprite).forEach(sprite => {
+                sprite.setScale(0.45);
+                if (player) {
+                    sprite.setDepth(player.depth + 1);
+                }
+            });
+            controller.syncMarkingPositions();
         }
     }
 
@@ -250,7 +269,8 @@ export class BoatTravel {
         this.savedState = {
             enabled: controller.enabled, autoMoving: controller.isAutoMoving,
             bodyEnabled: player.body.enable, visible: player.visible,
-            speed: controller.speed, flipX: player.flipX
+            speed: controller.speed, flipX: player.flipX,
+            depth: player.depth
         };
         this.isTravelling = true;
         this.armed = false;
@@ -258,9 +278,18 @@ export class BoatTravel {
         controller.isAutoMoving = true;
         player.body.enable = false;
         player.setVisible(false);
+        player.setDepth(43.5);
+        if (controller.marking_sprite) {
+            Object.values(controller.marking_sprite).forEach(sprite => {
+                sprite.setScale(0.3375);
+                sprite.setDepth(44.5);
+            });
+        }
         scene.wandController?.hideFor(BOAT_TRIP_DURATION);
         const start = { x: player.x, y: player.y + player.displayHeight / 2 };
         this.passenger.setPosition(start.x, start.y).setFlipX(player.flipX).setVisible(true);
+        player.setFlipX(this.passenger.flipX);
+        player.setPosition(this.passenger.x, this.passenger.y - 61);
         if (heldItem) {
             const itemOffsetX = this.passenger.flipX ? -8 : 8;
             heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
@@ -300,7 +329,8 @@ export class BoatTravel {
                         Phaser.Math.Linear(startY, destY, p)
                     );
                 }
-                player.setPosition(this.passenger.x, this.passenger.y - player.displayHeight / 2);
+                player.setFlipX(this.passenger.flipX);
+                player.setPosition(this.passenger.x, this.passenger.y - 61);
                 if (heldItem) {
                     const itemOffsetX = this.passenger.flipX ? -8 : 8;
                     heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
@@ -325,6 +355,7 @@ export class BoatTravel {
                 if (scene.wandController) {
                     scene.wandController.forceHiddenUntil = 0;
                 }
+                this.restoreMarkingState();
                 scene.cameras.main.startFollow(player);
                 this.currentDock = destinationKey;
                 this.isTravelling = false;
