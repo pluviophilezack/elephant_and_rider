@@ -13,7 +13,6 @@ import ingroupBirdContest from '../events/ingroup_bird_contest';
 import fairnessWater from '../events/fairness_water';
 import purityFloodedRuins from '../events/purity_flooded_ruins';
 import authorityHerd from '../events/authority_herd';
-import domainElephants from '../events/domain_elephants';
 
 // 將 Phaser 掛載到全域，修正其他模組中「Phaser is not defined」的錯誤
 window.Phaser = Phaser;
@@ -118,7 +117,7 @@ export class Overworld extends Scene
         })
 
         // 各事件自行建立 sprite／觸發區域／按鍵監聽／可拾取物註冊，並在條件成立時自己呼叫 onEnter(this)
-        this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd, domainElephants];
+        this.events_ = [tutorial, ingroupBirdContest, fairnessWater, purityFloodedRuins, authorityHerd];
         this.events_.forEach(event => {
             this.currentActiveEventKey = event.key;
             event.setup(this);
