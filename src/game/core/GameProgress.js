@@ -28,6 +28,11 @@ export const GameProgress = {
         getStorage()?.setItem(COMPLETION_STORAGE_KEY, 'true');
     },
 
+    resetCompleted() {
+        completedThisSession = false;
+        getStorage()?.removeItem(COMPLETION_STORAGE_KEY);   
+    },
+
     hasCompletedGame() {
         return completedThisSession
             || getStorage()?.getItem(COMPLETION_STORAGE_KEY) === 'true'
