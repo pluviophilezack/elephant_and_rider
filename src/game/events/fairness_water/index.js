@@ -520,7 +520,6 @@ export default {
     },
 
     update(scene) {
-        console.log(scene.wandController.enabled);
         const playerTarget = scene.player.sprite || scene.player.player || scene.player;
         if (state.pondZone && playerTarget && playerTarget.body) {
             state.isPlayerInPondZone = scene.physics.overlap(playerTarget, state.pondZone);
