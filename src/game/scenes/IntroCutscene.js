@@ -1,10 +1,15 @@
 // 開頭動畫過場場景：引導玩家思考道德本質，展示心智模型（象與騎象人）後進入大地圖
 import { Scene } from 'phaser';
 import { THEME_FONT, TextStyles } from '../core/theme';
+import { AudioManager } from '../core/AudioManager';
 
 /**
  * 開頭過場動畫參數設定（可在此自由微調各項數值）
  */
+const audio = AudioManager.getInstance(this);
+if (audio && !audio.isPlaying('bgm_wisdom_in_the_sun_loop')) {
+    audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 2.0 });
+}
 export const INTRO_CONFIG = {
     // 1. 背景顏色（米白色，提供十六進位字串供後續微調）
     backgroundColor: '#f1af41',
