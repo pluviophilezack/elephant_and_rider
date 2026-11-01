@@ -62,17 +62,19 @@ export class AudioManager {
     // -------------------------------------------------------------
     // 2. BGM 播放與淡入淡出 (Fade In / Fade Out)
     // -------------------------------------------------------------
-    playBGM(key, config = {}, fadeTimeMs = 1000) {
+    playBGM(key, config = {}, fadeInMs = 1000, fadeOutMs = null) {
         if (!this.scene || !this.scene.sound) return;
         if (this.currentBGMKey === key && this.currentBGM?.isPlaying) return;
 
+        const actualFadeOut = fadeOutMs ?? fadeInMs;
+
         // 若有舊 BGM，先淡出再播放新 BGM
         if (this.currentBGM && this.currentBGM.isPlaying) {
-            this.fadeOutBGM(fadeTimeMs, () => {
-                this._startBGM(key, config, fadeTimeMs);
+            this.fadeOutBGM(actualFadeOut, () => {
+                this._startBGM(key, config, fadeInMs);
             });
         } else {
-            this._startBGM(key, config, fadeTimeMs);
+            this._startBGM(key, config, fadeInMs);
         }
     }
 
@@ -96,13 +98,16 @@ export class AudioManager {
             return;
         }
 
+        // 清理既有的 tween，避免重複調用衝突
+        this.scene.tweens.killTweensOf(this.currentBGM);
+
         this.scene.tweens.add({
             targets: this.currentBGM,
             volume: 0,
             duration: fadeTimeMs,
             onComplete: () => {
-                this.currentBGM.stop();
-                this.currentBGM.destroy();
+                this.currentBGM?.stop();
+                this.currentBGM?.destroy();
                 this.currentBGM = null;
                 this.currentBGMKey = '';
                 onComplete?.();

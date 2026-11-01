@@ -1726,16 +1726,10 @@ export default {
 
             this._giveRainStone(scene, 'player');
 
-            // 💡 觸發 HUD 慶祝動畫：在石頭飛入面板之後，若祈雨石已達到 5 顆才將背景音樂淡出結束
+            // 💡 觸發 HUD 慶祝動畫（達 5 顆時由 RainEffect 統一銜接前首 4 秒淡出與雨聲 5 秒淡入）
             const targetHud = scene.hud || (scene.scene && scene.scene.get('Overworld') && scene.scene.get('Overworld').hud);
             if (targetHud && typeof targetHud.addRainStone === 'function') {
-                targetHud.addRainStone(1, (isSuccess) => {
-                    const audio = AudioManager.getInstance(scene);
-                    if (targetHud.rainStoneCount >= 5 && audio && typeof audio.fadeOutBGM === 'function') {
-                        // 祈雨石達到 5 顆，將背景音樂淡出結束（2 秒淡出）
-                        audio.fadeOutBGM(2000);
-                    }
-                });
+                targetHud.addRainStone(1);
             }
         }
     },
