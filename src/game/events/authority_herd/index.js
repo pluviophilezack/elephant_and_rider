@@ -1712,7 +1712,7 @@ export default {
 
         this._animatePlayerMovement(scene);
 
-        // ---- 偵測玩家用象鼻撿起第五顆祈雨石 ----
+        // ---- 偵測玩家用象鼻撿起祈雨石 ----
         if (scene.wandController &&
             scene.wandController.heldItem === this.sprites.rainStone &&
             !this._rainStoneCollected) {
@@ -1726,13 +1726,13 @@ export default {
 
             this._giveRainStone(scene, 'player');
 
-            // 💡 觸發 HUD 慶祝動畫：在石頭飛入面板之後，將背景音樂淡出結束！
+            // 💡 觸發 HUD 慶祝動畫：在石頭飛入面板之後，若祈雨石已達到 5 顆才將背景音樂淡出結束
             const targetHud = scene.hud || (scene.scene && scene.scene.get('Overworld') && scene.scene.get('Overworld').hud);
             if (targetHud && typeof targetHud.addRainStone === 'function') {
                 targetHud.addRainStone(1, (isSuccess) => {
                     const audio = AudioManager.getInstance(scene);
-                    if (audio && typeof audio.fadeOutBGM === 'function') {
-                        // 第五顆石頭飛入面板完畢，將背景音樂淡出結束（例如 2 秒淡出）
+                    if (targetHud.rainStoneCount >= 5 && audio && typeof audio.fadeOutBGM === 'function') {
+                        // 祈雨石達到 5 顆，將背景音樂淡出結束（2 秒淡出）
                         audio.fadeOutBGM(2000);
                     }
                 });
