@@ -17,10 +17,12 @@ export default {
         this.isConversing = false;
         this.isGetRainStone = false;
 
-        // 遊戲開始即播放 bgm_wisdom_in_the_sun_loop (循環播放)
         const audio = AudioManager.getInstance(scene);
         if (audio) {
+            //做個保險，只有當前沒在播放該首 BGM 時才呼叫 playBGM，避免切歌或重頭播放
+            if (!audio.isPlayingBGM || audio.currentBGMKey !== 'bgm_wisdom_in_the_sun_loop') {
             audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 0.6 }, 1000);
+            }
         }
 
         // 初始化主角上下左右的 WASD 移動引導
@@ -247,10 +249,6 @@ export default {
         // Woodpile list
         this.woodpiles = [this.woodpile01, this.woodpile02, this.woodpile03, this.woodpile04];
 
-        //不知道為甚麼要加這一行才有辦法搬木頭
-        if (!scene.items.includes(this.woodpile01)){
-            scene.items.push(this.woodpile01);
-        }
     
         // RainStone
 
@@ -878,8 +876,7 @@ export default {
                     }
                 }
 
-                const currentStones = scene.hud?.rainStoneCount ?? scene.sharedState?.rainStoneCount ?? 0;
-                if (currentStones >= 6 && this.rainStoneTriggerLine) {
+                if (scene.hud?.hasEnoughRainStones() && this.rainStoneTriggerLine) {
                     const line = this.rainStoneTriggerLine;
                     if (Phaser.Geom.Intersects.LineToRectangle(line, bodyRect) ||
                         Phaser.Geom.Rectangle.Contains(bodyRect, line.x1, line.y1) ||
