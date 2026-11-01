@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { DialogueSystem } from './DialogueSystem';
+import { ChoiceSystem } from './ChoiceSystem';
 import { AudioManager } from '../core/AudioManager';
 
 export class WandController {
@@ -103,6 +104,20 @@ export class WandController {
     }
 
     update() {
+        if (!this.playerController || !this.scene) return;
+
+        // 當對話系統或選擇系統顯示時，鎖定象鼻無法伸長並保持收回狀態
+        const isUIBusy = (typeof DialogueSystem !== 'undefined' && DialogueSystem.isShowing()) ||
+                         (typeof ChoiceSystem !== 'undefined' && ChoiceSystem.isShowing());
+
+        if (isUIBusy) {
+            this.currentBodyLength = 0;
+            if (this.wandBody) this.wandBody.setVisible(false);
+            if (this.wandTip) this.wandTip.setVisible(true);
+            this.isExtending = false;
+            return;
+        }
+
         const playerPos = this.player.getPosition();
         const pointerPos = this.scene.cameras.main
             ? this.pointer.positionToCamera(this.scene.cameras.main)
