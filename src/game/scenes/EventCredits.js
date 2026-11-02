@@ -3,8 +3,10 @@ import { PlayerController } from '../core/PlayerController';
 import { GameProgress } from '../core/GameProgress';
 import { TextStyles, THEME_FONT } from '../core/theme';
 import { MoralState } from '../core/MoralState';
+import { AudioManager } from '../core/AudioManager';
 
 export const EVENT_CREDITS_MENU_LABEL = '創作者足跡';
+export const CREDITS_BGM_KEY = 'bgm_planeteer_reaction';
 
 const PROXIMITY_RADIUS = 145;
 const INSPIRATION_URL = 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3116962/';
@@ -102,6 +104,11 @@ export class EventCredits extends Scene
         this.cameras.main.setBackgroundColor(0xeeb92e);
         this.physics.world.setBounds(0, 0, width, height);
         this.createSavannaBackdrop(width, height);
+
+        const audio = AudioManager.getInstance(this);
+        if (audio && GameProgress.hasCompletedGame()) {
+            audio.playBGM(CREDITS_BGM_KEY, { loop: true, volume: 0.6 }, 1000);
+        }
 
         this.playerController = new PlayerController(this, width / 2, height / 2);
         this.playerController.speed = 220;

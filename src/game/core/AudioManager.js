@@ -10,6 +10,16 @@ export class AudioManager {
         AudioManager.instance = this;
     }
 
+    get isPlayingBGM() {
+        return Boolean(this.currentBGM && this.currentBGM.isPlaying);
+    }
+
+    isPlaying(key = null) {
+        if (!this.currentBGM || !this.currentBGM.isPlaying) return false;
+        if (!key) return true;
+        return this.currentBGMKey === key;
+    }
+
     static getInstance(scene) {
         if (!AudioManager.instance && scene) {
             AudioManager.instance = new AudioManager(scene);
@@ -81,15 +91,17 @@ export class AudioManager {
     _startBGM(key, config, fadeTimeMs) {
         const targetVolume = config.volume ?? 0.6;
         this.currentBGMKey = key;
-        this.currentBGM = this.scene.sound.add(key, { loop: true, ...config, volume: 0 });
+        this.currentBGM = this.scene.sound.add(key, { loop: true, ...config, volume: fadeTimeMs > 0 ? 0 : targetVolume });
         this.currentBGM.play();
 
         // BGM 淡入
-        this.scene.tweens.add({
-            targets: this.currentBGM,
-            volume: targetVolume,
-            duration: fadeTimeMs
-        });
+        if (fadeTimeMs > 0 && this.scene.tweens) {
+            this.scene.tweens.add({
+                targets: this.currentBGM,
+                volume: targetVolume,
+                duration: fadeTimeMs
+            });
+        }
     }
 
     fadeOutBGM(fadeTimeMs = 2000, onComplete = null) {
@@ -99,7 +111,16 @@ export class AudioManager {
         }
 
         // 清理既有的 tween，避免重複調用衝突
-        this.scene.tweens.killTweensOf(this.currentBGM);
+        this.scene.tweens?.killTweensOf(this.currentBGM);
+
+        if (!this.scene?.tweens || fadeTimeMs <= 0) {
+            this.currentBGM?.stop();
+            this.currentBGM?.destroy();
+            this.currentBGM = null;
+            this.currentBGMKey = '';
+            onComplete?.();
+            return;
+        }
 
         this.scene.tweens.add({
             targets: this.currentBGM,

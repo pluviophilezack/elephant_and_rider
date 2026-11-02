@@ -4,6 +4,7 @@ import { Scene } from 'phaser';
 import { TextStyles } from '../core/theme';
 import { GameProgress } from '../core/GameProgress';
 import { MoralState } from '../core/MoralState';
+import { AudioManager } from '../core/AudioManager';
 import { EVENT_CREDITS_MENU_LABEL } from './EventCredits';
 
 export class MainMenu extends Scene
@@ -16,7 +17,7 @@ export class MainMenu extends Scene
     init (data = {})
     {
         // 跳過Menu動畫，方便方便快速開發（設為 false 可正常進入主選單並點擊 Start）
-        this.debugSkipMenu = true;
+        this.debugSkipMenu = false;
 
         // 是否開啟測試用慢速載入（設為 true 可方便調整進度條外觀，調校好後可改為 false）
         this.debugSlowLoad = false;
@@ -37,23 +38,29 @@ export class MainMenu extends Scene
             const scale = Math.max(scaleX, scaleY);
             bg.setScale(scale);
 
-            // 播放動畫：先播 start，完畢後接著播 loop
-            bg.play('main_menu_bg_start');
-            // 類似 EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation, frame, gameObject三個instance，這邊我們只需要EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation(資訊)
-            bg.on('animationcomplete', (animation) => {
-                if (animation.key === 'main_menu_bg_start') {
-                    this.firstPlayFinished = true;
-                    bg.play('main_menu_bg_loop');
+            if (data?.forceShowMenu) {
+                this.firstPlayFinished = true;
+                bg.play('main_menu_bg_loop');
+                this.showTitleText();
+            } else {
+                // 播放動畫：先播 start，完畢後接著播 loop
+                bg.play('main_menu_bg_start');
+                // 類似 EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation, frame, gameObject三個instance，這邊我們只需要EventListener，當bg播放完畢，Phaser會發生animationcomplete。animationcomplete會附帶animation(資訊)
+                bg.on('animationcomplete', (animation) => {
+                    if (animation.key === 'main_menu_bg_start') {
+                        this.firstPlayFinished = true;
+                        bg.play('main_menu_bg_loop');
 
-                    // 動畫第一次播放完畢，即顯示遊戲標題文字。因此無論載入時間多長，標題都會在一樣的時間出現。
-                    this.showTitleText();
-                    
-                    // 條件判斷：如果資源也已經載入完成了，就顯示 start 按鈕
-                    if (this.isLoadingComplete) {
-                        this.showStartButton();
+                        // 動畫第一次播放完畢，即顯示遊戲標題文字。因此無論載入時間多長，標題都會在一樣的時間出現。
+                        this.showTitleText();
+                        
+                        // 條件判斷：如果資源也已經載入完成了，就顯示 start 按鈕
+                        if (this.isLoadingComplete) {
+                            this.showStartButton();
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // 2. 建立進度條元件
             this.progressOutline = this.add.rectangle(512, 640, 468, 32).setStrokeStyle(1, 0x4d3d8f);
@@ -146,6 +153,8 @@ export class MainMenu extends Scene
 
     create ()
     {
+        AudioManager.getInstance(this);
+
         if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('credits')) {
             this.scene.start('EventCredits');
             return;
@@ -198,9 +207,11 @@ export class MainMenu extends Scene
 
         // 點擊後進入開頭動畫過場
         this.startText.once('pointerdown', () => {
+            this.startText.disableInteractive();
+            if (this.creditsText) this.creditsText.disableInteractive();
             MoralState.reset();
             GameProgress.resetCompleted();
-            this.scene.start('IntroCutscene');
+            this.scene.start('IntroCutscene', { fromRestart: hasCreditsUnlocked });
         });
 
         if (hasCreditsUnlocked) {

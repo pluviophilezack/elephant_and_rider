@@ -16,6 +16,7 @@ export const INTRO_CONFIG = {
     lineSpacing: 12,
 
     // 3. 時間參數（毫秒）
+    initialDelay: 500,            // 開始播放第一組文字前的等待時間（3 秒）
     textDuration: 5000,            // 每段文字停留時間（預設 5 秒）
     textFadeDuration: 800,          // 文字淡入／淡出動畫時長
     pauseBetweenTexts: 400,        // 每段文字淡出後，下一段出現前的停頓空白時間
@@ -60,9 +61,11 @@ export class IntroCutscene extends Scene {
         const audio = AudioManager.getInstance(this);
         if (audio) {
             // 檢查是否已在播放，避免重複觸發播放
-            const isPlaying = audio.currentBGMKey === 'bgm_wisdom_in_the_sun_loop' && audio.isPlayingBGM;
+            const isPlaying = audio.isPlaying('bgm_wisdom_in_the_sun_loop');
             if (!isPlaying) {
-                audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 0.6 }, 1000);
+                // 淡出 3 秒後終止並切換
+                const fadeOutMs = 1000
+                audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 0.6 }, 1000, fadeOutMs);
             }
         }
 
@@ -109,6 +112,10 @@ export class IntroCutscene extends Scene {
      */
     async playCutscene() {
         let isCharacterVisible = false;
+
+        // 播放第一組文字前先等待設定的秒數
+        await this.waitDuration(INTRO_CONFIG.initialDelay);
+        if (!this.isSceneActive) return;
 
         for (let i = 0; i < INTRO_SCRIPTS.length; i++) {
             if (!this.isSceneActive) return;
