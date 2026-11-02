@@ -24,6 +24,7 @@ const CHASE_FLEE_RADIUS = 500;
 const CHASE_FAST_SPEED = 215;
 const CHASE_TIRED_SPEED = 105;
 const CHASE_SPRINT_MS = 14000;
+const CHASE_SPEED_MULTIPLIER = 1.5;
 const LONE_BIRD_BUSH_DEPTH = 24;
 
 const AREA = {
@@ -31,7 +32,6 @@ const AREA = {
     loneStart: { x: 690, y: 850 },
     firstEscapeLeftSpot: { x: 525, y: 900 },
     firstEscapeRightSpot: { x: 855, y: 900 },
-    chaseBounds: new Phaser.Geom.Rectangle(180, 160, 1700, 1160)
 };
 
 const LONE_BIRD_BUSH_OFFSETS = [
@@ -60,6 +60,8 @@ export default {
         this.nextRockThrowAt = 0;
         this.rockThrowBatch = 0;
         this.captureStartedAt = 0;
+        this.playerSpeedBeforeChase = null;
+        scene.events.once('shutdown', () => this._setChaseSpeed(scene, false));
         this.flockBirds = [];
         this.musicNotes = [];
         this.angerMarks = [];
@@ -398,6 +400,7 @@ export default {
 
     _startEscapeDash(scene) {
         this.state = 'capture_escape';
+        this._setChaseSpeed(scene, true);
         const player = scene.playerController.getPosition();
         const angleAway = Phaser.Math.Angle.Between(
             player.x,
@@ -405,24 +408,25 @@ export default {
             this.loneBird.x,
             this.loneBird.y
         );
-        const targetX = Phaser.Math.Clamp(
-            this.loneBird.x + Math.cos(angleAway) * ESCAPE_DASH_DISTANCE,
-            AREA.chaseBounds.left,
-            AREA.chaseBounds.right
-        );
-        const targetY = Phaser.Math.Clamp(
-            this.loneBird.y + Math.sin(angleAway) * ESCAPE_DASH_DISTANCE,
-            AREA.chaseBounds.top,
-            AREA.chaseBounds.bottom
-        );
+        const bounds = this._getChaseBounds(scene);
+        const targetX = Phaser.Math.Clamp(this.loneBird.x + Math.cos(angleAway) * ESCAPE_DASH_DISTANCE, bounds.left, bounds.right);
+        const targetY = Phaser.Math.Clamp(this.loneBird.y + Math.sin(angleAway) * ESCAPE_DASH_DISTANCE, bounds.top, bounds.bottom);
 
-        scene.tweens.add({
-            targets: this.loneBird,
-            x: targetX,
-            y: targetY,
-            angle: Phaser.Math.Between(-12, 12),
-            duration: ESCAPE_DASH_MS,
+        const startX = this.loneBird.x;
+        const startY = this.loneBird.y;
+        let lastProgress = 0;
+        scene.tweens.addCounter({
+            from: 0,
+            to: 1,
+            duration: ESCAPE_DASH_MS / CHASE_SPEED_MULTIPLIER,
             ease: 'Cubic.easeOut',
+            onUpdate: tween => {
+                const progress = tween.getValue();
+                this._moveChasingBird(scene,
+                    (targetX - startX) * (progress - lastProgress),
+                    (targetY - startY) * (progress - lastProgress));
+                lastProgress = progress;
+            },
             onComplete: () => {
                 this.captureStartedAt = scene.time.now;
                 this._addToItems(scene, this.loneBird);
@@ -434,6 +438,7 @@ export default {
     _updateCapture(scene) {
         if (this.state === 'capture_chase') {
             if (scene.wandController?.heldItem === this.loneBird) {
+                this._setChaseSpeed(scene, false);
                 this.state = 'capture_return';
                 return;
             }
@@ -450,21 +455,24 @@ export default {
                     0,
                     1
                 );
-                const speed = Phaser.Math.Linear(CHASE_FAST_SPEED, CHASE_TIRED_SPEED, sprintProgress);
-                this.loneBird.x += Math.cos(angleAway + wobble) * speed * delta;
-                this.loneBird.y += Math.sin(angleAway + wobble) * speed * delta;
+                const speed = Phaser.Math.Linear(CHASE_FAST_SPEED, CHASE_TIRED_SPEED, sprintProgress) * CHASE_SPEED_MULTIPLIER;
+                this._moveChasingBird(scene, Math.cos(angleAway + wobble) * speed * delta,
+                    Math.sin(angleAway + wobble) * speed * delta);
             } else {
-                this.loneBird.x += Math.sin(scene.time.now / 300) * 42 * delta;
-                this.loneBird.y += Math.cos(scene.time.now / 340) * 34 * delta;
+                this._moveChasingBird(scene, Math.sin(scene.time.now / 300) * 42 * delta * CHASE_SPEED_MULTIPLIER,
+                    Math.cos(scene.time.now / 340) * 34 * delta * CHASE_SPEED_MULTIPLIER);
             }
 
-            this._clampLoneBirdToChaseArea();
+            const bounds = this._getChaseBounds(scene);
+            this.loneBird.x = Phaser.Math.Clamp(this.loneBird.x, bounds.left, bounds.right);
+            this.loneBird.y = Phaser.Math.Clamp(this.loneBird.y, bounds.top, bounds.bottom);
             return;
         }
 
         if (this.state !== 'capture_return') return;
 
         if (scene.wandController?.heldItem !== this.loneBird) {
+            this._setChaseSpeed(scene, true);
             this.state = 'capture_chase';
             return;
         }
@@ -697,20 +705,99 @@ export default {
             sprite.setDepth(18 + Math.round(sprite.y / 100));
         });
 
-        scene.player?.setDepth(18 + Math.round(scene.player.y / 100));
-        // Keep the wand above the player's changing world depth, even between pickups.
-        if (scene.player) {
-            const wand = scene.wandController;
-            const depth = scene.player.depth;
-            wand?.wandBody?.setDepth(depth + 5);
-            wand?.wandTip?.setDepth(depth + 6);
-            wand?.heldItem?.setDepth(depth + 100);
+    },
+
+    _moveChasingBird(scene, dx, dy) {
+        const player = scene.playerController.sprite;
+        const body = player.body;
+        const bounds = this._getChaseBounds(scene);
+        const tutorial = scene.events_?.find(event => event.key === 'tutorial');
+        const passableTree = tutorial?.bushCompound04;
+        const treeBounds = passableTree?.getBounds();
+        const boundaryLines = (tutorial?.boundaryLines ?? []).filter(line =>
+            !treeBounds || !Phaser.Geom.Intersects.LineToRectangle(line, treeBounds));
+        boundaryLines.push(new Phaser.Geom.Line(2344, 448, 2752, 642));
+        if (tutorial?.rainStoneTriggerLine && !scene.hud?.hasEnoughRainStones()) {
+            boundaryLines.push(tutorial.rainStoneTriggerLine);
+        }
+        const blockers = new Set();
+        const containsPlayer = object => object === player || object?.contains?.(player)
+            || (Array.isArray(object) && object.includes(player));
+        const collect = object => {
+            if (Array.isArray(object)) object.forEach(collect);
+            else if (object?.getChildren) object.getChildren().forEach(collect);
+            else if (object?.body && object !== player && object !== this.loneBird && object !== passableTree) blockers.add(object.body);
+        };
+        // Use the same solid objects as the player's colliders, not trigger overlaps.
+        for (const collider of scene.physics.world.colliders.getActive()) {
+            if (!collider.active || collider.overlapOnly) continue;
+            if (containsPlayer(collider.object1)) collect(collider.object2);
+            if (containsPlayer(collider.object2)) collect(collider.object1);
+        }
+        collect(scene.terrainCollision?.walls);
+        collect(this.loneBirdBushes);
+        const offsetX = body.center.x - player.x;
+        const offsetY = body.center.y - player.y;
+        const halfWidth = Math.max(body.width / 2 + 4, this.loneBird.displayWidth / 2);
+        const halfHeight = Math.max(body.height / 2 + 4, this.loneBird.displayHeight / 2);
+        const distance = Math.hypot(dx, dy);
+        const steps = Math.max(1, Math.ceil(distance / 8));
+        for (const turn of [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+            const moveX = dx * Math.cos(turn) - dy * Math.sin(turn);
+            const moveY = dx * Math.sin(turn) + dy * Math.cos(turn);
+            let clear = true;
+            for (let step = 1; step <= steps && clear; step++) {
+                const x = this.loneBird.x + moveX * step / steps;
+                const y = this.loneBird.y + moveY * step / steps;
+                if (x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom) {
+                    clear = false;
+                    break;
+                }
+                const footprint = new Phaser.Geom.Rectangle(x + offsetX - halfWidth,
+                    y + offsetY - halfHeight, halfWidth * 2, halfHeight * 2);
+                if (boundaryLines.some(line => Phaser.Geom.Intersects.LineToRectangle(line, footprint))) {
+                    clear = false;
+                    break;
+                }
+                for (const wall of blockers) {
+                    if (wall.gameObject?.active === false) continue;
+                    if (x + offsetX + halfWidth > wall.x && x + offsetX - halfWidth < wall.right
+                        && y + offsetY + halfHeight > wall.y && y + offsetY - halfHeight < wall.bottom) {
+                        clear = false;
+                        break;
+                    }
+                }
+            }
+            if (clear) {
+                this.loneBird.x += moveX;
+                this.loneBird.y += moveY;
+                return;
+            }
         }
     },
 
-    _clampLoneBirdToChaseArea() {
-        this.loneBird.x = Phaser.Math.Clamp(this.loneBird.x, AREA.chaseBounds.left, AREA.chaseBounds.right);
-        this.loneBird.y = Phaser.Math.Clamp(this.loneBird.y, AREA.chaseBounds.top, AREA.chaseBounds.bottom);
+    _getChaseBounds(scene) {
+        const world = scene.physics.world.bounds;
+        const marginX = Math.max(100, this.loneBird.displayWidth / 2);
+        const marginY = this.loneBird.displayHeight / 2;
+        return {
+            left: world.left + marginX,
+            right: world.right - marginX,
+            top: world.top + marginY,
+            bottom: world.bottom - marginY
+        };
+    },
+
+    _setChaseSpeed(scene, enabled) {
+        const controller = scene.playerController;
+        if (!controller) return;
+        if (enabled && this.playerSpeedBeforeChase === null) {
+            this.playerSpeedBeforeChase = controller.ingroupChaseSpeedMultiplier ?? 1;
+            controller.ingroupChaseSpeedMultiplier = this.playerSpeedBeforeChase * CHASE_SPEED_MULTIPLIER;
+        } else if (!enabled && this.playerSpeedBeforeChase !== null) {
+            controller.ingroupChaseSpeedMultiplier = this.playerSpeedBeforeChase;
+            this.playerSpeedBeforeChase = null;
+        }
     },
 
     _removeFromItems(scene, sprite) {
