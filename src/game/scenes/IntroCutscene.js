@@ -6,10 +6,6 @@ import { AudioManager } from '../core/AudioManager';
 /**
  * 開頭過場動畫參數設定（可在此自由微調各項數值）
  */
-const audio = AudioManager.getInstance(this);
-if (audio && !audio.isPlaying('bgm_wisdom_in_the_sun_loop')) {
-    audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 2.0 });
-}
 export const INTRO_CONFIG = {
     // 1. 背景顏色（米白色，提供十六進位字串供後續微調）
     backgroundColor: '#f1af41',
@@ -21,7 +17,7 @@ export const INTRO_CONFIG = {
 
     // 3. 時間參數（毫秒）
     textDuration: 5000,            // 每段文字停留時間（預設 5 秒）
-    textFadeDuration: 800,         // 文字淡入／淡出動畫時長
+    textFadeDuration: 800,          // 文字淡入／淡出動畫時長
     pauseBetweenTexts: 400,        // 每段文字淡出後，下一段出現前的停頓空白時間
     characterFadeDuration: 1200,   // 主角（大象與騎象人）淡入動畫時長
     sceneTransitionFadeDuration: 1600, // 結束轉場至 Overworld 的淡出時長
@@ -31,7 +27,7 @@ export const INTRO_CONFIG = {
     characterX: 512,               // 主角 X 軸置中
     characterY: 310,               // 主角 Y 軸位置（偏中央上方）
     characterScale: 0.5,           // 主角縮放比例
-    lateTextY: 530                 // 後兩句文字（主角在場時）的 Y 軸位置（主角下方）
+    lateTextY: 530                  // 後兩句文字（主角在場時）的 Y 軸位置（主角下方）
 };
 
 // 開頭對白腳本內容
@@ -59,6 +55,16 @@ export class IntroCutscene extends Scene {
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.isSceneActive = false;
         });
+
+        // 在此處取得 AudioManager 並播放音樂
+        const audio = AudioManager.getInstance(this);
+        if (audio) {
+            // 檢查是否已在播放，避免重複觸發播放
+            const isPlaying = audio.currentBGMKey === 'bgm_wisdom_in_the_sun_loop' && audio.isPlayingBGM;
+            if (!isPlaying) {
+                audio.playBGM('bgm_wisdom_in_the_sun_loop', { loop: true, volume: 0.6 }, 1000);
+            }
+        }
 
         // 1. 設定米白色底色
         this.cameras.main.setBackgroundColor(INTRO_CONFIG.backgroundColor);
