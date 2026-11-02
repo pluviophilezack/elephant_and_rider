@@ -294,19 +294,9 @@ export class HUD {
             this._completeStoneDelivery();
             return;
         }
-
-        const audio = AudioManager.getInstance(scene);
+        
         const count = this.pendingRainStoneCount;
 
-        if (audio) {
-            if (count === 1) {
-                audio.playSFX('sfx_get_stone_1');
-            } else if (count === 2 || count === 3) {
-                audio.playSFX('sfx_get_stone_2&3');
-            } else if (count === 4 || count === 5) {
-                audio.playSFX('sfx_get_stone_4&5');
-        }
-        }
         const startX = camera.x + (player.x - camera.worldView.x) * camera.zoom + 46;
         const startY = camera.y + (player.y - camera.worldView.y) * camera.zoom - 28;
         const targetX = this.container.x + this.icon.x;
@@ -353,6 +343,17 @@ export class HUD {
     _flashHudBorder() {
         this.glowTween?.stop();
         this.glowBorder.setAlpha(1);
+        const audio = AudioManager.getInstance(this.scene);
+         if (audio) {
+            const count = this.rainStoneCount;
+            if (count === 1) {
+                audio.playSFX('sfx_get_stone_1');
+            } else if (count === 2 || count === 3) {
+                audio.playSFX('sfx_get_stone_2&3');
+            } else if (count === 4 || count === 5) {
+                audio.playSFX('sfx_get_stone_4&5');
+            }
+        }
         this.glowTween = this.scene.tweens.add({
             targets: this.glowBorder,
             alpha: 0.15,
