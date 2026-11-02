@@ -104,6 +104,8 @@ export class WandController {
     }
 
     update() {
+        if (!this.player || !this.scene) return;
+
         // 當對話系統或選擇系統顯示時，鎖定象鼻無法伸長並保持收回狀態
         const isUIBusy = (typeof DialogueSystem !== 'undefined' && DialogueSystem.isShowing()) ||
                          (typeof ChoiceSystem !== 'undefined' && ChoiceSystem.isShowing());

@@ -199,9 +199,7 @@ export default {
 
         this.glasses = scene.physics.add.sprite(222, 724, 'glasses').setScale(0.75);
         scene.registerAsset(this.glasses);
-        if (scene.items && !scene.items.includes(this.glasses)) {
-            scene.items.push(this.glasses);
-        }
+        scene.items.push(this.glasses);
 
         // 一般情況
         scene.input.keyboard.on('keydown-SPACE', () => {
