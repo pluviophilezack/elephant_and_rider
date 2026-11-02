@@ -83,7 +83,7 @@ export default {
         // Bush compound
         // this.bushCompound02 = scene.physics.add.sprite(631, 225, 'bush_compound_02').setDepth(105);
         scene.physics.add.sprite(1560, 110, 'bush_compound_01').setDepth(1);
-        this.bushCompound04 = scene.physics.add.sprite(1350, 905, 'bush_compound_04')
+        this.bushCompound04 = scene.add.sprite(1350, 905, 'bush_compound_04')
 
         // 根據主角在線段的左側或右側，設定與bush compound圖層
 

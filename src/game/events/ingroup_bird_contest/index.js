@@ -695,8 +695,6 @@ export default {
         sprites.forEach((sprite) => {
             sprite.setDepth(18 + Math.round(sprite.y / 100));
         });
-
-        scene.player?.setDepth(18 + Math.round(scene.player.y / 100));
     },
 
     _clampLoneBirdToChaseArea() {
