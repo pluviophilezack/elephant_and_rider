@@ -640,8 +640,8 @@ export default {
                 '哈哈！看這雨下得多大呀！',
                 '大雨治好我的老花，從此不再需要眼鏡！',
                 '⋯⋯',
-                '其實，在我有限的歲月中，經歷過數百次的乾旱和大雨的循環',
-                '待你離開，沒過多久，雨將停歇，河水猛然消失，沙塵暴揚起，祈雨石再度四散各方',
+                '其實，我有限的歲月中，曾經歷過數千次的乾旱和大雨的循環',
+                '待你離開，沒過多久，雨將驟然停歇，河水消失，沙塵暴揚起，祈雨石再度四散各方',
                 '然後又會出現新的勇者，前來拯救我們，如此迴環往復',
                 '看看你身上獨有的斑紋吧。那是這趟冒險旅途中，道德判斷的印記',
                 '我見過數百位像你這樣的心智化身，印記各有不同',
@@ -975,7 +975,7 @@ export default {
 
 
         // 自動開啟與monkey的對話: 初始教學＆搶眼鏡彩蛋
-        if(this.turns_monkey === 0){
+        if(this.turns_monkey === 0 && !scene.hud.hasEnoughRainStones()){
             const distance = Phaser.Math.Distance.Between(
             this.playerSprite.x, this.playerSprite.y,
             this.monkeyElder.x, this.monkeyElder.y);
