@@ -693,10 +693,19 @@ export default {
         }
 
         sprites.forEach((sprite) => {
+            if (sprite === scene.wandController?.heldItem) return;
             sprite.setDepth(18 + Math.round(sprite.y / 100));
         });
 
         scene.player?.setDepth(18 + Math.round(scene.player.y / 100));
+        // Keep the wand above the player's changing world depth, even between pickups.
+        if (scene.player) {
+            const wand = scene.wandController;
+            const depth = scene.player.depth;
+            wand?.wandBody?.setDepth(depth + 5);
+            wand?.wandTip?.setDepth(depth + 6);
+            wand?.heldItem?.setDepth(depth + 100);
+        }
     },
 
     _clampLoneBirdToChaseArea() {
