@@ -214,7 +214,8 @@ export class PlayerController {
             velocityX *= 0.7071;
             velocityY *= 0.7071;
         }
-        this.sprite.setVelocity(velocityX, velocityY);
+        const chaseMultiplier = this.ingroupChaseSpeedMultiplier ?? 1;
+        this.sprite.setVelocity(velocityX * chaseMultiplier, velocityY * chaseMultiplier);
         
         // 切換動畫或靜止狀態
         if (velocityX !== 0 || velocityY !== 0) {
