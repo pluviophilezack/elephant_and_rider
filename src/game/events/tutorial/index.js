@@ -209,7 +209,7 @@ export default {
             if (distance <= this.CONVERSATION_DISTANCE){
                 this.startConversationMonkey(scene);
             }
-        })
+        });
 
         // 自言自語路段 (靠近木堆觸發對話，左上(100,1580)、右上(500,1580)、左下(86,1925)、右下(551,1925)；拿起第一塊木頭後銷毀)
         this.woodpileTriggerZone = createTriggerZone(scene, { x: 318.5, y: 1752.5, width: 465, height: 345 });
@@ -652,8 +652,8 @@ export default {
                 '時間差不多了，我這裡有個寶盒，快把你蒐集的祈雨石放進來吧',
                 '再會了，勇者。'
             ], ()=>{
-                onFinishConversation;
-                // TODO: 直接接續動畫
+                onFinishConversation();
+                scene.scene.start('RainStoneCutsceneScene');
             })
         }
 

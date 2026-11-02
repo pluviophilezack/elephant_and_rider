@@ -6,6 +6,7 @@ import { Overworld } from './scenes/Overworld';
 import { Ending } from './scenes/Ending';
 import { EventCredits } from './scenes/EventCredits';
 import { AUTO, Game, Scale } from 'phaser';
+import { RainStoneCutsceneScene } from './scenes/RainStoneCutsceneScene';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
@@ -32,6 +33,7 @@ const config = {
         IntroCutscene,
         Overworld,
         Ending,
+        RainStoneCutsceneScene,
         EventCredits
     ]
 };

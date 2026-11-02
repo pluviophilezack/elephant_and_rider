@@ -48,7 +48,16 @@ export default {
 
     // 2. 守衛與巨石
     this.guard = safeAddSprite(scene, 4835, 2680, "guard_trapped", 2);
-    if (this.guard) this.guard.setScale(0.6);
+    if (this.guard) {
+      this.guard.setScale(0.6);
+      scene.physics.add.existing(this.guard, true);
+      const width = this.guard.width * 0.6;
+      const height = this.guard.height * 0.4;
+      const offsetX = (this.guard.width - width) / 2;
+      const offsetY = this.guard.height - height;
+      this.guard.body.setSize(width, height);
+      scene.physics.add.collider(scene.player, this.guard);
+    }
 
     this.rockGuard = safeAddImage(scene, 4835, 2600, "rock_guard", 3);
 
@@ -116,26 +125,29 @@ export default {
     const dialogs = dialogueData || [];
 
     if (this.isTrunkPolluted) {
+      // 魔杖已遭油污，聖物被染黑
       safeSetTexture(this.lotusRelic, "lotus_relic_polluted");
       DialogueSystem.show(scene, dialogs[3] || [], () => {
         scene.giveRainStone?.();
       });
     } else {
+      // 魔杖維持潔淨，聖物保持純潔
       safeSetTexture(this.lotusRelic, "lotus_relic_clean");
-      DialogueSystem.show(scene, dialogs[1] || [], () => {
+      DialogueSystem.show(scene, dialogs[5] || [], () => {
         scene.giveRainStone?.();
       });
     }
   },
 
-  triggerGuardDialogue(scene) {
+triggerGuardDialogue(scene) {
     const dialogs = dialogueData || [];
 
+    // 觸發初次對話（引發同理心與危險警告）
     DialogueSystem.show(scene, dialogs[0] || [], () => {
       this.isTalked = true;
       const options = [
-        { key: "leave", label: "不救並離開" },
-        { key: "save", label: "用象鼻移開石塊救牠" },
+        { key: "save", label: "用象鼻移開石塊救牠（象鼻將被污染）" },
+        { key: "leave", label: "保持潔淨並離開（保留無瑕聖物）" }
       ];
 
       if (ChoiceSystem?.prompt) {
@@ -150,10 +162,12 @@ export default {
               }
               safeSetTexture(this.guard, "guard_saved");
 
+              // 拯救選擇：增加關懷（harm）道德值
               MoralState?.add?.("harm", 1);
               DialogueSystem.show(scene, dialogs[2] || [], () => {});
             } else if (choice === "leave") {
               this.isTrunkPolluted = false;
+              // 保持純潔選擇：增加聖潔（purity）道德值
               MoralState?.add?.("purity", 1);
               DialogueSystem.show(scene, dialogs[1] || [], () => {});
             }
@@ -161,7 +175,6 @@ export default {
       }
     });
   },
-
   update(scene) {
     if (!scene.player || !scene.playerController) return;
 
