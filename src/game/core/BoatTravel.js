@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { DialogueSystem } from './DialogueSystem';
 import { DOCKS, SHALLOW_BERTH, TUTORIAL_RETURN, CURRENT_WARNINGS } from './DockLayout';
+import { AudioManager } from './AudioManager';
 export { DOCKS } from './DockLayout';
 
 export const BOAT_TRIP_DURATION = 10000;
@@ -16,8 +17,6 @@ export const BOAT_RETURN_ROUTE = [
     [TUTORIAL_RETURN.berth.x, TUTORIAL_RETURN.berth.y]
 ];
 
-// Both piers face east: the boat moors to the right, and passengers land left.
-// Follow the eastern river around the peninsula rather than cutting over land.
 export const BOAT_ROUTE = [
     [5040, 1640], [5040, 1840], [5020, 1980], [5000, 2210],
     [4770, 2440], [4460, 2620], [4200, 2660], [4190, 2530]
@@ -33,17 +32,16 @@ export class BoatTravel {
         this.phase = 'outbound';
         this.warningArmed = true;
         this.shallowWarningArmed = true;
+        this.shippingSound = null; //  紀錄搭船浪聲實體
         this.docks = {};
         for (const [key, dock] of Object.entries(DOCKS)) {
             const image = scene.add.image(dock.x, dock.y, 'port').setScale(1.2).setDepth(7);
             scene.registerAsset(image, `boat_dock_${key}`);
-            // Board only near the boat-facing end, not at the pier entrance.
             const zone = scene.add.zone(dock.x + 150, dock.y + 25, 30, 80);
             scene.physics.add.existing(zone, true);
             this.docks[key] = { zone, image };
         }
         const berth = DOCKS.mainland.berth;
-        // The hull draws in front of the passenger; both stay above the pier.
         this.boat = scene.add.image(berth.x, berth.y, 'boat').setScale(1.3).setDepth(45);
         scene.registerAsset(this.boat, 'river_boat');
         this.passenger = scene.add.sprite(0, 0, 'main_character_stand_still')
@@ -68,10 +66,21 @@ export class BoatTravel {
             this.tween?.stop();
             this.driftTween?.stop();
             this.releaseTween?.stop();
+            this.stopShippingSound();
             this.restoreReleaseState();
             this.restoreHeldItemState();
+            this.restoreMarkingState();
             this.isTravelling = false;
         });
+    }
+
+    //  停止搭船水浪音效
+    stopShippingSound() {
+        if (this.shippingSound) {
+            this.shippingSound.stop();
+            this.shippingSound.destroy();
+            this.shippingSound = null;
+        }
     }
 
     restoreHeldItemState() {
@@ -79,6 +88,24 @@ export class BoatTravel {
         if (heldItem && this.savedItemDepth != null) {
             heldItem.setDepth(this.savedItemDepth);
             this.savedItemDepth = null;
+        }
+    }
+
+    restoreMarkingState() {
+        const controller = this.scene.playerController;
+        if (!controller) return;
+        const player = controller.sprite;
+        if (this.savedState?.depth != null && player) {
+            player.setDepth(this.savedState.depth);
+        }
+        if (controller.marking_sprite) {
+            Object.values(controller.marking_sprite).forEach(sprite => {
+                sprite.setScale(0.45);
+                if (player) {
+                    sprite.setDepth(player.depth + 1);
+                }
+            });
+            controller.syncMarkingPositions();
         }
     }
 
@@ -116,7 +143,6 @@ export class BoatTravel {
         }
         const zone = this.docks[this.currentDock].zone;
         const atDock = scene.physics.overlap(controller.sprite, zone);
-        // Require leaving the arrival trigger before another trip can begin.
         if (!atDock) this.armed = true;
         if (atDock && this.armed && controller.enabled && !controller.isAutoMoving
             && !controller.isInteracting && !DialogueSystem.isShowing() && !scene.isDialogueActive) {
@@ -212,11 +238,20 @@ export class BoatTravel {
         this.armed = false;
         if ((scene.hud?.rainStoneCount ?? 0) < (returning ? BOAT_RETURN_STONES : BOAT_REQUIRED_STONES)) {
             this.boardingDialogue = DialogueSystem.show(scene, [
-                { speaker: 'player', text: '祈雨石還沒收集到四顆，河道乾涸，船無法航行。' },
+                { speaker: 'player', text: '祈雨石還沒收集到四顆，現在還不能搭船。' },
                 { speaker: 'player', text: '回去看看吧，或許還有需要幫忙的夥伴。' }
             ]);
             return;
         }
+
+        // 搭船時根據去程 / 回程播放對應的水浪音效
+        const soundKey = returning ? 'sfx_shipping_wave_strong' : 'sfx_shipping_wave_weak';
+        if (scene.sound && scene.cache?.audio?.exists(soundKey)) {
+            this.stopShippingSound();
+            this.shippingSound = scene.sound.add(soundKey, { loop: true, volume: 1.0 });
+            this.shippingSound.play();
+        }
+
         const controller = scene.playerController;
         const player = controller.sprite;
         const from = returning ? { berth: SHALLOW_BERTH } : DOCKS.mainland;
@@ -234,7 +269,8 @@ export class BoatTravel {
         this.savedState = {
             enabled: controller.enabled, autoMoving: controller.isAutoMoving,
             bodyEnabled: player.body.enable, visible: player.visible,
-            speed: controller.speed, flipX: player.flipX
+            speed: controller.speed, flipX: player.flipX,
+            depth: player.depth
         };
         this.isTravelling = true;
         this.armed = false;
@@ -242,9 +278,18 @@ export class BoatTravel {
         controller.isAutoMoving = true;
         player.body.enable = false;
         player.setVisible(false);
+        player.setDepth(43.5);
+        if (controller.marking_sprite) {
+            Object.values(controller.marking_sprite).forEach(sprite => {
+                sprite.setScale(0.3375);
+                sprite.setDepth(44.5);
+            });
+        }
         scene.wandController?.hideFor(BOAT_TRIP_DURATION);
         const start = { x: player.x, y: player.y + player.displayHeight / 2 };
         this.passenger.setPosition(start.x, start.y).setFlipX(player.flipX).setVisible(true);
+        player.setFlipX(this.passenger.flipX);
+        player.setPosition(this.passenger.x, this.passenger.y - 61);
         if (heldItem) {
             const itemOffsetX = this.passenger.flipX ? -8 : 8;
             heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
@@ -284,14 +329,17 @@ export class BoatTravel {
                         Phaser.Math.Linear(startY, destY, p)
                     );
                 }
-                // Keep the hidden physical player near the passenger for other systems.
-                player.setPosition(this.passenger.x, this.passenger.y - player.displayHeight / 2);
+                player.setFlipX(this.passenger.flipX);
+                player.setPosition(this.passenger.x, this.passenger.y - 61);
                 if (heldItem) {
                     const itemOffsetX = this.passenger.flipX ? -8 : 8;
                     heldItem.setPosition(this.passenger.x + itemOffsetX, this.passenger.y - 45);
                 }
             },
             onComplete: () => {
+                //  抵達目的地時停止水浪音效
+                this.stopShippingSound();
+
                 this.boat.setPosition(to.berth.x, to.berth.y).setAngle(0);
                 player.body.reset(to.landing.x, to.landing.y);
                 player.body.enable = this.savedState.bodyEnabled;
@@ -307,6 +355,7 @@ export class BoatTravel {
                 if (scene.wandController) {
                     scene.wandController.forceHiddenUntil = 0;
                 }
+                this.restoreMarkingState();
                 scene.cameras.main.startFollow(player);
                 this.currentDock = destinationKey;
                 this.isTravelling = false;

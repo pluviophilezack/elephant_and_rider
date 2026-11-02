@@ -1,4 +1,4 @@
-// UI元件：畫面上方的抬頭顯示，目前顯示玩家已蒐集的祈雨石數量（目標五顆）
+import { AudioManager } from '../core/AudioManager';
 const CAMERA_ZOOM_IN_MS = 1200;
 const DANCE_END_AT_MS = 4200;
 const CAMERA_ZOOM_OUT_MS = 800;
@@ -190,6 +190,17 @@ export class HUD {
             this._finishRainStoneFeedback(false);
         }
 
+        const audio = AudioManager.getInstance(this.scene);
+        if (audio) {
+            const possibleKeys = [
+                'bgm_piano_magic_motive',
+                'bgm_piano_magic motive',
+                'bgm_piano_magic%20motive'
+            ];
+            const validKey = possibleKeys.find(k => this.scene.cache.audio.exists(k)) || 'bgm_piano_magic_motive';
+            audio.playSFX(validKey, { volume: 0.8 });
+        }
+
         const scene = this.scene;
         const playerController = scene.playerController;
         const player = playerController?.sprite ?? scene.player;
@@ -283,6 +294,8 @@ export class HUD {
             this._completeStoneDelivery();
             return;
         }
+        
+        const count = this.pendingRainStoneCount;
 
         const startX = camera.x + (player.x - camera.worldView.x) * camera.zoom + 46;
         const startY = camera.y + (player.y - camera.worldView.y) * camera.zoom - 28;
@@ -312,6 +325,12 @@ export class HUD {
     }
 
     _completeStoneDelivery() {
+        const audio = AudioManager.getInstance(this.scene);
+        if (audio) {
+            audio.stopSFX('bgm_piano_magic_motive', 300); // 300ms 微淡出停止
+            audio.stopSFX('bgm_piano_magic motive', 300);
+            audio.stopSFX('bgm_piano_magic%20motive', 300);
+        }
         this.setRainStoneCount(this.pendingRainStoneCount);
         this._flashHudBorder();
 
@@ -324,6 +343,17 @@ export class HUD {
     _flashHudBorder() {
         this.glowTween?.stop();
         this.glowBorder.setAlpha(1);
+        const audio = AudioManager.getInstance(this.scene);
+         if (audio) {
+            const count = this.rainStoneCount;
+            if (count === 1) {
+                audio.playSFX('sfx_get_stone_1');
+            } else if (count === 2 || count === 3) {
+                audio.playSFX('sfx_get_stone_2&3');
+            } else if (count === 4 || count === 5) {
+                audio.playSFX('sfx_get_stone_4&5');
+            }
+        }
         this.glowTween = this.scene.tweens.add({
             targets: this.glowBorder,
             alpha: 0.15,
@@ -359,6 +389,12 @@ export class HUD {
     }
 
     _finishRainStoneFeedback(notifyComplete) {
+        const audio = AudioManager.getInstance(this.scene);
+        if (audio) {
+            audio.stopSFX('bgm_piano_magic_motive', 0);
+            audio.stopSFX('bgm_piano_magic motive', 0);
+            audio.stopSFX('bgm_piano_magic%20motive', 0);
+        }
         const playerController = this.scene.playerController;
         const player = playerController?.sprite ?? this.scene.player;
         const completeCallback = this.feedbackCompleteCallback;

@@ -120,8 +120,9 @@ export class RainEffect {
 
         const audio = AudioManager.getInstance(this.scene);
         if (audio) {
-            // 使用 loop: true 確保雨聲不限時、持續播放下去
-            audio.playBGM('bgm_rain', { loop: true, volume: 5.0 }, 8000);
+            // 使用 loop: true 確保雨聲持續播放
+            // 前首淡出時間 4 秒（4000ms），淡出完畢後雨聲淡入 5 秒（5000ms）
+            audio.playBGM('bgm_rain', { loop: true, volume: 5.0 }, 5000, 4000);
         }
     }
 

@@ -39,7 +39,6 @@ export default {
 
     // 1. 背景裝飾與黑油水流區域
     this.pollutionOil = safeAddImage(scene, 4850, 2675, "pollution_oil", 1);
-    this.pollutionOil.setScale(3)
     this.slowZone = createTriggerZone(scene, {
       x: 4730,
       y: 2650,
@@ -147,7 +146,7 @@ triggerGuardDialogue(scene) {
     DialogueSystem.show(scene, dialogs[0] || [], () => {
       this.isTalked = true;
       const options = [
-        { key: "save", label: "用魔杖移開石塊救牠（象鼻將被污染）" },
+        { key: "save", label: "用象鼻移開石塊救牠（象鼻將被污染）" },
         { key: "leave", label: "保持潔淨並離開（保留無瑕聖物）" }
       ];
 
