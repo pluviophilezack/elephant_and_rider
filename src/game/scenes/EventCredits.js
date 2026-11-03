@@ -96,9 +96,11 @@ export class EventCredits extends Scene
 
     create ()
     {
+        
         const width = this.scale.width;
         const height = this.scale.height;
-
+        
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0xeeb92e);
         this.physics.world.setBounds(0, 0, width, height);
         this.createSavannaBackdrop(width, height);

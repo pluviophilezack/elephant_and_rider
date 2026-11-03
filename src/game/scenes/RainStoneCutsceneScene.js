@@ -21,39 +21,59 @@ export class RainStoneCutsceneScene extends Phaser.Scene {
     }
 
     create() {
-        const { width, height } = this.scale;
-        const centerX = width / 2;
-        const centerY = height / 2;
+    const { width, height } = this.scale;
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-        // 鏡頭淡入
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
+    // 鏡頭淡入
+    this.cameras.main.fadeIn(1000, 0, 0, 0);
 
-        // 1. 鋪上底色
-        this.add.rectangle(centerX, centerY, width, height, 0xffffff).setDepth(0);
+    // 1. 鋪上底色
+    this.add.rectangle(centerX, centerY, width, height, 0xffffff).setDepth(0);
 
-        // 2. 祭壇底圖：將最大等比縮放係數調小至 0.7
-        this.bg = safeAddImage(this, centerX, centerY + 30, "stone_system_without_text", 1);
-        if (this.bg) {
-            this.bg.setOrigin(0.5);
-            this.bgScale = Math.min(width / this.bg.width, height / this.bg.height) * 0.7;
-            this.bg.setScale(this.bgScale);
-        }
+    // 2. 祭壇底圖：
+    // B (無文字): 作為底圖，depth 設為 1，始終保持不變
+    this.bgNoText = safeAddImage(this, centerX, centerY + 30, "stone_system_without_text", 1);
+    
+    // A (有文字): 上層，depth 設為 2，初始 alpha 設為 0 以便淡入
+    this.bgWithText = safeAddImage(this, centerX, centerY + 30, "stone_system", 2);
 
-        // 取得玩家道德分數（判斷石頭亮暗）
-        const moralScores = MoralState.getAll() || {};
+    if (this.bgNoText && this.bgWithText) {
+        this.bgNoText.setOrigin(0.5);
+        this.bgWithText.setOrigin(0.5);
 
-        // 3. 五色寶石與對應美德/座標設定 (以 (0.7 / 0.95) 比例轉換後的 Offset)
-        const stonePositions = [
-            { key: "blue_stone", handKey: "hand_blue", domain: "purity", offsetX: -72, offsetY: 118 },
-            { key: "green_stone", handKey: "hand_green", domain: "fairness", offsetX: 4, offsetY: -30 },
-            { key: "pink_stone", handKey: "hand_pink", domain: "authority", offsetX: 131, offsetY: -30 },
-            { key: "purple_stone", handKey: "hand_purple", domain: "harm", offsetX: 77, offsetY: 118 },
-            { key: "yellow_stone", handKey: "hand_yellow", domain: "ingroup", offsetX: -124, offsetY: -30 }
-        ];
+        // 計算縮放係數
+        this.bgScale = Math.min(width / this.bgNoText.width, height / this.bgNoText.height) * 0.7;
+        this.bgNoText.setScale(this.bgScale);
+        this.bgWithText.setScale(this.bgScale);
 
-        // 啟動儀式放置動畫序列
-        this.playStonePlacementSequence(centerX, centerY, stonePositions, moralScores);
+        // 將 A (有文字) 設為完全透明
+        this.bgWithText.setAlpha(0);
+
+        // 淡入 A (從 0 到 1)，覆蓋在 B 之上
+        this.tweens.add({
+            targets: this.bgWithText,
+            alpha: 1,
+            duration: 4500,
+            ease: "Quad.easeInOut"
+        });
     }
+
+    // 取得玩家道德分數（判斷石頭亮暗）
+    const moralScores = MoralState.getAll() || {};
+
+    // 3. 五色寶石與對應美德/座標設定
+    const stonePositions = [
+        { key: "blue_stone", handKey: "hand_blue", domain: "purity", offsetX: -72, offsetY: 118 },
+        { key: "green_stone", handKey: "hand_green", domain: "fairness", offsetX: 4, offsetY: -30 },
+        { key: "pink_stone", handKey: "hand_pink", domain: "authority", offsetX: 131, offsetY: -30 },
+        { key: "purple_stone", handKey: "hand_purple", domain: "harm", offsetX: 77, offsetY: 118 },
+        { key: "yellow_stone", handKey: "hand_yellow", domain: "ingroup", offsetX: -124, offsetY: -30 }
+    ];
+
+    // 啟動儀式放置動畫序列
+    this.playStonePlacementSequence(centerX, centerY, stonePositions, moralScores);
+}
 
     /**
      * 寶石順序鑲嵌動畫序列
@@ -82,7 +102,7 @@ export class RainStoneCutsceneScene extends Phaser.Scene {
                         targets: hand,
                         y: handTargetY,
                         alpha: 1,
-                        duration: 900,
+                        duration: 2000,
                         ease: "Cubic.out",
                         onComplete: () => {
                             const stone = safeAddImage(this, targetX, targetY, item.key, 5);
@@ -107,12 +127,14 @@ export class RainStoneCutsceneScene extends Phaser.Scene {
                                 });
                             }
 
+                            hand.setTexture("hand_open")
+
                             // 3. 手部自然鬆開向下退場
                             this.tweens.add({
                                 targets: hand,
                                 y: handExitY,
                                 alpha: 0,
-                                duration: 600,
+                                duration: 2000,
                                 ease: "Power1.in",
                                 onComplete: () => hand.destroy()
                             });
@@ -121,14 +143,11 @@ export class RainStoneCutsceneScene extends Phaser.Scene {
                 }
             });
 
-            delayOffset += 1100;
+            delayOffset += 4500;
         });
 
         // 放置完成後：換成包含說明的背景完整圖
         this.time.delayedCall(delayOffset + 600, () => {
-            if (this.bg && this.textures.exists("stone_system")) {
-                this.bg.setTexture("stone_system");
-            }
             this.finishCutscene();
         });
     }
@@ -144,7 +163,6 @@ export class RainStoneCutsceneScene extends Phaser.Scene {
             this.cameras.main.once(
                 Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
                 () => {
-                    const url = new URL(window.location.href);
                     this.scene.start("EventCredits");
                 }
             );
